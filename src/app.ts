@@ -1,8 +1,10 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import morgan from 'morgan';
-import config from './config/config';
+
+import morganMiddleware from './middlewares/MorganMiddleware';
+import logger from './utils/logger';
+import config from './config';
 
 const app: Express = express();
 
@@ -15,9 +17,10 @@ app.use(
   })
 );
 app.use(helmet());
-app.use(morgan('tiny'));
+app.use(morganMiddleware);
 
 app.get('/', (req: Request, res: Response) => {
+	logger.info('Checking the API status: Everything is OK');
   res.send('Express + TypeScript Server');
 });
 
