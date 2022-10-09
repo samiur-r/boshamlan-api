@@ -14,13 +14,13 @@ app.use(
   cors({
     // @ts-ignore
     origin: config.clientOrigins[config.nodeEnv],
-  })
+  }),
 );
 app.use(helmet());
 app.use(morganMiddleware);
 
 app.get('/', (req: Request, res: Response) => {
-	logger.info('Checking the API status: Everything is OK');
+  logger.info('Checking the API status: Everything is OK');
   res.send('Express + TypeScript Server');
 });
 
