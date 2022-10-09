@@ -3,5 +3,5 @@ import config from './config';
 import logger from './utils/logger';
 
 app.listen(config.port, () => {
-  logger.info(`🚀 Listening on ${config.port} with NODE_ENV=${config.nodeEnv} 🚀`);
+  logger.info(`🚀 Listening n ${config.port} with NODE_ENV=${config.nodeEnv} 🚀`);
 });
