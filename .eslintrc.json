@@ -1,6 +1,8 @@
 {
   "parser": "@typescript-eslint/parser",
   "extends": [
+    "airbnb-base",
+    "airbnb-typescript/base",
     "plugin:security/recommended",
     "prettier",
     "plugin:@typescript-eslint/recommended",
@@ -8,7 +10,8 @@
   ],
   "parserOptions": {
     "ecmaVersion": 2018,
-    "sourceType": "module"
+    "sourceType": "module",
+    "project": "./tsconfig.json"
   },
   "rules": {}
 }
