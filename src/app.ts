@@ -12,6 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     origin: config.clientOrigins[config.nodeEnv],
   }),

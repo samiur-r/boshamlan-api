@@ -25,6 +25,8 @@
     "yup": "^0.32.11"
   },
   "devDependencies": {
+    "@commitlint/cli": "^17.1.2",
+    "@commitlint/config-conventional": "^17.1.0",
     "@types/cors": "^2.8.12",
     "@types/dotenv": "^8.2.0",
     "@types/express": "^4.17.14",
@@ -52,7 +54,8 @@
   },
   "lint-staged": {
     "src/**/*.{js,ts}": [
-      "eslint --config ./.eslintrc.json --ext js --ext ts"
+      "npm run lint",
+      "npm run format"
     ]
   }
 }
