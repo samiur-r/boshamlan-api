@@ -1,0 +1,11 @@
+# Code build folder
+.dist
+
+# Code build folder
+tsconfig.json
+
+# Dependency directories
+node_modules/
+
+# Ignore all markdown files:
+*.md
