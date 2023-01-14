@@ -29,13 +29,13 @@ export class Otp extends BaseEntity implements IOtp {
   @Column()
   expiration_date: Date;
 
+  @ManyToOne('User', 'otp')
+  @JoinColumn({ name: 'user_id' })
+  user: IUser;
+
   @CreateDateColumn()
   created_at: Date;
 
   @UpdateDateColumn()
   updated_at: Date;
-
-  @ManyToOne('User', 'otp')
-  @JoinColumn({ name: 'user_id' })
-  user: IUser;
 }

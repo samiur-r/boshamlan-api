@@ -5,6 +5,13 @@ import { User } from '../api/v1/users/model';
 import { Credit } from '../api/v1/credits/model';
 import { Otp } from '../api/v1/otps/model';
 import { Agent } from '../api/v1/agents/model';
+import { Transaction } from '../api/v1/transactions/model';
+import { Package } from '../api/v1/packages/model';
+import { Category } from '../api/v1/categories/model';
+import { PropertyType } from '../api/v1/property_types/model';
+import { Region } from '../api/v1/regions/model';
+import { Post } from '../api/v1/posts/model';
+import { Multimedia, PostMultimedia } from '../api/v1/multimedia/model';
 
 const AppDataSource = new DataSource({
   type: 'postgres',
@@ -15,12 +22,20 @@ const AppDataSource = new DataSource({
   database: process.env.POSTGRES_DB || 'boshamlan_dev',
   synchronize: true,
   logging: false,
-  entities: [User, Credit, Otp, Agent],
-  //   cli: {
-  //     entitiesDir: 'src/orm/entities',
-  //     migrationsDir: 'src/orm/migrations',
-  //     subscribersDir: 'src/orm/subscriber',
-  //   },
+  entities: [
+    User,
+    Credit,
+    Otp,
+    Agent,
+    Transaction,
+    Package,
+    Category,
+    PropertyType,
+    Region,
+    Post,
+    Multimedia,
+    PostMultimedia,
+  ],
 });
 
 export default AppDataSource;

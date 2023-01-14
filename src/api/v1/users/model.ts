@@ -10,6 +10,7 @@ import {
 
 import { IUser } from './interfaces';
 import { IOtp } from '../otps/interfaces';
+import { ITransaction } from '../transactions/interfaces';
 
 @Entity('users')
 export class User extends BaseEntity implements IUser {
@@ -35,6 +36,9 @@ export class User extends BaseEntity implements IUser {
 
   @OneToMany('Otp', 'user')
   otp: IOtp[];
+
+  @OneToMany('Transaction', 'user')
+  transaction: ITransaction[];
 
   @CreateDateColumn()
   created_at: Date;

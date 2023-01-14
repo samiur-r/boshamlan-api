@@ -3,6 +3,8 @@
         "boshamlan",
         "middlewares",
         "otps",
+        "repost",
+        "reposted",
         "typeorm"
     ]
 }
