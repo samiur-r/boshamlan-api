@@ -13,5 +13,5 @@
     "sourceType": "module",
     "project": "./tsconfig.json"
   },
-  "rules": {}
+  "rules": { "import/prefer-default-export": "off", "no-restricted-exports": "off" }
 }
