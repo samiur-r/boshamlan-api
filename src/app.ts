@@ -3,9 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 import morganMiddleware from './middlewares/MorganMiddleware';
-import logger from './utils/logger';
 import config from './config';
 import userRoutes from './api/v1/users';
+import errorHandler from './middlewares/ErrorHandler';
 
 const app: Express = express();
 
@@ -22,5 +22,7 @@ app.use(helmet());
 app.use(morganMiddleware);
 
 app.use('/api/v1/users', userRoutes);
+
+app.use(errorHandler);
 
 export default app;
