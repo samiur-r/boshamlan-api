@@ -17,4 +17,9 @@ const getById = () => {
   return 6;
 };
 
-export { getAll, getById };
+const login = async (req: Request, res: Response) => {
+  const { phone, password } = req.body;
+  return res.status(200).json({ phone, password });
+};
+
+export { getAll, getById, login };

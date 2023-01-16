@@ -21,7 +21,7 @@ app.use(
 app.use(helmet());
 app.use(morganMiddleware);
 
-app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/user', userRoutes);
 
 app.use(errorHandler);
 
