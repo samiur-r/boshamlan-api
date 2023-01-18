@@ -1,7 +1,7 @@
 import app from './app';
 import config from './config';
 import logger from './utils/logger';
-import AppDataSource from './db/config';
+import AppDataSource from './config/db';
 
 AppDataSource.initialize()
   .then(() => {
