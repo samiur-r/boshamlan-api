@@ -28,10 +28,19 @@ export class User extends BaseEntity implements IUser {
   @Column()
   status: string;
 
-  @Column()
+  @Column({
+    default: false,
+  })
   is_agent: boolean;
 
-  @Column()
+  @Column({
+    default: false,
+  })
+  is_admin: boolean;
+
+  @Column({
+    nullable: true,
+  })
   admin_comment: string;
 
   @OneToMany('Otp', 'user')

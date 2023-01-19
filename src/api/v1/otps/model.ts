@@ -23,11 +23,13 @@ export class Otp extends BaseEntity implements IOtp {
   @Column()
   type: string;
 
-  @Column()
-  is_used: boolean;
+  @Column({
+    default: false,
+  })
+  verified: boolean;
 
   @Column()
-  expiration_date: Date;
+  expiration_time: Date;
 
   @ManyToOne('User', 'otp')
   @JoinColumn({ name: 'user_id' })
@@ -35,7 +37,4 @@ export class Otp extends BaseEntity implements IOtp {
 
   @CreateDateColumn()
   created_at: Date;
-
-  @UpdateDateColumn()
-  updated_at: Date;
 }

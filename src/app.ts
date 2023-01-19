@@ -1,14 +1,17 @@
 import express, { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import CookieParser from 'cookie-parser';
 
 import morganMiddleware from './middlewares/MorganMiddleware';
 import userRoutes from './api/v1/users';
-import errorHandler from './middlewares/ErrorHandler';
+import errorHandlingMiddleware from './middlewares/ErrorHandlingMiddleware';
 import corsOptions from './config/corsOption';
+import config from './config';
 
 const app: Express = express();
 
+app.use(CookieParser(config.cookieSecret));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
@@ -17,6 +20,6 @@ app.use(morganMiddleware);
 
 app.use('/api/v1/user', userRoutes);
 
-app.use(errorHandler);
+app.use(errorHandlingMiddleware);
 
 export default app;
