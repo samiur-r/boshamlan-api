@@ -1,41 +1,24 @@
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import { User } from './model';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import { hashPassword, verifyPassword } from '../../../utils/passwordUtils';
 import config from '../../../config';
-import { sendOtpVerificationSms } from './service';
+import { findUserByPhone, saveUser } from './service';
+import { sendOtpVerificationSms } from '../otps/service';
 import { IUser } from './interfaces';
 import logger from '../../../utils/logger';
 
-const getAll = async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const users = await User.find();
-    if (!users.length) throw new ErrorHandler(400, 'Users not found');
-  } catch (error) {
-    return next(error);
-  }
-
-  return res.json({ success: 'true' });
-};
-
-const getById = (req: Request, res: Response) => {
-  const { signedCookies = {} } = req;
-  const { token } = signedCookies;
-  return res.json(token);
-};
-
 const login = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
+
   try {
-    const user = await User.findOne({ where: { phone: parseInt(phone, 10) } });
+    const user = await findUserByPhone(phone);
     if (!user) {
       throw new ErrorHandler(403, 'Incorrect phone or password');
     }
 
     if (user && user.status === 'not_verified') {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       res.cookie('user_status', 'not_verified', config.cookieOptions);
       return res.status(200).json({ success: 'Please verify your phone number' });
@@ -52,7 +35,6 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
       { expiresIn: 60 * 60 * 24 * 30 },
     );
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     res.cookie('token', token, config.cookieOptions);
     return res.status(200).json({ success: 'Logged in successfully' });
@@ -64,12 +46,12 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
+
   try {
-    const user = await User.findOne({ where: { phone: parseInt(phone, 10) } });
+    const user = await findUserByPhone(phone);
     if (user && user.status !== 'not_verified') throw new ErrorHandler(409, 'User already exists');
 
     if (user && user.status === 'not_verified') {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       res.cookie('user_status', 'not_verified', config.cookieOptions);
       return res.status(200).json({ success: 'Please verify your phone number' });
@@ -77,16 +59,9 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const newUser = User.create({
-      phone,
-      password: hashedPassword,
-      status: 'not_verified',
-    });
+    const userObj: unknown = await saveUser(phone, hashedPassword, 'not_verified');
+    await sendOtpVerificationSms(phone, 'registration', userObj as IUser);
 
-    const userObj: unknown = await User.save(newUser);
-    await sendOtpVerificationSms(userObj as IUser, 'registration');
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     res.cookie('user_status', 'not_verified', config.cookieOptions);
     return res.status(200).json({ success: 'Please verify your phone number' });
@@ -106,4 +81,4 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { getAll, getById, login, register };
+export { login, register };
