@@ -2,9 +2,9 @@ import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
 import ErrorHandler from '../../../utils/ErrorHandler';
-import { hashPassword, verifyPassword } from '../../../utils/passwordUtils';
+import { hashPassword, verifyToken } from '../../../utils/passwordUtils';
 import config from '../../../config';
-import { findUserByPhone, saveUser } from './service';
+import { findUserByPhone, saveUser, updateUserPassword } from './service';
 import { sendOtpVerificationSms } from '../otps/service';
 import { IUser } from './interfaces';
 import logger from '../../../utils/logger';
@@ -14,20 +14,13 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 
   try {
     const user = await findUserByPhone(phone);
-    if (!user) {
-      throw new ErrorHandler(403, 'Incorrect phone or password');
-    }
+    if (!user) throw new ErrorHandler(403, 'رقم الهاتف أو كلمة المرور غير صحيحين'); // Incorrect phone or password'
 
-    if (user && user.status === 'not_verified') {
-      // @ts-ignore
-      res.cookie('user_status', 'not_verified', config.cookieOptions);
-      return res.status(200).json({ success: 'Please verify your phone number' });
-    }
+    if (user && user.status === 'not_verified')
+      return res.status(200).json({ nextOperation: 'verify phone', userId: user.id });
 
-    const isValidPassword = await verifyPassword(password, user.password);
-    if (isValidPassword) {
-      throw new ErrorHandler(403, 'Incorrect phone or password');
-    }
+    const isValidPassword = await verifyToken(password, user.password);
+    if (isValidPassword) throw new ErrorHandler(403, 'رقم الهاتف أو كلمة المرور غير صحيحين'); // Incorrect phone or password'
 
     const token = jwt.sign(
       { id: user.id, phone: user.phone, is_admin: user.is_admin, is_agent: user.is_agent, status: user.status },
@@ -37,7 +30,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 
     // @ts-ignore
     res.cookie('token', token, config.cookieOptions);
-    return res.status(200).json({ success: 'Logged in successfully' });
+    return res.status(200).json({ success: 'تم تسجيل الدخول بنجاح' }); // Logged in successfully
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err) {
     return next(err);
@@ -49,36 +42,67 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 
   try {
     const user = await findUserByPhone(phone);
-    if (user && user.status !== 'not_verified') throw new ErrorHandler(409, 'User already exists');
+    if (user && user.status !== 'not_verified') throw new ErrorHandler(409, 'المستخدم موجود اصلا'); // User already exists
 
-    if (user && user.status === 'not_verified') {
-      // @ts-ignore
-      res.cookie('user_status', 'not_verified', config.cookieOptions);
-      return res.status(200).json({ success: 'Please verify your phone number' });
-    }
+    if (user && user.status === 'not_verified')
+      return res.status(200).json({ nextOperation: 'verify mobile', userId: user.id });
 
     const hashedPassword = await hashPassword(password);
 
-    const userObj: unknown = await saveUser(phone, hashedPassword, 'not_verified');
-    await sendOtpVerificationSms(phone, 'registration', userObj as IUser);
+    const userObj: IUser = await saveUser(phone, hashedPassword, 'not_verified');
+    await sendOtpVerificationSms(phone, 'registration', userObj);
 
-    // @ts-ignore
-    res.cookie('user_status', 'not_verified', config.cookieOptions);
-    return res.status(200).json({ success: 'Please verify your phone number' });
+    return res.status(200).json({ nextOperation: 'verify mobile', userId: userObj?.id });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.name === 'QueryFailedError') {
       logger.error(`${error.name}: ${error.message}`);
-      error.message = 'request failed';
+      error.message = 'الطلب فشل'; // Request failed
     }
 
     if (error.message === 'All SMS messages failed to send') {
-      logger.error(`MessageSendAllFailure: ${error.message}`);
+      logger.error(`MessageSendAllFailure: ${JSON.stringify(error)}`);
       error.status = 500;
-      error.message = 'failed to send otp';
+      error.message = 'فشل إرسال otp'; // Failed to send otp
     }
     return next(error);
   }
 };
 
-export { login, register };
+const logout = async (_req: Request, res: Response) => {
+  res.clearCookie('token');
+  return res.status(200).json({ success: 'تم تسجيل الخروج بنجاح' }); // Logged out successfully
+};
+
+const doesUserExists = async (req: Request, res: Response, next: NextFunction) => {
+  const { phone } = req.body;
+
+  try {
+    const user = await findUserByPhone(phone);
+
+    if (!user) throw new ErrorHandler(404, 'لم يتم العثور على مستخدم بهذا الهاتف. الرجاء التسجيل'); // No user with this phone is found. Please register
+
+    return res.status(200).json({ userId: user.id });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+  const { phone, password } = req.body;
+
+  try {
+    const user = await findUserByPhone(phone);
+
+    if (!user) throw new ErrorHandler(404, 'لم يتم العثور على مستخدم بهذا الهاتف. الرجاء التسجيل'); // No user with this phone is found. Please register
+
+    const hashedPassword = await hashPassword(password);
+    await updateUserPassword(user, hashedPassword);
+
+    return res.status(200).json({ success: 'تم تحديث كلمة السر بنجاح' }); // Password updated successfully
+  } catch (err) {
+    return next(err);
+  }
+};
+
+export { login, logout, register, doesUserExists, resetPassword };

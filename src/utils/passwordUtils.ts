@@ -8,7 +8,7 @@ export const hashPassword = async (plaintextPassword: string) => {
   return hash;
 };
 
-export const verifyPassword = async (plaintextPassword: string, hash: string) => {
+export const verifyToken = async (plaintextPassword: string, hash: string) => {
   const isValid = await bcrypt.compare(plaintextPassword, hash);
 
   return isValid;

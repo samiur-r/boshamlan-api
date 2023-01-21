@@ -5,6 +5,7 @@ import CookieParser from 'cookie-parser';
 
 import morganMiddleware from './middlewares/MorganMiddleware';
 import userRoutes from './api/v1/users';
+import otpRoutes from './api/v1/otps';
 import errorHandlingMiddleware from './middlewares/ErrorHandlingMiddleware';
 import corsOptions from './config/corsOption';
 import config from './config';
@@ -19,6 +20,7 @@ app.use(helmet());
 app.use(morganMiddleware);
 
 app.use('/api/v1/user', userRoutes);
+app.use('/api/v1/otp', otpRoutes);
 
 app.use(errorHandlingMiddleware);
 

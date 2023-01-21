@@ -1,7 +1,6 @@
 import bcrypt from 'bcrypt';
-import { Vonage } from '@vonage/server-sdk';
 
-import config from '../config';
+import vonage from '../config/vonage';
 
 export const generateOtp = async () => {
   const otp = Math.floor(Math.random() * 9000 + 1000);
@@ -12,12 +11,6 @@ export const generateOtp = async () => {
 };
 
 export const sendSms = async (phone: number, otp: number) => {
-  // @ts-ignore
-  const vonage = new Vonage({
-    apiKey: config.vonageApiKey,
-    apiSecret: config.vonageApiSecret,
-  });
-
   const from = 'Boshamlan';
   const to = `+880${phone}`;
   const text = `OTP: ${otp}. Valid for 10 minutes.`;
