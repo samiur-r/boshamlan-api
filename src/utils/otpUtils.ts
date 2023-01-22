@@ -12,7 +12,7 @@ export const generateOtp = async () => {
 
 export const sendSms = async (phone: number, otp: number) => {
   const from = 'Boshamlan';
-  const to = `+880${phone}`;
+  const to = `+965${phone}`;
   const text = `OTP: ${otp}. Valid for 10 minutes.`;
   await vonage.sms.send({ to, from, text });
 };

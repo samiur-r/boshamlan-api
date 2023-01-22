@@ -8,11 +8,15 @@ import { findUserByPhone, saveUser, updateUserPassword } from './service';
 import { sendOtpVerificationSms } from '../otps/service';
 import { IUser } from './interfaces';
 import logger from '../../../utils/logger';
+import { phoneSchema, passwordSchema } from './validation';
 
 const login = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
 
   try {
+    await phoneSchema.validate(phone, { abortEarly: false });
+    await passwordSchema.validate(password, { abortEarly: false });
+
     const user = await findUserByPhone(phone);
     if (!user) throw new ErrorHandler(403, 'رقم الهاتف أو كلمة المرور غير صحيحين'); // Incorrect phone or password'
 
@@ -41,6 +45,9 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
 
   try {
+    await phoneSchema.validate(phone, { abortEarly: false });
+    await passwordSchema.validate(password, { abortEarly: false });
+
     const user = await findUserByPhone(phone);
     if (user && user.status !== 'not_verified') throw new ErrorHandler(409, 'المستخدم موجود اصلا'); // User already exists
 
@@ -78,6 +85,7 @@ const doesUserExists = async (req: Request, res: Response, next: NextFunction) =
   const { phone } = req.body;
 
   try {
+    await phoneSchema.validate(phone, { abortEarly: false });
     const user = await findUserByPhone(phone);
 
     if (!user) throw new ErrorHandler(404, 'لم يتم العثور على مستخدم بهذا الهاتف. الرجاء التسجيل'); // No user with this phone is found. Please register
@@ -92,6 +100,9 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
   const { phone, password } = req.body;
 
   try {
+    await phoneSchema.validate(phone, { abortEarly: false });
+    await passwordSchema.validate(password, { abortEarly: false });
+
     const user = await findUserByPhone(phone);
 
     if (!user) throw new ErrorHandler(404, 'لم يتم العثور على مستخدم بهذا الهاتف. الرجاء التسجيل'); // No user with this phone is found. Please register
