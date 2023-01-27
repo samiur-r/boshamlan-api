@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
 
 import ErrorHandler from '../../../utils/ErrorHandler';
 import { hashPassword, verifyToken } from '../../../utils/passwordUtils';
@@ -9,6 +8,7 @@ import { sendOtpVerificationSms } from '../otps/service';
 import { IUser } from './interfaces';
 import logger from '../../../utils/logger';
 import { phoneSchema, passwordSchema } from './validation';
+import { signJwt } from '../../../utils/jwtUtils';
 
 const login = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
@@ -24,13 +24,17 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
       return res.status(200).json({ nextOperation: 'verify phone', userId: user.id });
 
     const isValidPassword = await verifyToken(password, user.password);
-    if (isValidPassword) throw new ErrorHandler(403, 'رقم الهاتف أو كلمة المرور غير صحيحين'); // Incorrect phone or password'
+    if (!isValidPassword) throw new ErrorHandler(403, 'رقم الهاتف أو كلمة المرور غير صحيحين'); // Incorrect phone or password'
 
-    const token = jwt.sign(
-      { id: user.id, phone: user.phone, is_admin: user.is_admin, is_agent: user.is_agent, status: user.status },
-      config.jwtSecret,
-      { expiresIn: 60 * 60 * 24 * 30 },
-    );
+    const userPayload = {
+      id: user.id,
+      phone: user.phone,
+      is_admin: user.is_admin,
+      is_agent: user.is_agent,
+      status: user.status,
+    };
+
+    const token = await signJwt(userPayload);
 
     // @ts-ignore
     res.cookie('token', token, config.cookieOptions);

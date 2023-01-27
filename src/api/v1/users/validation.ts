@@ -5,7 +5,7 @@ export const phoneSchema = yup
   .number()
   .typeError('يجب أن يكون الهاتف رقمًا')
   .required('الهاتف هو حقل مطلوب')
-  .test('len', 'يجب أن يكون 8 أرقام', (val) => val?.toString().length === 8);
+  .test('len', 'يجب أن يكون 8 أرقام', (val) => val?.toString().length === 10);
 
 export const passwordSchema = yup
   .string()

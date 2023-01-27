@@ -1,29 +1,27 @@
 import { NextFunction, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import { IUser } from '../api/v1/users/interfaces';
 
-import config from '../config';
+import { verifyJwt } from '../utils/jwtUtils';
 import ErrorHandler from '../utils/ErrorHandler';
 
-export const isUserAuth = (req: Request, res: Response, next: NextFunction) => {
+export const isUserAuth = async (req: Request, res: Response, next: NextFunction) => {
   const { signedCookies = {} } = req;
   const { token } = signedCookies;
 
   try {
-    jwt.verify(token, config.jwtSecret);
+    await verifyJwt(token);
     next();
   } catch (err) {
     next(new ErrorHandler(401, 'You are not authorized'));
   }
 };
 
-export const isAdminAuth = (req: Request, res: Response, next: NextFunction) => {
+export const isAdminAuth = async (req: Request, res: Response, next: NextFunction) => {
   const { signedCookies = {} } = req;
   const { token } = signedCookies;
 
   try {
-    const user = jwt.verify(token, config.jwtSecret) as IUser;
-    if (!user.is_admin) throw new ErrorHandler(401, 'You are not authorized');
+    const { payload } = await verifyJwt(token);
+    if (!payload?.is_admin) throw new ErrorHandler(401, 'You are not authorized');
     next();
   } catch (err) {
     next(err);
