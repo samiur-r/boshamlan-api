@@ -38,7 +38,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 
     // @ts-ignore
     res.cookie('token', token, config.cookieOptions);
-    return res.status(200).json({ success: 'تم تسجيل الدخول بنجاح' }); // Logged in successfully
+    return res.status(200).json({ success: userPayload }); // Logged in successfully
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err) {
     return next(err);

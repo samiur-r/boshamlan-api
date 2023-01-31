@@ -14,7 +14,7 @@ const config = {
     secure: process.env.NODE_ENV === 'production',
     signed: true,
     sameSite: 'strict',
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: 728 * 86400000, // 2 years
   },
 };
 

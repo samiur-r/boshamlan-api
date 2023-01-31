@@ -9,7 +9,7 @@ const signJwt = async (user: { id: number; phone: number; is_admin: boolean; is_
   const jwt = await new jose.SignJWT(user)
     .setProtectedHeader({ alg })
     .setIssuedAt()
-    .setExpirationTime('2h')
+    .setExpirationTime('728d')
     .sign(secret);
 
   return jwt;
