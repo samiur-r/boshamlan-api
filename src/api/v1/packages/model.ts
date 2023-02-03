@@ -9,13 +9,13 @@ export class Package extends BaseEntity implements IPackage {
   id: number;
 
   @Column()
-  type: string;
+  title: string;
 
   @Column()
   cost: number;
 
   @Column()
-  expiration_date: Date;
+  numberOfCredits: number;
 
   @OneToMany('Transaction', 'package')
   transaction: ITransaction[];

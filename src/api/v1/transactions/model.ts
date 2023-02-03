@@ -18,6 +18,16 @@ export class Transaction extends BaseEntity implements ITransaction {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({
+    unique: true,
+  })
+  trackId: number;
+
+  @Column({
+    default: null,
+  })
+  referenceId: number;
+
   @Column()
   amount: number;
 

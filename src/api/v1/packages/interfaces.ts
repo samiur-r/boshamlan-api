@@ -1,6 +1,6 @@
 export interface IPackage {
   id: number;
-  type: string;
+  title: string;
   cost: number;
-  expiration_date: Date;
+  numberOfCredits: number;
 }
