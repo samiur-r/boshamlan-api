@@ -40,8 +40,12 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     res.cookie('token', token, config.cookieOptions);
     return res.status(200).json({ success: userPayload }); // Logged in successfully
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err) {
-    return next(err);
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    if (error.name === 'ValidationError') {
+      error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
+    }
+    return next(error);
   }
 };
 
@@ -66,14 +70,12 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     return res.status(200).json({ nextOperation: 'verify mobile', userId: userObj?.id });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    if (error.name === 'QueryFailedError') {
-      logger.error(`${error.name}: ${error.message}`);
-      error.message = 'الطلب فشل'; // Request failed
+    logger.error(`${error.name}: ${error.message}`);
+    if (error.name === 'ValidationError') {
+      error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
+      return next(error);
     }
-
     if (error.message === 'All SMS messages failed to send') {
-      logger.error(`MessageSendAllFailure: ${JSON.stringify(error)}`);
-      error.status = 500;
       error.message = 'فشل إرسال otp'; // Failed to send otp
     }
     return next(error);
@@ -95,8 +97,9 @@ const doesUserExists = async (req: Request, res: Response, next: NextFunction) =
     if (!user) throw new ErrorHandler(404, 'لم يتم العثور على مستخدم بهذا الهاتف. الرجاء التسجيل'); // No user with this phone is found. Please register
 
     return res.status(200).json({ userId: user.id });
-  } catch (err) {
-    return next(err);
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
   }
 };
 
@@ -115,8 +118,9 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
     await updateUserPassword(user, hashedPassword);
 
     return res.status(200).json({ success: 'تم تحديث كلمة السر بنجاح' }); // Password updated successfully
-  } catch (err) {
-    return next(err);
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
   }
 };
 

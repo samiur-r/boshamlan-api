@@ -22,7 +22,7 @@ app.use(morganMiddleware);
 
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/otp', otpRoutes);
-app.use('/api/v1/transactions', transactionRoutes);
+app.use('/api/v1/transaction', transactionRoutes);
 
 app.use(errorHandlingMiddleware);
 

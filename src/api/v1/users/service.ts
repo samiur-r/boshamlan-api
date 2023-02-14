@@ -41,4 +41,14 @@ const updateUserPassword = async (userObj: IUser, password: string) => {
   });
 };
 
-export { findUserById, findUserByPhone, saveUser, updateUserStatus, updateUserPassword };
+const updateIsUserAnAgent = async (id: number, isAgent: boolean) => {
+  const userObj = await User.findOneBy({ id });
+
+  const user = await User.save({
+    ...userObj,
+    is_agent: isAgent,
+  });
+  return user;
+};
+
+export { findUserById, findUserByPhone, saveUser, updateUserStatus, updateUserPassword, updateIsUserAnAgent };

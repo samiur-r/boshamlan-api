@@ -9,7 +9,9 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { IPackage } from '../packages/interfaces';
+import { Package } from '../packages/model';
 import { IUser } from '../users/interfaces';
+import { User } from '../users/model';
 
 import { ITransaction } from './interfaces';
 
@@ -20,25 +22,42 @@ export class Transaction extends BaseEntity implements ITransaction {
 
   @Column({
     unique: true,
+    type: 'bigint',
   })
-  trackId: number;
+  track_id: string;
 
   @Column({
     default: null,
   })
-  referenceId: number;
+  reference_id: string;
+
+  @Column({
+    default: null,
+  })
+  tran_id: string;
+
+  @Column({
+    default: null,
+  })
+  response: string;
 
   @Column()
   amount: number;
 
-  @Column()
+  @Column({
+    default: 'created',
+  })
   status: string;
 
-  @ManyToOne('User', 'transaction')
+  @Column()
+  package_title: string;
+
+  @ManyToOne(() => User, { nullable: false, eager: true })
   @JoinColumn({ name: 'user_id' })
   user: IUser;
 
-  @ManyToOne('Package', 'transaction')
+  // @ManyToOne('Package', 'transaction')
+  @ManyToOne(() => Package, { nullable: false, eager: true })
   @JoinColumn({ name: 'package_id' })
   package: IPackage;
 

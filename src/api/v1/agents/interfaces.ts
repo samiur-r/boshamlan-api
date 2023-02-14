@@ -6,7 +6,7 @@ export interface IAgent {
   instagram: string;
   twitter: string;
   logo_url: string;
-  subscription: Date;
+  expired_date: Date;
   created_at: Date;
   updated_at: Date;
 }

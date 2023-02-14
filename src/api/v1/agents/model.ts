@@ -11,6 +11,7 @@ import {
 
 import { IAgent } from './interfaces';
 import { IUser } from '../users/interfaces';
+import { User } from '../users/model';
 
 @Entity('agents')
 export class Agent extends BaseEntity implements IAgent {
@@ -20,27 +21,27 @@ export class Agent extends BaseEntity implements IAgent {
   @Column()
   name: string;
 
-  @Column()
+  @Column({ nullable: true })
   description: string;
 
-  @Column()
+  @Column({ nullable: true })
   email: string;
 
-  @Column()
+  @Column({ nullable: true })
   instagram: string;
 
-  @Column()
+  @Column({ nullable: true })
   twitter: string;
 
-  @Column()
+  @Column({ nullable: true })
   logo_url: string;
 
   @Column()
-  subscription: Date;
+  expired_date: Date;
 
-  @OneToOne('User')
+  @OneToOne(() => User, { nullable: false, eager: true })
   @JoinColumn({ name: 'user_id' })
-  credit: IUser;
+  user: IUser;
 
   @CreateDateColumn()
   created_at: Date;
