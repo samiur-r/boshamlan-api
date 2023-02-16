@@ -9,6 +9,7 @@ import { editTransaction, editTransactionStatus, saveTransaction } from './servi
 import { transactionSchema, transactionUpdateSchema, transactionUpdateStatusSchema } from './validation';
 import config from '../../../config';
 import aesDecrypt from '../../../utils/aesDecrypt';
+import { signJwt } from '../../../utils/jwtUtils';
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
   const { payload } = req.body;
@@ -30,36 +31,36 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const update = async (req: Request, res: Response, next: NextFunction) => {
-  const { trackId, referenceId, tranId, status, numOfCredits } = req.body;
+// const update = async (req: Request, res: Response, next: NextFunction) => {
+//   const { trackId, referenceId, tranId, status, numOfCredits } = req.body;
 
-  try {
-    let nextOperation = false;
-    let user;
-    await transactionUpdateSchema.validate({ trackId, referenceId, tranId, status });
-    const response = await editTransaction(trackId, referenceId.toString(), tranId.toString(), status);
-    if (response.status === 404) throw new ErrorHandler(404, 'معرف المسار غير موجود'); // Track id not found
-    if (status === 'completed' && response.data) {
-      let { package_title: packageTitle } = response.data;
-      packageTitle = packageTitle.slice(0, -1);
-      await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits, 10));
-      if (packageTitle === 'agent') {
-        await updateIsUserAnAgent(response.data.user.id, true);
-        await initOrUpdateAgent(response.data.user);
-        nextOperation = true;
-        user = response.data.user;
-      }
-    }
-    return res.status(200).json({ success: 'Your payment was successfully processed', nextOperation, user });
-  } catch (error) {
-    logger.error(`${error.name}: ${error.message}`);
-    if (error.name === 'ValidationError') {
-      error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
-      return next(error);
-    }
-    return next(error);
-  }
-};
+//   try {
+//     let nextOperation = false;
+//     let user;
+//     await transactionUpdateSchema.validate({ trackId, referenceId, tranId, status });
+//     const response = await editTransaction(trackId, referenceId.toString(), tranId.toString(), status);
+//     if (response.status === 404) throw new ErrorHandler(404, 'معرف المسار غير موجود'); // Track id not found
+//     if (status === 'completed' && response.data) {
+//       let { package_title: packageTitle } = response.data;
+//       packageTitle = packageTitle.slice(0, -1);
+//       await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits, 10));
+//       if (packageTitle === 'agent') {
+//         await updateIsUserAnAgent(response.data.user.id, true);
+//         await initOrUpdateAgent(response.data.user);
+//         nextOperation = true;
+//         user = response.data.user;
+//       }
+//     }
+//     return res.status(200).json({ success: 'Your payment was successfully processed', nextOperation, user });
+//   } catch (error) {
+//     logger.error(`${error.name}: ${error.message}`);
+//     if (error.name === 'ValidationError') {
+//       error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
+//       return next(error);
+//     }
+//     return next(error);
+//   }
+// };
 
 const updateStatus = async (req: Request, res: Response, next: NextFunction) => {
   const { trackId, status } = req.body;
@@ -113,8 +114,21 @@ const handleKpayResponse = async (req: Request, res: Response) => {
           packageTitle = packageTitle.slice(0, -1);
           await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits as string, 10));
           if (packageTitle === 'agent') {
-            await updateIsUserAnAgent(response.data.user.id, true);
+            const user = await updateIsUserAnAgent(response.data.user.id, true);
             await initOrUpdateAgent(response.data.user);
+
+            res.clearCookie('token');
+
+            const userPayload = {
+              id: user.id,
+              phone: user.phone,
+              is_admin: user.is_admin,
+              is_agent: user.is_agent,
+              status: user.status,
+            };
+            const token = await signJwt(userPayload);
+            // @ts-ignore
+            res.cookie('token', token, config.cookieOptions);
             nextOperation = true;
           }
         }
@@ -135,4 +149,4 @@ const handleKpayResponse = async (req: Request, res: Response) => {
   return res.redirect(301, `${redirectUrl}${message}${nextOperation ? '&redirect=true' : ''}`);
 };
 
-export { insert, update, updateStatus, handleKpayResponse };
+export { insert, updateStatus, handleKpayResponse };

@@ -1,4 +1,3 @@
-/* eslint-disable import/prefer-default-export */
 import * as yup from 'yup';
 
 export const phoneSchema = yup
