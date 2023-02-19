@@ -34,10 +34,13 @@ export class Agent extends BaseEntity implements IAgent {
   twitter: string;
 
   @Column({ nullable: true })
+  facebook: string;
+
+  @Column({ nullable: true })
   logo_url: string;
 
   @Column()
-  expired_date: Date;
+  expiry_date: Date;
 
   @OneToOne(() => User, { nullable: false, eager: true })
   @JoinColumn({ name: 'user_id' })

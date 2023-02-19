@@ -11,11 +11,8 @@ export class PropertyType extends BaseEntity implements IPropertyType {
   @Column()
   title: string;
 
-  @Column()
+  @Column({ default: null })
   title_plural: string;
-
-  @Column()
-  slug: string;
 
   @OneToMany('Post', 'property_type')
   post: IPost[];

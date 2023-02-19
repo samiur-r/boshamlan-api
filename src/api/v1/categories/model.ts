@@ -11,9 +11,6 @@ export class Category extends BaseEntity implements ICategory {
   @Column()
   title: string;
 
-  @Column()
-  slug: string;
-
   @OneToMany('Post', 'category')
   post: IPost[];
 }

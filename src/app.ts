@@ -4,13 +4,15 @@ import helmet from 'helmet';
 import CookieParser from 'cookie-parser';
 
 import morganMiddleware from './middlewares/MorganMiddleware';
+import errorHandlingMiddleware from './middlewares/ErrorHandlingMiddleware';
+import corsOptions from './config/corsOption';
+import config from './config';
+
 import userRoutes from './api/v1/users';
 import otpRoutes from './api/v1/otps';
 import transactionRoutes from './api/v1/transactions';
 import agentRoutes from './api/v1/agents';
-import errorHandlingMiddleware from './middlewares/ErrorHandlingMiddleware';
-import corsOptions from './config/corsOption';
-import config from './config';
+import postRoutes from './api/v1/posts';
 
 const app: Express = express();
 
@@ -25,6 +27,7 @@ app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/otp', otpRoutes);
 app.use('/api/v1/transaction', transactionRoutes);
 app.use('/api/v1/agent', agentRoutes);
+app.use('/api/v1/post', postRoutes);
 
 app.use(errorHandlingMiddleware);
 

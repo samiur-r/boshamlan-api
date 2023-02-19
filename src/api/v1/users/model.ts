@@ -11,6 +11,7 @@ import {
 import { IUser } from './interfaces';
 import { IOtp } from '../otps/interfaces';
 import { ITransaction } from '../transactions/interfaces';
+import { IAgent } from '../agents/interfaces';
 
 @Entity('users')
 export class User extends BaseEntity implements IUser {
@@ -48,6 +49,9 @@ export class User extends BaseEntity implements IUser {
 
   @OneToMany('Transaction', 'user')
   transaction: ITransaction[];
+
+  @OneToMany('Agent', 'user')
+  agent: IAgent;
 
   @CreateDateColumn()
   created_at: Date;

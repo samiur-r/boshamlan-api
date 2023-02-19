@@ -1,4 +1,7 @@
+import { In } from 'typeorm';
+import ErrorHandler from '../../../utils/ErrorHandler';
 import { IUser } from '../users/interfaces';
+import { ICredit } from './interfaces';
 import { Credit } from './model';
 
 const initCredits = async (user: IUser) => {
@@ -18,17 +21,48 @@ const findCreditByUserId = async (user_id: number) => {
   return credit;
 };
 
-const updateCredit = async (userId: number, typeOfCredit: string, numberOfCredits: number) => {
-  const credit = await findCreditByUserId(userId);
-  if (!credit) return { status: 404 };
+const updateCredit = async (
+  userId: number,
+  typeOfCredit: string | undefined,
+  numberOfCredits: number,
+  operation: string, // ADD or SUB
+  creditData?: ICredit,
+) => {
+  let credit;
+  if (!creditData) {
+    credit = await findCreditByUserId(userId);
+    if (!credit) throw new ErrorHandler(500, 'Something went wrong');
+  } else credit = creditData;
+
+  if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
 
   const currCredit = credit[typeOfCredit.toString() as keyof typeof credit] || 0;
+  const creditsToUpdate =
+    operation === 'ADD' ? (currCredit as number) + numberOfCredits : (currCredit as number) - numberOfCredits;
 
   await Credit.save({
     ...credit,
-    [typeOfCredit]: (currCredit as number) + numberOfCredits,
+    [typeOfCredit]: creditsToUpdate,
   });
-  return { status: 200 };
 };
 
-export { initCredits, updateCredit };
+const deduceCredit = async (userId: number, is_agent: boolean) => {
+  const credit = await findCreditByUserId(userId);
+  if (!credit) throw new ErrorHandler(500, 'Something went wrong');
+
+  let typeOfCredit;
+
+  if (credit.free > 0) typeOfCredit = 'free';
+  else if (credit.agent > 0 && is_agent) typeOfCredit = 'agent';
+  else if (credit.regular > 0) typeOfCredit = 'regular';
+
+  const response = await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
+
+  return response;
+};
+
+const updateAgentCredit = async (ids: number[], value: number) => {
+  await Credit.update({ user: { id: In(ids) } }, { agent: value });
+};
+
+export { initCredits, updateCredit, updateAgentCredit, findCreditByUserId, deduceCredit };

@@ -1,4 +1,8 @@
 import dayJs from 'dayjs';
+import * as path from 'path';
+import { LessThan } from 'typeorm';
+
+import { deleteFile } from '../../../utils/deleteFile';
 import ErrorHandler from '../../../utils/ErrorHandler';
 
 import { IUser } from '../users/interfaces';
@@ -14,6 +18,12 @@ const updateAgent = async (agentInfo: AgentInfoType, userId: number) => {
   const agent = await findAgentByUserId(userId);
 
   if (!agent) throw new ErrorHandler(404, `agent doesn't exists`);
+
+  if (agent.logo_url) {
+    const currentDirectory = __dirname;
+    const filePath = path.resolve(currentDirectory, '../../../../../boshamlan-frontend/public/images/agents');
+    deleteFile(`${filePath}/${agent.logo_url}`);
+  }
 
   const agentData = Agent.create({
     ...agent,
@@ -31,12 +41,12 @@ const initOrUpdateAgent = async (user: IUser) => {
   if (agent) {
     agentData = Agent.create({
       ...agent,
-      expired_date: dayJs().month(3),
+      expiry_date: dayJs().month(3),
     });
   } else {
     agentData = Agent.create({
       name: 'agent',
-      expired_date: dayJs().month(3),
+      expiry_date: dayJs().month(3),
       user,
     });
   }
@@ -44,4 +54,12 @@ const initOrUpdateAgent = async (user: IUser) => {
   await Agent.save(agentData);
 };
 
-export { initOrUpdateAgent, findAgentByUserId, updateAgent };
+const getExpiredAgentUserIds = async () => {
+  const agents = await Agent.find({
+    where: { expiry_date: LessThan(new Date()) },
+  });
+  const userIds = agents.map((agent) => agent.user.id);
+  return userIds;
+};
+
+export { initOrUpdateAgent, findAgentByUserId, updateAgent, getExpiredAgentUserIds };

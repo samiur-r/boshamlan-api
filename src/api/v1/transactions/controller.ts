@@ -6,7 +6,7 @@ import { updateCredit } from '../credits/service';
 import { findPackageById } from '../packages/service';
 import { updateIsUserAnAgent } from '../users/service';
 import { editTransaction, editTransactionStatus, saveTransaction } from './service';
-import { transactionSchema, transactionUpdateSchema, transactionUpdateStatusSchema } from './validation';
+import { transactionSchema, transactionUpdateStatusSchema } from './validation';
 import config from '../../../config';
 import aesDecrypt from '../../../utils/aesDecrypt';
 import { signJwt } from '../../../utils/jwtUtils';
@@ -112,7 +112,7 @@ const handleKpayResponse = async (req: Request, res: Response) => {
         if (status === 'completed' && response.data) {
           let { package_title: packageTitle } = response.data;
           packageTitle = packageTitle.slice(0, -1);
-          await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits as string, 10));
+          await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits as string, 10), 'ADD');
           if (packageTitle === 'agent') {
             const user = await updateIsUserAnAgent(response.data.user.id, true);
             await initOrUpdateAgent(response.data.user);

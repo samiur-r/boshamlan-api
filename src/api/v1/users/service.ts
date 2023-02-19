@@ -1,3 +1,4 @@
+import { In } from 'typeorm';
 import { hashPassword } from '../../../utils/passwordUtils';
 import { IUser } from './interfaces';
 import { User } from './model';
@@ -51,4 +52,16 @@ const updateIsUserAnAgent = async (id: number, isAgent: boolean) => {
   return user;
 };
 
-export { findUserById, findUserByPhone, saveUser, updateUserStatus, updateUserPassword, updateIsUserAnAgent };
+const updateBulkIsUserAnAgent = async (ids: number[], status: boolean) => {
+  await User.update({ id: In(ids) }, { is_agent: status });
+};
+
+export {
+  findUserById,
+  findUserByPhone,
+  saveUser,
+  updateUserStatus,
+  updateUserPassword,
+  updateIsUserAnAgent,
+  updateBulkIsUserAnAgent,
+};

@@ -9,7 +9,7 @@ import { Transaction } from '../api/v1/transactions/model';
 import { Package } from '../api/v1/packages/model';
 import { Category } from '../api/v1/categories/model';
 import { PropertyType } from '../api/v1/property_types/model';
-import { Region } from '../api/v1/regions/model';
+import { Location } from '../api/v1/locations/model';
 import { Post } from '../api/v1/posts/model';
 import { Multimedia, PostMultimedia } from '../api/v1/multimedia/model';
 
@@ -22,6 +22,7 @@ const AppDataSource = new DataSource({
   database: process.env.POSTGRES_DB || 'boshamlan_dev',
   synchronize: true,
   logging: false,
+  migrationsRun: false,
   entities: [
     User,
     Credit,
@@ -31,7 +32,7 @@ const AppDataSource = new DataSource({
     Package,
     Category,
     PropertyType,
-    Region,
+    Location,
     Post,
     Multimedia,
     PostMultimedia,
