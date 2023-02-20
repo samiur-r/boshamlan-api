@@ -13,8 +13,8 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
   const files = req.files as Express.Multer.File[];
   postInfo.media = [];
 
-  if (files) {
-    req.files?.forEach((file) => {
+  if (files && files.length) {
+    files.forEach((file) => {
       postInfo.media.push(file.filename);
     });
   }

@@ -10,7 +10,6 @@ export interface IPost {
   category_title: string;
   price: number;
   description: string;
-  status: string;
   is_sticky: boolean;
   views: number;
   is_reposted: boolean;

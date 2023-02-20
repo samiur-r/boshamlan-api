@@ -9,13 +9,13 @@ import {
   ManyToOne,
 } from 'typeorm';
 
-import { IPost } from './interfaces';
+import { IPost } from '../interfaces';
 
-import { IUser } from '../users/interfaces';
-import { User } from '../users/model';
+import { IUser } from '../../users/interfaces';
+import { User } from '../../users/model';
 
-@Entity('posts')
-export class Post extends BaseEntity implements IPost {
+@Entity('deleted_posts')
+export class DeletedPost extends BaseEntity implements IPost {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -52,11 +52,6 @@ export class Post extends BaseEntity implements IPost {
 
   @Column({ nullable: true })
   description: string;
-
-  @Column({
-    default: 'active',
-  })
-  status: string;
 
   @Column({ default: false })
   is_sticky: boolean;

@@ -10,7 +10,9 @@ import { Package } from '../api/v1/packages/model';
 import { Category } from '../api/v1/categories/model';
 import { PropertyType } from '../api/v1/property_types/model';
 import { Location } from '../api/v1/locations/model';
-import { Post } from '../api/v1/posts/model';
+import { Post } from '../api/v1/posts/models/Post';
+import { ArchivePost } from '../api/v1/posts/models/ArchivePost';
+import { DeletedPost } from '../api/v1/posts/models/DeletedPost';
 
 const AppDataSource = new DataSource({
   type: 'postgres',
@@ -22,7 +24,20 @@ const AppDataSource = new DataSource({
   synchronize: true,
   logging: false,
   migrationsRun: false,
-  entities: [User, Credit, Otp, Agent, Transaction, Package, Category, PropertyType, Location, Post],
+  entities: [
+    User,
+    Credit,
+    Otp,
+    Agent,
+    Transaction,
+    Package,
+    Category,
+    PropertyType,
+    Location,
+    Post,
+    ArchivePost,
+    DeletedPost,
+  ],
 });
 
 export default AppDataSource;

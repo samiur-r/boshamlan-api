@@ -1,6 +1,6 @@
 import dayJs from 'dayjs';
 import { IUser } from '../users/interfaces';
-import { Post } from './model';
+import { Post } from './models/Post';
 
 const savePost = async (
   postInfo: {
@@ -33,8 +33,6 @@ const savePost = async (
     media: postInfo.media,
     user,
   });
-
-  console.log(postInfo);
 
   await Post.save(newPost);
 };
