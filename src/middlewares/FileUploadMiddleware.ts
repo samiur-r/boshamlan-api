@@ -5,12 +5,17 @@ const storage = multer.diskStorage({
   destination(req: any, _file: any, cb: (arg0: null, arg1: string) => void) {
     const pathName = '../boshamlan-frontend/public/images/';
     let dir = '';
+    const endpoint = req.originalUrl.substr(8, req.originalUrl.length);
 
-    if (req.originalUrl === '/api/v1/agent') dir = 'agents/';
+    if (endpoint === 'agent') dir = 'agents/';
+    else if (endpoint === 'post') dir = 'posts/';
+
     cb(null, `${pathName}${dir}`);
   },
-  filename(_req: any, file: { fieldname: any; originalname: any }, cb: (arg0: null, arg1: string) => void) {
-    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+  filename(req: any, file: { fieldname: any; originalname: any }, cb: (arg0: null, arg1: string) => void) {
+    const endpoint = req.originalUrl.substr(8, req.originalUrl.length);
+
+    cb(null, `${endpoint}s-${Date.now()}${path.extname(file.originalname)}`);
   },
 });
 

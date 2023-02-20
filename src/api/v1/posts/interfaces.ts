@@ -1,13 +1,13 @@
 export interface IPost {
   id: number;
   city_id: number;
-  city_name: string;
+  city_title: string;
   state_id: number;
-  state_name: string;
+  state_title: string;
   property_id: number;
-  property_name: string;
+  property_title: string;
   category_id: number;
-  category_name: string;
+  category_title: string;
   price: number;
   description: string;
   status: string;

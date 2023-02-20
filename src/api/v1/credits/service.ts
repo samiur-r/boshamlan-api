@@ -23,7 +23,7 @@ const findCreditByUserId = async (user_id: number) => {
 
 const updateCredit = async (
   userId: number,
-  typeOfCredit: string | undefined,
+  typeOfCredit: string,
   numberOfCredits: number,
   operation: string, // ADD or SUB
   creditData?: ICredit,
@@ -33,8 +33,6 @@ const updateCredit = async (
     credit = await findCreditByUserId(userId);
     if (!credit) throw new ErrorHandler(500, 'Something went wrong');
   } else credit = creditData;
-
-  if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
 
   const currCredit = credit[typeOfCredit.toString() as keyof typeof credit] || 0;
   const creditsToUpdate =
@@ -46,7 +44,7 @@ const updateCredit = async (
   });
 };
 
-const deduceCredit = async (userId: number, is_agent: boolean) => {
+const typeOfCreditToDeduct = async (userId: number, is_agent: boolean) => {
   const credit = await findCreditByUserId(userId);
   if (!credit) throw new ErrorHandler(500, 'Something went wrong');
 
@@ -56,13 +54,11 @@ const deduceCredit = async (userId: number, is_agent: boolean) => {
   else if (credit.agent > 0 && is_agent) typeOfCredit = 'agent';
   else if (credit.regular > 0) typeOfCredit = 'regular';
 
-  const response = await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
-
-  return response;
+  return { typeOfCredit, credit };
 };
 
 const updateAgentCredit = async (ids: number[], value: number) => {
   await Credit.update({ user: { id: In(ids) } }, { agent: value });
 };
 
-export { initCredits, updateCredit, updateAgentCredit, findCreditByUserId, deduceCredit };
+export { initCredits, updateCredit, updateAgentCredit, findCreditByUserId, typeOfCreditToDeduct };

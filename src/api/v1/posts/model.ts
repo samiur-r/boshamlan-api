@@ -7,11 +7,9 @@ import {
   UpdateDateColumn,
   BaseEntity,
   ManyToOne,
-  OneToMany,
 } from 'typeorm';
 
 import { IPost } from './interfaces';
-import { PostMultimedia } from '../multimedia/model';
 
 import { IUser } from '../users/interfaces';
 import { User } from '../users/model';
@@ -49,13 +47,10 @@ export class Post extends BaseEntity implements IPost {
   @Column()
   property_title: string;
 
-  @OneToMany('PostMultimedia', 'post')
-  post_multimedia: PostMultimedia[];
-
-  @Column()
+  @Column({ nullable: true })
   price: number;
 
-  @Column()
+  @Column({ nullable: true })
   description: string;
 
   @Column({
@@ -83,6 +78,9 @@ export class Post extends BaseEntity implements IPost {
 
   @Column()
   expiry_date: Date;
+
+  @Column('text', { array: true, nullable: true })
+  media: string[];
 
   @CreateDateColumn()
   created_at: Date;

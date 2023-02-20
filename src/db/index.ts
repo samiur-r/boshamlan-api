@@ -11,7 +11,6 @@ import { Category } from '../api/v1/categories/model';
 import { PropertyType } from '../api/v1/property_types/model';
 import { Location } from '../api/v1/locations/model';
 import { Post } from '../api/v1/posts/model';
-import { Multimedia, PostMultimedia } from '../api/v1/multimedia/model';
 
 const AppDataSource = new DataSource({
   type: 'postgres',
@@ -23,20 +22,7 @@ const AppDataSource = new DataSource({
   synchronize: true,
   logging: false,
   migrationsRun: false,
-  entities: [
-    User,
-    Credit,
-    Otp,
-    Agent,
-    Transaction,
-    Package,
-    Category,
-    PropertyType,
-    Location,
-    Post,
-    Multimedia,
-    PostMultimedia,
-  ],
+  entities: [User, Credit, Otp, Agent, Transaction, Package, Category, PropertyType, Location, Post],
 });
 
 export default AppDataSource;

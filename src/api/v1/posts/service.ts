@@ -14,6 +14,7 @@ const savePost = async (
     categoryTitle: string;
     price: number;
     description: string;
+    media: string[];
   },
   user: IUser,
 ) => {
@@ -29,8 +30,11 @@ const savePost = async (
     price: postInfo.price,
     description: postInfo.description,
     expiry_date: dayJs().month(2),
+    media: postInfo.media,
     user,
   });
+
+  console.log(postInfo);
 
   await Post.save(newPost);
 };
