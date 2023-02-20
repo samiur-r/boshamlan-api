@@ -19,6 +19,9 @@ export class DeletedPost extends BaseEntity implements IPost {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column()
+  title: string;
+
   @ManyToOne(() => User, { nullable: false, eager: true })
   @JoinColumn({ name: 'user_id' })
   user: IUser;

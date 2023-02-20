@@ -1,5 +1,6 @@
 export interface IPost {
   id: number;
+  title: string;
   city_id: number;
   city_title: string;
   state_id: number;
@@ -10,6 +11,7 @@ export interface IPost {
   category_title: string;
   price: number;
   description: string;
+  media: string[];
   is_sticky: boolean;
   views: number;
   is_reposted: boolean;

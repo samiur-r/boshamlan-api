@@ -61,4 +61,9 @@ const updateAgentCredit = async (ids: number[], value: number) => {
   await Credit.update({ user: { id: In(ids) } }, { agent: value });
 };
 
-export { initCredits, updateCredit, updateAgentCredit, findCreditByUserId, typeOfCreditToDeduct };
+const findStickyCredits = async (userId: number) => {
+  const stickyCredits = await Credit.findOne({ where: { user: { id: userId } } });
+  return stickyCredits;
+};
+
+export { initCredits, updateCredit, updateAgentCredit, findCreditByUserId, typeOfCreditToDeduct, findStickyCredits };

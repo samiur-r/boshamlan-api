@@ -12,6 +12,7 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
   const userId = res.locals.user.payload.id;
   const files = req.files as Express.Multer.File[];
   postInfo.media = [];
+  postInfo.title = `${postInfo.propertyTitle} ل${postInfo.categoryTitle} في ${postInfo.cityTitle}`;
 
   if (files && files.length) {
     files.forEach((file) => {
