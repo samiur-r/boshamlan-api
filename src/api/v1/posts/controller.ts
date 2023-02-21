@@ -13,6 +13,7 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
   const files = req.files as Express.Multer.File[];
   postInfo.media = [];
   postInfo.title = `${postInfo.propertyTitle} ل${postInfo.categoryTitle} في ${postInfo.cityTitle}`;
+  postInfo.isStickyPost = postInfo.isStickyPost === 'true';
 
   if (files && files.length) {
     files.forEach((file) => {
@@ -25,10 +26,10 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
     const user = await findUserById(userId);
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
 
-    const { typeOfCredit, credit } = await typeOfCreditToDeduct(user.id, user.is_agent);
+    const { typeOfCredit, credit } = await typeOfCreditToDeduct(user.id, user.is_agent, postInfo.isStickyPost);
     if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
 
-    await savePost(postInfo, user);
+    await savePost(postInfo, user, typeOfCredit);
     await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
     return res.status(200).json({ success: 'Post created successfully' });
   } catch (error) {

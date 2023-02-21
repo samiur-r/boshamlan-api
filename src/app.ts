@@ -13,6 +13,7 @@ import otpRoutes from './api/v1/otps';
 import transactionRoutes from './api/v1/transactions';
 import agentRoutes from './api/v1/agents';
 import postRoutes from './api/v1/posts';
+import creditRoutes from './api/v1/credits';
 
 const app: Express = express();
 
@@ -28,6 +29,7 @@ app.use('/api/v1/otp', otpRoutes);
 app.use('/api/v1/transaction', transactionRoutes);
 app.use('/api/v1/agent', agentRoutes);
 app.use('/api/v1/post', postRoutes);
+app.use('/api/v1/credits', creditRoutes);
 
 app.use(errorHandlingMiddleware);
 

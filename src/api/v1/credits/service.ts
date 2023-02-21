@@ -44,13 +44,15 @@ const updateCredit = async (
   });
 };
 
-const typeOfCreditToDeduct = async (userId: number, is_agent: boolean) => {
+const typeOfCreditToDeduct = async (userId: number, is_agent: boolean, isStickyPost: boolean) => {
   const credit = await findCreditByUserId(userId);
   if (!credit) throw new ErrorHandler(500, 'Something went wrong');
 
   let typeOfCredit;
 
-  if (credit.free > 0) typeOfCredit = 'free';
+  if (isStickyPost) {
+    if (credit.sticky > 0) typeOfCredit = 'sticky';
+  } else if (credit.free > 0) typeOfCredit = 'free';
   else if (credit.agent > 0 && is_agent) typeOfCredit = 'agent';
   else if (credit.regular > 0) typeOfCredit = 'regular';
 

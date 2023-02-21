@@ -22,6 +22,7 @@ const savePost = async (
     media: string[];
   },
   user: IUser,
+  typeOfCredit: string,
 ) => {
   const newPost = Post.create({
     title: postInfo.title,
@@ -37,6 +38,7 @@ const savePost = async (
     description: postInfo.description,
     expiry_date: dayJs().month(2),
     media: postInfo.media,
+    is_sticky: typeOfCredit === 'sticky',
     user,
   });
 
@@ -58,6 +60,7 @@ const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
     description: postInfo.description,
     expiry_date: dayJs().month(2),
     media: postInfo.media,
+    is_sticky: false,
     user,
   });
 
@@ -79,6 +82,7 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     description: postInfo.description,
     expiry_date: dayJs().month(2),
     media: postInfo.media,
+    is_sticky: false,
     user,
   });
 
