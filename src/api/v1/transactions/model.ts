@@ -28,11 +28,13 @@ export class Transaction extends BaseEntity implements ITransaction {
 
   @Column({
     default: null,
+    nullable: true,
   })
   reference_id: string;
 
   @Column({
     default: null,
+    nullable: true,
   })
   tran_id: string;
 

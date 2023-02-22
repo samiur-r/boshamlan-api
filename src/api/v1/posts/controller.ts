@@ -5,7 +5,7 @@ import logger from '../../../utils/logger';
 import { findUserById } from '../users/service';
 import { typeOfCreditToDeduct, updateCredit } from '../credits/service';
 import { postSchema } from './validation';
-import { savePost } from './service';
+import { savePost, saveTempPost } from './service';
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
   const { postInfo } = req.body;
@@ -14,6 +14,8 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
   postInfo.media = [];
   postInfo.title = `${postInfo.propertyTitle} ل${postInfo.categoryTitle} في ${postInfo.cityTitle}`;
   postInfo.isStickyPost = postInfo.isStickyPost === 'true';
+  const endpoint = req.originalUrl.substring(13, req.originalUrl.length);
+  const isTempPost = endpoint === 'temp';
 
   if (files && files.length) {
     files.forEach((file) => {
@@ -26,11 +28,17 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
     const user = await findUserById(userId);
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
 
-    const { typeOfCredit, credit } = await typeOfCreditToDeduct(user.id, user.is_agent, postInfo.isStickyPost);
-    if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
+    if (isTempPost) {
+      const typeOfCredit = 'sticky';
+      await saveTempPost(postInfo, user, typeOfCredit);
+    } else {
+      const { typeOfCredit, credit } = await typeOfCreditToDeduct(user.id, user.is_agent, postInfo.isStickyPost);
+      if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
 
-    await savePost(postInfo, user, typeOfCredit);
-    await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
+      await savePost(postInfo, user, typeOfCredit);
+      await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
+    }
+
     return res.status(200).json({ success: 'Post created successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);

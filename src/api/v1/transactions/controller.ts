@@ -10,6 +10,7 @@ import { transactionSchema, transactionUpdateStatusSchema } from './validation';
 import config from '../../../config';
 import aesDecrypt from '../../../utils/aesDecrypt';
 import { signJwt } from '../../../utils/jwtUtils';
+import { moveTempPost, removeTempPostByTrackId } from '../posts/service';
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
   const { payload } = req.body;
@@ -82,7 +83,7 @@ const updateStatus = async (req: Request, res: Response, next: NextFunction) => 
 
 const handleKpayResponse = async (req: Request, res: Response) => {
   let isOperationSucceeded = false;
-  const redirectUrl = `${config.origin}/topup?`;
+  let redirectUrl = `${config.origin}/topup?`;
   let nextOperation = false;
 
   if (req.body?.trandata) {
@@ -99,7 +100,10 @@ const handleKpayResponse = async (req: Request, res: Response) => {
       if (result === 'CAPTURED') {
         status = 'completed';
         isOperationSucceeded = true;
-      } else status = 'failed';
+      } else {
+        status = 'failed';
+        await removeTempPostByTrackId(trackId as string);
+      }
 
       try {
         const response = await editTransaction(
@@ -112,24 +116,30 @@ const handleKpayResponse = async (req: Request, res: Response) => {
         if (status === 'completed' && response.data) {
           let { package_title: packageTitle } = response.data;
           packageTitle = packageTitle.slice(0, -1);
-          await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits as string, 10), 'ADD');
-          if (packageTitle === 'agent') {
-            const user = await updateIsUserAnAgent(response.data.user.id, true);
-            await initOrUpdateAgent(response.data.user);
 
-            res.clearCookie('token');
+          if (packageTitle === 'stickyDirec') {
+            await moveTempPost(trackId as string);
+            redirectUrl = `${config.origin}/redirect?`;
+          } else {
+            await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits as string, 10), 'ADD');
+            if (packageTitle === 'agent') {
+              const user = await updateIsUserAnAgent(response.data.user.id, true);
+              await initOrUpdateAgent(response.data.user);
 
-            const userPayload = {
-              id: user.id,
-              phone: user.phone,
-              is_admin: user.is_admin,
-              is_agent: user.is_agent,
-              status: user.status,
-            };
-            const token = await signJwt(userPayload);
-            // @ts-ignore
-            res.cookie('token', token, config.cookieOptions);
-            nextOperation = true;
+              res.clearCookie('token');
+
+              const userPayload = {
+                id: user.id,
+                phone: user.phone,
+                is_admin: user.is_admin,
+                is_agent: user.is_agent,
+                status: user.status,
+              };
+              const token = await signJwt(userPayload);
+              // @ts-ignore
+              res.cookie('token', token, config.cookieOptions);
+              nextOperation = true;
+            }
           }
         }
       } catch (error) {
@@ -140,6 +150,7 @@ const handleKpayResponse = async (req: Request, res: Response) => {
 
       try {
         await editTransactionStatus(trackId, status);
+        await removeTempPostByTrackId(trackId as string);
       } catch (error) {
         logger.error(`${error.name}: ${error.message}`);
       }
@@ -149,4 +160,17 @@ const handleKpayResponse = async (req: Request, res: Response) => {
   return res.redirect(301, `${redirectUrl}${message}${nextOperation ? '&redirect=true' : ''}`);
 };
 
-export { insert, updateStatus, handleKpayResponse };
+const handleKpayError = async (req: Request, res: Response) => {
+  const trackId = req.query.trackid;
+  const redirectUrl = `${config.origin}/topup?`;
+
+  try {
+    await editTransactionStatus(trackId as string, 'failed');
+    await removeTempPostByTrackId(trackId as string);
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+  }
+  return res.redirect(301, `${redirectUrl}success=false`);
+};
+
+export { insert, updateStatus, handleKpayResponse, handleKpayError };

@@ -7,5 +7,6 @@ import * as PostController from './controller';
 const router = express.Router();
 
 router.post('/', [isUserAuth, upload.any()], PostController.insert);
+router.post('/temp', [isUserAuth, upload.any()], PostController.insert);
 
 export default router;

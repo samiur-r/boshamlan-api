@@ -13,6 +13,7 @@ import { Location } from '../api/v1/locations/model';
 import { Post } from '../api/v1/posts/models/Post';
 import { ArchivePost } from '../api/v1/posts/models/ArchivePost';
 import { DeletedPost } from '../api/v1/posts/models/DeletedPost';
+import { TempPost } from '../api/v1/posts/models/TempPost';
 
 const AppDataSource = new DataSource({
   type: 'postgres',
@@ -37,6 +38,7 @@ const AppDataSource = new DataSource({
     Post,
     ArchivePost,
     DeletedPost,
+    TempPost,
   ],
 });
 
