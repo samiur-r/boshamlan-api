@@ -6,11 +6,13 @@ import { deleteFile } from '../../../utils/deleteFile';
 import ErrorHandler from '../../../utils/ErrorHandler';
 
 import { IUser } from '../users/interfaces';
-import { AgentInfoType } from './interfaces';
+import { AgentInfoType, IAgent } from './interfaces';
 import { Agent } from './model';
 
 const findAgentByUserId = async (userId: number) => {
-  const agent = await Agent.findOne({ where: { user: { id: userId } } });
+  const agent: IAgent | null = await Agent.findOne({ where: { user: { id: userId } } });
+  delete agent?.user;
+
   return agent;
 };
 

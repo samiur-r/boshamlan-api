@@ -14,6 +14,7 @@ import transactionRoutes from './api/v1/transactions';
 import agentRoutes from './api/v1/agents';
 import postRoutes from './api/v1/posts';
 import creditRoutes from './api/v1/credits';
+import accountRoutes from './api/v1/account';
 
 const app: Express = express();
 
@@ -30,6 +31,7 @@ app.use('/api/v1/transaction', transactionRoutes);
 app.use('/api/v1/agent', agentRoutes);
 app.use('/api/v1/post', postRoutes);
 app.use('/api/v1/credits', creditRoutes);
+app.use('/api/v1/account', accountRoutes);
 
 app.use(errorHandlingMiddleware);
 

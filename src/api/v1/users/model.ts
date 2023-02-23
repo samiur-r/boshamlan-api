@@ -23,7 +23,7 @@ export class User extends BaseEntity implements IUser {
   })
   phone: number;
 
-  @Column()
+  @Column({ select: false })
   password: string;
 
   @Column()

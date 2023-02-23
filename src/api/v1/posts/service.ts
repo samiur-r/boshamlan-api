@@ -198,6 +198,24 @@ const moveTempPost = async (track_id: string) => {
   await removeTempPost(post.id);
 };
 
+const findPostByUserId = async (userId: number) => {
+  const posts: IPost[] | null = await Post.find({ where: { user: { id: userId } } });
+
+  // eslint-disable-next-line no-param-reassign
+  posts.forEach((post) => delete post.user);
+
+  return posts;
+};
+
+const findArchivedPostByUserId = async (userId: number) => {
+  const posts: IPost[] | null = await ArchivePost.find({ where: { user: { id: userId } } });
+
+  // eslint-disable-next-line no-param-reassign
+  posts.forEach((post) => delete post.user);
+
+  return posts;
+};
+
 export {
   savePost,
   moveExpiredPosts,
@@ -206,4 +224,6 @@ export {
   saveTempPost,
   moveTempPost,
   removeTempPostByTrackId,
+  findPostByUserId,
+  findArchivedPostByUserId,
 };

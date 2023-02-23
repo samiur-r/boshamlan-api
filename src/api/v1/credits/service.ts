@@ -17,7 +17,10 @@ const initCredits = async (user: IUser) => {
 };
 
 const findCreditByUserId = async (user_id: number) => {
-  const credit = await Credit.findOne({ where: { user: { id: user_id } } });
+  const credit: ICredit | null = await Credit.findOne({ where: { user: { id: user_id } } });
+
+  delete credit?.user;
+
   return credit;
 };
 

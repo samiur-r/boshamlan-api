@@ -1,4 +1,7 @@
+import { IUser } from '../users/interfaces';
+
 export interface IAgent {
+  user?: IUser;
   id: number;
   name: string;
   description: string;

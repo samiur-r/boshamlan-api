@@ -1,4 +1,7 @@
+import { IUser } from '../users/interfaces';
+
 export interface IPost {
+  user?: IUser;
   id: number;
   title: string;
   city_id: number;
