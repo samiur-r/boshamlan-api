@@ -258,7 +258,17 @@ const updatePost = async (
 
   const newPost = await Post.save({
     ...post,
-    ...postInfo,
+    city_id: postInfo.cityId,
+    city_title: postInfo.cityTitle,
+    state_id: postInfo.stateId,
+    state_title: postInfo.stateTitle,
+    property_id: postInfo.propertyId,
+    property_title: postInfo.propertyTitle,
+    category_id: postInfo.categoryId,
+    category_title: postInfo.categoryTitle,
+    price: postInfo.price,
+    description: postInfo.description,
+    media: postInfo.media,
   });
 
   return newPost;

@@ -1,7 +1,7 @@
 import { mixed, object, number, string } from 'yup';
 
 export const postSchema = object({
-  title: string().required(),
+  title: string(),
   cityId: number().required(),
   cityTitle: string().required(),
   stateId: number().required(),
