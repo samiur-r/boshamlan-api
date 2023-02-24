@@ -9,7 +9,9 @@ import {
   findArchivedPostById,
   findPostById,
   removeArchivedPost,
+  removePost,
   removePostMedia,
+  saveDeletedPost,
   savePost,
   saveTempPost,
   updatePost,
@@ -104,9 +106,8 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
   const userId = res.locals.user.payload.id;
   const { postId } = req.body;
 
-  if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
-
   try {
+    if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
     const credit = await findCreditByUserId(userId);
     if (!credit) throw new ErrorHandler(500, 'Something went wrong');
 
@@ -182,4 +183,21 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { insert, update, fetchOne, updatePostToStick, rePost };
+const deletePost = async (req: Request, res: Response, next: NextFunction) => {
+  const { postId } = req.body;
+
+  try {
+    if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
+    const post = await findPostById(parseInt(postId, 10));
+    if (!post) throw new ErrorHandler(500, 'Something went wrong');
+
+    await removePost(post.id);
+    await saveDeletedPost(post, post.user as IUser);
+    return res.status(200).json({ success: 'Post deleted successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export { insert, update, fetchOne, updatePostToStick, rePost, deletePost };

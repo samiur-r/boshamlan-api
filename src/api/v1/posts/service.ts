@@ -54,7 +54,6 @@ const savePost = async (
 };
 
 const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
-  console.log(postInfo);
   const newPost = ArchivePost.create({
     title: postInfo.title,
     city_id: postInfo.city_id,
@@ -96,6 +95,8 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     media: postInfo.media,
     is_sticky: false,
     credit_type: postInfo.credit_type,
+    is_reposted: postInfo.is_reposted,
+    repost_count: postInfo.repost_count,
     user,
   });
 
@@ -242,9 +243,6 @@ const findArchivedPostByUserId = async (userId: number) => {
 
 const findPostById = async (id: number) => {
   const post: IPost | null = await Post.findOneBy({ id });
-
-  delete post?.user;
-
   return post;
 };
 
@@ -325,6 +323,7 @@ export {
   findPostById,
   removePostMedia,
   removeArchivedPost,
+  removePost,
   updatePost,
   updatePostStickyVal,
   updatePostRepostVals,
