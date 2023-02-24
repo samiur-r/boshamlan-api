@@ -5,7 +5,20 @@ import logger from '../../../utils/logger';
 import { findUserById } from '../users/service';
 import { typeOfCreditToDeduct, updateCredit } from '../credits/service';
 import { postSchema } from './validation';
-import { savePost, saveTempPost } from './service';
+import { findPostById, removePostMedia, savePost, saveTempPost, updatePost } from './service';
+
+const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const post = await findPostById(parseInt(req.params.id, 10));
+
+    if (!post) throw new ErrorHandler(500, 'Something went wrong');
+
+    return res.status(200).json({ success: post });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
   const { postInfo } = req.body;
@@ -49,4 +62,30 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { insert };
+const update = async (req: Request, res: Response, next: NextFunction) => {
+  const { postInfo, postId } = req.body;
+  postInfo.media = [];
+  const files = req.files as Express.Multer.File[];
+
+  if (files && files.length) {
+    files.forEach((file) => {
+      postInfo.media.push(file.filename);
+    });
+  }
+
+  try {
+    await postSchema.validate(postInfo);
+    await removePostMedia(postId);
+    await updatePost(postInfo, postId);
+
+    return res.status(200).json({ success: 'Post Updated successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    if (error.name === 'ValidationError') {
+      error.message = 'Invalid payload passed';
+    }
+    return next(error);
+  }
+};
+
+export { insert, update, fetchOne };

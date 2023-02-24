@@ -140,6 +140,18 @@ const removePost = async (id: number) => {
   await Post.delete(id);
 };
 
+const removePostMedia = async (id: number) => {
+  const result = await Post.find({ where: { id }, select: { media: true, city_id: true }, relations: [] });
+
+  if (result.length && result[0].media && result[0].media.length) {
+    const currentDirectory = __dirname;
+    const filePath = path.resolve(currentDirectory, '../../../../../boshamlan-frontend/public/images/posts');
+    result[0].media.forEach((file) => {
+      deleteFile(`${filePath}/${file}`);
+    });
+  }
+};
+
 const moveExpiredPosts = async () => {
   const expiredPosts = await Post.find({ where: { expiry_date: LessThan(new Date()) } });
 
@@ -216,6 +228,42 @@ const findArchivedPostByUserId = async (userId: number) => {
   return posts;
 };
 
+const findPostById = async (id: number) => {
+  const post: IPost | null = await Post.findOneBy({ id });
+
+  delete post?.user;
+
+  return post;
+};
+
+const updatePost = async (
+  postInfo: {
+    cityId: number;
+    cityTitle: string;
+    stateId: number;
+    stateTitle: string;
+    propertyId: number;
+    propertyTitle: string;
+    categoryId: number;
+    categoryTitle: string;
+    price: number;
+    description: string;
+    media: string[];
+  },
+  postId: number,
+) => {
+  const post = await findPostById(postId);
+
+  if (!post) throw new ErrorHandler(500, 'Something went wrong');
+
+  const newPost = await Post.save({
+    ...post,
+    ...postInfo,
+  });
+
+  return newPost;
+};
+
 export {
   savePost,
   moveExpiredPosts,
@@ -226,4 +274,7 @@ export {
   removeTempPostByTrackId,
   findPostByUserId,
   findArchivedPostByUserId,
+  findPostById,
+  removePostMedia,
+  updatePost,
 };
