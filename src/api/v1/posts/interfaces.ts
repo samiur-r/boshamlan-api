@@ -16,6 +16,7 @@ export interface IPost {
   description: string;
   media: string[];
   is_sticky: boolean;
+  credit_type: string;
   views: number;
   is_reposted: boolean;
   repost_count: number;

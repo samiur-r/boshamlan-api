@@ -3,9 +3,9 @@ import ErrorHandler from '../../../utils/ErrorHandler';
 
 import logger from '../../../utils/logger';
 import { findUserById } from '../users/service';
-import { typeOfCreditToDeduct, updateCredit } from '../credits/service';
+import { findCreditByUserId, typeOfCreditToDeduct, updateCredit } from '../credits/service';
 import { postSchema } from './validation';
-import { findPostById, removePostMedia, savePost, saveTempPost, updatePost } from './service';
+import { findPostById, removePostMedia, savePost, saveTempPost, updatePost, updatePostStickyVal } from './service';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -89,4 +89,35 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { insert, update, fetchOne };
+const updatePostToStick = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = res.locals.user.payload.id;
+  const { postId } = req.body;
+
+  if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
+
+  try {
+    const credit = await findCreditByUserId(userId);
+    if (!credit) throw new ErrorHandler(500, 'Something went wrong');
+
+    if (credit.sticky < 1) throw new ErrorHandler(402, 'You do not have enough credit');
+
+    const post = await findPostById(parseInt(postId, 10));
+    if (!post) throw new ErrorHandler(500, 'Something went wrong');
+    if (post.is_sticky) throw new ErrorHandler(304, 'Post is already sticky');
+
+    const user = await findUserById(userId);
+
+    await updatePostStickyVal(post, true);
+
+    let creditType = post.credit_type;
+    if (creditType === 'agent' && !user?.is_agent) creditType = 'regular';
+    const updatedCredit = await updateCredit(userId, post.credit_type, 1, 'ADD', credit);
+    await updateCredit(userId, 'sticky', 1, 'SUB', updatedCredit);
+
+    return res.status(200).json({ success: 'Post is sticked successfully' });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export { insert, update, fetchOne, updatePostToStick };

@@ -41,10 +41,11 @@ const updateCredit = async (
   const creditsToUpdate =
     operation === 'ADD' ? (currCredit as number) + numberOfCredits : (currCredit as number) - numberOfCredits;
 
-  await Credit.save({
+  const updatedCredit = await Credit.save({
     ...credit,
     [typeOfCredit]: creditsToUpdate,
   });
+  return updatedCredit;
 };
 
 const typeOfCreditToDeduct = async (userId: number, is_agent: boolean, isStickyPost: boolean) => {

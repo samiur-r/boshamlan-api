@@ -65,6 +65,9 @@ export class TempPost extends BaseEntity implements IPost {
   @Column({ default: false })
   is_sticky: boolean;
 
+  @Column({ nullable: true })
+  credit_type: string;
+
   @Column({
     default: 0,
   })

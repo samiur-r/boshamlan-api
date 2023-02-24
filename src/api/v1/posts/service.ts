@@ -45,6 +45,7 @@ const savePost = async (
     expiry_date: dayJs().month(2),
     media: postInfo.media,
     is_sticky: typeOfCredit === 'sticky',
+    credit_type: typeOfCredit,
     user,
   });
 
@@ -67,6 +68,7 @@ const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
     expiry_date: dayJs().month(2),
     media: postInfo.media,
     is_sticky: false,
+    credit_type: postInfo.credit_type,
     user,
   });
 
@@ -89,6 +91,7 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     expiry_date: dayJs().month(2),
     media: postInfo.media,
     is_sticky: false,
+    credit_type: postInfo.credit_type,
     user,
   });
 
@@ -130,6 +133,7 @@ const saveTempPost = async (
     expiry_date: dayJs().month(2),
     media: postInfo.media,
     is_sticky: typeOfCredit === 'sticky',
+    credit_type: typeOfCredit,
     user,
   });
 
@@ -274,6 +278,14 @@ const updatePost = async (
   return newPost;
 };
 
+const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {
+  const newPost = Post.create({
+    ...post,
+    is_sticky: isSticky,
+  });
+  await Post.save(newPost);
+};
+
 export {
   savePost,
   moveExpiredPosts,
@@ -287,4 +299,5 @@ export {
   findPostById,
   removePostMedia,
   updatePost,
+  updatePostStickyVal,
 };
