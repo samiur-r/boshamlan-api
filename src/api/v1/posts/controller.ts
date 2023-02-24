@@ -74,6 +74,7 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   try {
+    if (!postId) throw new ErrorHandler(404, 'Post not found');
     await postSchema.validate(postInfo);
     await removePostMedia(postId);
     await updatePost(postInfo, postId);
