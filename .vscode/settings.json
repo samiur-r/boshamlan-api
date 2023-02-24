@@ -15,6 +15,7 @@
         "trackid",
         "trandata",
         "typeorm",
+        "Vals",
         "Vonage"
     ]
 }

@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
-import { IAgent } from '../agents/interfaces';
 import { findAgentByUserId } from '../agents/service';
 import { findCreditByUserId } from '../credits/service';
 import { findArchivedPostByUserId, findPostByUserId } from '../posts/service';

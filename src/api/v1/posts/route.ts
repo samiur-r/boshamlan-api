@@ -11,5 +11,6 @@ router.post('/', [isUserAuth, upload.any()], PostController.insert);
 router.put('/', [isUserAuth, upload.any()], PostController.update);
 router.post('/temp', [isUserAuth, upload.any()], PostController.insert);
 router.post('/stick', [isUserAuth, upload.any()], PostController.updatePostToStick);
+router.post('/repost', [isUserAuth, upload.any()], PostController.rePost);
 
 export default router;

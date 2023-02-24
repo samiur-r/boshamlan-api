@@ -5,7 +5,18 @@ import logger from '../../../utils/logger';
 import { findUserById } from '../users/service';
 import { findCreditByUserId, typeOfCreditToDeduct, updateCredit } from '../credits/service';
 import { postSchema } from './validation';
-import { findPostById, removePostMedia, savePost, saveTempPost, updatePost, updatePostStickyVal } from './service';
+import {
+  findArchivedPostById,
+  findPostById,
+  removeArchivedPost,
+  removePostMedia,
+  savePost,
+  saveTempPost,
+  updatePost,
+  updatePostRepostVals,
+  updatePostStickyVal,
+} from './service';
+import { IUser } from '../users/interfaces';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -116,8 +127,59 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
 
     return res.status(200).json({ success: 'Post is sticked successfully' });
   } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
     return next(error);
   }
 };
 
-export { insert, update, fetchOne, updatePostToStick };
+const rePost = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = res.locals.user.payload.id;
+  const { postId } = req.body;
+
+  try {
+    if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
+    const post = await findArchivedPostById(postId);
+    if (!post) throw new ErrorHandler(500, 'Something went wrong');
+
+    const user = await findUserById(userId);
+    if (!user) throw new ErrorHandler(500, 'Something went wrong');
+
+    const credit = await findCreditByUserId(userId);
+    if (!credit) throw new ErrorHandler(500, 'Something went wrong');
+
+    let typeOfCredit;
+
+    if (credit.free > 0) typeOfCredit = 'free';
+    else if (user.is_agent && credit.agent > 0) typeOfCredit = 'agent';
+    else if (credit.regular > 0) typeOfCredit = 'regular';
+
+    if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
+
+    const postInfo = {
+      title: post.title,
+      cityId: post.city_id,
+      cityTitle: post.city_title,
+      stateId: post.state_id,
+      stateTitle: post.state_title,
+      propertyId: post.property_id,
+      propertyTitle: post.property_title,
+      categoryId: post.category_id,
+      categoryTitle: post.category_title,
+      price: post.price,
+      description: post.description,
+      media: post.media,
+    };
+
+    const newPost = await savePost(postInfo, user as IUser, typeOfCredit);
+    await removeArchivedPost(post.id);
+    await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
+    const repostCount = post.repost_count + 1;
+    await updatePostRepostVals(newPost, true, repostCount);
+    return res.status(200).json({ success: 'Post is reposted successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export { insert, update, fetchOne, updatePostToStick, rePost };

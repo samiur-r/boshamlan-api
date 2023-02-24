@@ -49,10 +49,12 @@ const savePost = async (
     user,
   });
 
-  await Post.save(newPost);
+  const post = await Post.save(newPost);
+  return post;
 };
 
 const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
+  console.log(postInfo);
   const newPost = ArchivePost.create({
     title: postInfo.title,
     city_id: postInfo.city_id,
@@ -65,7 +67,9 @@ const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
     category_title: postInfo.category_title,
     price: postInfo.price,
     description: postInfo.description,
-    expiry_date: dayJs().month(2),
+    expiry_date: postInfo.expiry_date,
+    is_reposted: postInfo.is_reposted,
+    repost_count: postInfo.repost_count,
     media: postInfo.media,
     is_sticky: false,
     credit_type: postInfo.credit_type,
@@ -142,6 +146,10 @@ const saveTempPost = async (
 
 const removePost = async (id: number) => {
   await Post.delete(id);
+};
+
+const removeArchivedPost = async (id: number) => {
+  await ArchivePost.delete(id);
 };
 
 const removePostMedia = async (id: number) => {
@@ -240,6 +248,14 @@ const findPostById = async (id: number) => {
   return post;
 };
 
+const findArchivedPostById = async (id: number) => {
+  const post: IPost | null = await ArchivePost.findOneBy({ id });
+
+  delete post?.user;
+
+  return post;
+};
+
 const updatePost = async (
   postInfo: {
     cityId: number;
@@ -286,6 +302,15 @@ const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {
   await Post.save(newPost);
 };
 
+const updatePostRepostVals = async (post: IPost, isReposted: boolean, repostCount: number) => {
+  const newPost = Post.create({
+    ...post,
+    is_reposted: isReposted,
+    repost_count: repostCount,
+  });
+  await Post.save(newPost);
+};
+
 export {
   savePost,
   moveExpiredPosts,
@@ -295,9 +320,12 @@ export {
   moveTempPost,
   removeTempPostByTrackId,
   findPostByUserId,
+  findArchivedPostById,
   findArchivedPostByUserId,
   findPostById,
   removePostMedia,
+  removeArchivedPost,
   updatePost,
   updatePostStickyVal,
+  updatePostRepostVals,
 };
