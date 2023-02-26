@@ -28,4 +28,24 @@ const fetch = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { fetch };
+const fetchCreditAndAgentInfo = async (req: Request, res: Response, next: NextFunction) => {
+  const user = res.locals.user.payload;
+  let agent = null;
+
+  try {
+    const userInfo = await findUserById(user.id);
+
+    if (!userInfo) throw new ErrorHandler(500, 'Something went wrong');
+
+    const credits = await findCreditByUserId(userInfo.id);
+
+    if (user.is_agent) agent = await findAgentByUserId(userInfo.id);
+
+    return res.status(200).json({ success: { agent, credits } });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export { fetch, fetchCreditAndAgentInfo };

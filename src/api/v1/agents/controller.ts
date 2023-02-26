@@ -1,9 +1,35 @@
 import { NextFunction, Request, Response } from 'express';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
+import { findPostByUserId } from '../posts/service';
 import { findUserById } from '../users/service';
-import { findAgentByUserId, updateAgent } from './service';
+import { findAgentById, findAgentByUserId, findManyAgents, updateAgent } from './service';
 import { agentSchema } from './validation';
+
+const fetchMany = async (req: Request, res: Response, next: NextFunction) => {
+  const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+  const offset = req.query.offset ? parseInt(req.query.offset as string, 10) : undefined;
+  try {
+    const { agents, totalRows } = await findManyAgents(limit, offset);
+    return res.status(200).json({ agents, totalRows });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+const fetchById = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agent = await findAgentById(parseInt(req.params.id, 10));
+    if (!agent || !agent.user_id) throw new ErrorHandler(500, 'Something went wrong');
+
+    const posts = await findPostByUserId(agent.user_id);
+    return res.status(200).json({ agent, posts });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
 
 const fetch = async (req: Request, res: Response, next: NextFunction) => {
   const user = res.locals.user.payload;
@@ -40,4 +66,4 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { fetch, update };
+export { fetch, fetchById, fetchMany, update };

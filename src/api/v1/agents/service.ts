@@ -1,6 +1,7 @@
+/* eslint-disable no-param-reassign */
 import dayJs from 'dayjs';
 import * as path from 'path';
-import { LessThan } from 'typeorm';
+import { LessThan, MoreThanOrEqual } from 'typeorm';
 
 import { deleteFile } from '../../../utils/deleteFile';
 import ErrorHandler from '../../../utils/ErrorHandler';
@@ -9,8 +10,59 @@ import { IUser } from '../users/interfaces';
 import { AgentInfoType, IAgent } from './interfaces';
 import { Agent } from './model';
 
+const findManyAgents = async (limit: number, offset: number | undefined) => {
+  let totalRows;
+  const currentDate = new Date();
+  const agents: IAgent[] | null = await Agent.find({
+    where: { expiry_date: MoreThanOrEqual(currentDate) },
+    take: limit,
+    skip: offset,
+  });
+
+  if (offset === 0) totalRows = await Agent.count();
+
+  agents?.forEach((agent) => {
+    agent.phone = agent.user?.phone;
+
+    agent.socialLinks = [
+      {
+        image: '/images/facebook-filled.svg',
+        href: `https://www.facebook.com/${agent.facebook}`,
+      },
+      {
+        image: '/images/twitter-filled.svg',
+        href: `https://www.twitter.com/${agent.twitter}`,
+      },
+      {
+        image: '/images/instagram-filled.svg',
+        href: `https://www.instagram.com/${agent.instagram}`,
+      },
+      {
+        image: '/images/email-filled.svg',
+        href: `mailto:${agent.email}`,
+      },
+    ];
+    delete agent?.user;
+  });
+
+  return { agents, totalRows };
+};
+
 const findAgentByUserId = async (userId: number) => {
   const agent: IAgent | null = await Agent.findOne({ where: { user: { id: userId } } });
+  delete agent?.user;
+
+  return agent;
+};
+
+const findAgentById = async (id: number) => {
+  const agent: IAgent | null = await Agent.findOneBy({ id });
+
+  if (agent) {
+    agent.phone = agent?.user?.phone;
+    agent.user_id = agent?.user?.id;
+  }
+
   delete agent?.user;
 
   return agent;
@@ -64,4 +116,4 @@ const getExpiredAgentUserIds = async () => {
   return userIds;
 };
 
-export { initOrUpdateAgent, findAgentByUserId, updateAgent, getExpiredAgentUserIds };
+export { initOrUpdateAgent, findAgentByUserId, updateAgent, getExpiredAgentUserIds, findManyAgents, findAgentById };

@@ -13,6 +13,9 @@ export interface IAgent {
   expiry_date: Date;
   created_at: Date;
   updated_at: Date;
+  phone?: number;
+  socialLinks?: Array<{ image: string; href: string }>;
+  user_id?: number;
 }
 
 export interface AgentInfoType {
