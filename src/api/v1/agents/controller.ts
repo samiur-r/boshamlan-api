@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
-import { findPostByUserId } from '../posts/service';
+import { findPosts } from '../posts/service';
 import { findUserById } from '../users/service';
 import { findAgentById, findAgentByUserId, findManyAgents, updateAgent } from './service';
 import { agentSchema } from './validation';
@@ -23,8 +23,8 @@ const fetchById = async (req: Request, res: Response, next: NextFunction) => {
     const agent = await findAgentById(parseInt(req.params.id, 10));
     if (!agent || !agent.user_id) throw new ErrorHandler(500, 'Something went wrong');
 
-    const posts = await findPostByUserId(agent.user_id);
-    return res.status(200).json({ agent, posts });
+    const { posts, count } = await findPosts(10, 0, agent.user_id);
+    return res.status(200).json({ agent, posts, totalPosts: count });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

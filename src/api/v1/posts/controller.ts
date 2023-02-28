@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from 'express';
+import e, { NextFunction, Request, Response } from 'express';
 import ErrorHandler from '../../../utils/ErrorHandler';
 
 import logger from '../../../utils/logger';
@@ -7,7 +7,9 @@ import { findCreditByUserId, typeOfCreditToDeduct, updateCredit } from '../credi
 import { postSchema } from './validation';
 import {
   findArchivedPostById,
+  findArchivedPostByUserId,
   findPostById,
+  findPosts,
   removeArchivedPost,
   removePost,
   removePostMedia,
@@ -27,6 +29,39 @@ const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
 
     return res.status(200).json({ success: post });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+const fetchMany = async (req: Request, res: Response, next: NextFunction) => {
+  const limit = req.query?.limit ? parseInt(req.query.limit as string, 10) : 10;
+  const offset = req.query?.offset ? parseInt(req.query.offset as string, 10) : undefined;
+  // eslint-disable-next-line no-nested-ternary
+  const userId = res.locals.user.payload.id
+    ? res.locals.user.payload.id
+    : req.query?.userId
+    ? parseInt(req.query?.userId as string, 10)
+    : undefined;
+
+  try {
+    const posts = await findPosts(limit, offset, userId);
+    return res.status(200).json(posts);
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+const fetchManyArchive = async (req: Request, res: Response, next: NextFunction) => {
+  const limit = req.query?.limit ? parseInt(req.query.limit as string, 10) : 10;
+  const offset = req.query?.offset ? parseInt(req.query.offset as string, 10) : undefined;
+  const userId = res.locals.user.payload.id;
+
+  try {
+    const resPosts = await findArchivedPostByUserId(limit, offset, userId);
+    return res.status(200).json({ posts: resPosts.archivePosts });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
@@ -184,15 +219,23 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const deletePost = async (req: Request, res: Response, next: NextFunction) => {
-  const { postId } = req.body;
+  const { postId, isArchive } = req.body;
+  const userId = res.locals.user.payload.id;
 
   try {
     if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
-    const post = await findPostById(parseInt(postId, 10));
-    if (!post) throw new ErrorHandler(500, 'Something went wrong');
+    let post;
 
-    await removePost(post.id);
-    await saveDeletedPost(post, post.user as IUser);
+    if (isArchive) post = await findArchivedPostById(parseInt(postId, 10));
+    else post = await findPostById(parseInt(postId, 10));
+
+    if (!post) throw new ErrorHandler(500, 'Something went wrong');
+    const user = await findUserById(userId);
+    if (!user) throw new ErrorHandler(500, 'Something went wrong');
+
+    if (isArchive) await removeArchivedPost(post.id);
+    else await removePost(post.id);
+    await saveDeletedPost(post, user);
     return res.status(200).json({ success: 'Post deleted successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
@@ -200,4 +243,4 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { insert, update, fetchOne, updatePostToStick, rePost, deletePost };
+export { insert, update, fetchOne, fetchMany, updatePostToStick, rePost, deletePost, fetchManyArchive };

@@ -232,13 +232,21 @@ const findPostByUserId = async (userId: number) => {
   return posts;
 };
 
-const findArchivedPostByUserId = async (userId: number) => {
-  const posts: IPost[] | null = await ArchivePost.find({ where: { user: { id: userId } } });
+const findArchivedPostByUserId = async (limit: number, offset: number | undefined, userId: number | undefined) => {
+  const archivePosts: IPost[] | null = await ArchivePost.find({
+    where: { user: { id: userId } },
+    take: limit,
+    skip: offset,
+  });
+
+  let archiveCount;
+
+  if (offset === 0) archiveCount = await ArchivePost.count({ where: { user: { id: userId } } });
 
   // eslint-disable-next-line no-param-reassign
-  posts.forEach((post) => delete post.user);
+  archivePosts.forEach((post) => delete post.user);
 
-  return posts;
+  return { archivePosts, archiveCount };
 };
 
 const findPostById = async (id: number) => {
@@ -309,6 +317,32 @@ const updatePostRepostVals = async (post: IPost, isReposted: boolean, repostCoun
   await Post.save(newPost);
 };
 
+const findPosts = async (limit: number, offset: number | undefined, userId: number | undefined) => {
+  const queryOptions: any = {
+    order: {
+      is_sticky: 'DESC',
+      created_at: 'DESC',
+    },
+    take: limit,
+    skip: offset,
+  };
+
+  if (userId) {
+    queryOptions.where = { user: { id: userId } };
+  }
+
+  const posts: IPost[] | null = await Post.find(queryOptions);
+
+  let count;
+
+  if (offset === 0) count = await Post.count({ where: { user: { id: userId } } });
+
+  // eslint-disable-next-line no-param-reassign
+  posts.forEach((post) => delete post.user);
+
+  return { posts, count };
+};
+
 export {
   savePost,
   moveExpiredPosts,
@@ -321,6 +355,7 @@ export {
   findArchivedPostById,
   findArchivedPostByUserId,
   findPostById,
+  findPosts,
   removePostMedia,
   removeArchivedPost,
   removePost,
