@@ -251,6 +251,11 @@ const findArchivedPostByUserId = async (limit: number, offset: number | undefine
 
 const findPostById = async (id: number) => {
   const post: IPost | null = await Post.findOneBy({ id });
+
+  if (post) {
+    post.phone = post?.user?.phone;
+    delete post?.user;
+  }
   return post;
 };
 
@@ -308,6 +313,18 @@ const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {
   await Post.save(newPost);
 };
 
+const updatePostViewCount = async (id: number, count: number) => {
+  const post = await Post.findOneBy({ id });
+  if (!post) throw new ErrorHandler(404, 'Post not found');
+
+  const viewCount = post.views + count;
+
+  await Post.save({
+    ...post,
+    views: viewCount,
+  });
+};
+
 const updatePostRepostVals = async (post: IPost, isReposted: boolean, repostCount: number) => {
   const newPost = Post.create({
     ...post,
@@ -362,4 +379,5 @@ export {
   updatePost,
   updatePostStickyVal,
   updatePostRepostVals,
+  updatePostViewCount,
 };

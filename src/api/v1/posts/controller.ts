@@ -1,4 +1,4 @@
-import e, { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import ErrorHandler from '../../../utils/ErrorHandler';
 
 import logger from '../../../utils/logger';
@@ -19,6 +19,7 @@ import {
   updatePost,
   updatePostRepostVals,
   updatePostStickyVal,
+  updatePostViewCount,
 } from './service';
 import { IUser } from '../users/interfaces';
 
@@ -26,7 +27,7 @@ const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const post = await findPostById(parseInt(req.params.id, 10));
 
-    if (!post) throw new ErrorHandler(500, 'Something went wrong');
+    if (!post) throw new ErrorHandler(404, 'Post not found');
 
     return res.status(200).json({ success: post });
   } catch (error) {
@@ -243,4 +244,26 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { insert, update, fetchOne, fetchMany, updatePostToStick, rePost, deletePost, fetchManyArchive };
+const increasePostCount = async (req: Request, res: Response, next: NextFunction) => {
+  const { postId } = req.body;
+
+  try {
+    await updatePostViewCount(postId, 1);
+    return res.status(200).json({ success: 'View count updates successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export {
+  insert,
+  update,
+  fetchOne,
+  fetchMany,
+  updatePostToStick,
+  rePost,
+  deletePost,
+  fetchManyArchive,
+  increasePostCount,
+};
