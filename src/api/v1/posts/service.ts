@@ -1,6 +1,6 @@
 import dayJs from 'dayjs';
 import path from 'path';
-import { LessThan } from 'typeorm';
+import { Between, In, LessThan, Like } from 'typeorm';
 import { deleteFile } from '../../../utils/deleteFile';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
@@ -352,12 +352,56 @@ const findPosts = async (limit: number, offset: number | undefined, userId: numb
 
   let count;
 
-  if (offset === 0) count = await Post.count({ where: { user: { id: userId } } });
+  if (offset === 0 && userId) count = await Post.count({ where: { user: { id: userId } } });
+  else if (offset === 0 && !userId) count = await Post.count();
 
   // eslint-disable-next-line no-param-reassign
   posts.forEach((post) => delete post.user);
 
   return { posts, count };
+};
+
+const searchPosts = async (
+  limit: number,
+  offset: number | undefined,
+  locations?: Array<{ id: number; title: string; state_id: number | null }>,
+  propertyId?: number,
+  categoryId?: number,
+  priceRange?: { min: number; max: number },
+  keyword?: string,
+) => {
+  const searchCriteria: any = {};
+
+  if (categoryId) {
+    searchCriteria.category_id = categoryId;
+  }
+  if (propertyId) {
+    searchCriteria.property_id = propertyId;
+  }
+  if (locations?.length) {
+    searchCriteria.location_id = In(locations.map((l) => l.id));
+  }
+  if (priceRange) {
+    searchCriteria.price = Between(priceRange.min, priceRange.max);
+  }
+
+  if (keyword) {
+    searchCriteria.OR = [
+      { categoryId_title: Like(`%${keyword}%`) },
+      { property_title: Like(`%${keyword}%`) },
+      { location_title: Like(`%${keyword}%`) },
+    ];
+  }
+
+  return Post.find({
+    where: searchCriteria,
+    order: {
+      is_sticky: 'DESC',
+      created_at: 'DESC',
+    },
+    take: limit,
+    skip: offset,
+  });
 };
 
 export {
@@ -380,4 +424,5 @@ export {
   updatePostStickyVal,
   updatePostRepostVals,
   updatePostViewCount,
+  searchPosts,
 };

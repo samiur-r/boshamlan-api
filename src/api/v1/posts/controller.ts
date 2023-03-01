@@ -40,15 +40,15 @@ const fetchMany = async (req: Request, res: Response, next: NextFunction) => {
   const limit = req.query?.limit ? parseInt(req.query.limit as string, 10) : 10;
   const offset = req.query?.offset ? parseInt(req.query.offset as string, 10) : undefined;
   // eslint-disable-next-line no-nested-ternary
-  const userId = res.locals.user.payload.id
+  const userId = res?.locals?.user?.payload?.id
     ? res.locals.user.payload.id
     : req.query?.userId
     ? parseInt(req.query?.userId as string, 10)
     : undefined;
 
   try {
-    const posts = await findPosts(limit, offset, userId);
-    return res.status(200).json(posts);
+    const { posts, count } = await findPosts(limit, offset, userId);
+    return res.status(200).json({ posts, totalPosts: count });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
