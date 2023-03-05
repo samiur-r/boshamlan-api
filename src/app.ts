@@ -16,6 +16,7 @@ import postRoutes from './api/v1/posts';
 import creditRoutes from './api/v1/credits';
 import accountRoutes from './api/v1/account';
 import searchRoutes from './api/v1/search';
+import locationRoutes from './api/v1/locations';
 
 const app: Express = express();
 
@@ -34,6 +35,7 @@ app.use('/api/v1/post', postRoutes);
 app.use('/api/v1/credits', creditRoutes);
 app.use('/api/v1/account', accountRoutes);
 app.use('/api/v1/search', searchRoutes);
+app.use('/api/v1/locations', locationRoutes);
 
 app.use(errorHandlingMiddleware);
 
