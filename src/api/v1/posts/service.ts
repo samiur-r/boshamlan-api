@@ -148,7 +148,7 @@ const saveTempPost = async (
 };
 
 const removePost = async (id: number) => {
-  const post = await Post.delete(id);
+  await Post.delete(id);
 };
 
 const removeArchivedPost = async (id: number) => {
