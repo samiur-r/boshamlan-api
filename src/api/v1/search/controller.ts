@@ -1,14 +1,34 @@
 import { NextFunction, Request, Response } from 'express';
 
-import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
+import { searchPosts } from '../posts/service';
 
 const search = async (req: Request, res: Response, next: NextFunction) => {
-  const { location, propertyType, category, priceRange, keyword } = req.body;
-  console.log(location, propertyType, category, priceRange, keyword);
+  const { limit, offset, location, propertyType, category, priceRange, keyword } = req.body;
+
+  const propertyId = propertyType ? propertyType.id : undefined;
+  const categoryId = category ? category.id : undefined;
+  let city = [];
+  let stateId;
+
+  if (location && location.length > 1) city = location;
+  else if (location && location.length === 1) {
+    if (location[0].state_id === null) stateId = location[0].id;
+    else city = location;
+  }
 
   try {
-    return res.status(200).json({ success: true });
+    const { posts, count } = await searchPosts(
+      limit,
+      offset,
+      city,
+      stateId,
+      propertyId,
+      categoryId,
+      priceRange,
+      keyword,
+    );
+    return res.status(200).json({ posts, count });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

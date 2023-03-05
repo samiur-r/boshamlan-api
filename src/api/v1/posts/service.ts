@@ -1,9 +1,10 @@
 import dayJs from 'dayjs';
 import path from 'path';
-import { Between, In, LessThan, Like } from 'typeorm';
+import { Between, In, IsNull, LessThan, Like } from 'typeorm';
 import { deleteFile } from '../../../utils/deleteFile';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
+import { updateLocationCountValue } from '../locations/service';
 import { IUser } from '../users/interfaces';
 import { findUserById } from '../users/service';
 import { IPost } from './interfaces';
@@ -50,6 +51,7 @@ const savePost = async (
   });
 
   const post = await Post.save(newPost);
+  await updateLocationCountValue(postInfo.cityId, 'increment');
   return post;
 };
 
@@ -99,7 +101,7 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     repost_count: postInfo.repost_count,
     user,
   });
-
+  await updateLocationCountValue(postInfo.city_id, 'decrement');
   await DeletedPost.save(newPost);
 };
 
@@ -146,7 +148,7 @@ const saveTempPost = async (
 };
 
 const removePost = async (id: number) => {
-  await Post.delete(id);
+  const post = await Post.delete(id);
 };
 
 const removeArchivedPost = async (id: number) => {
@@ -171,6 +173,7 @@ const moveExpiredPosts = async () => {
   expiredPosts.forEach(async (post) => {
     await removePost(post.id);
     await saveArchivedPost(post, post.user);
+    await updateLocationCountValue(post.city_id, 'decrement');
   });
 
   return expiredPosts;
@@ -302,6 +305,8 @@ const updatePost = async (
     media: postInfo.media,
   });
 
+  await updateLocationCountValue(postInfo.cityId, 'increment');
+
   return newPost;
 };
 
@@ -364,7 +369,8 @@ const findPosts = async (limit: number, offset: number | undefined, userId: numb
 const searchPosts = async (
   limit: number,
   offset: number | undefined,
-  locations?: Array<{ id: number; title: string; state_id: number | null }>,
+  city?: Array<{ id: number; title: string; state_id: number | null }>,
+  stateId?: number,
   propertyId?: number,
   categoryId?: number,
   priceRange?: { min: number; max: number },
@@ -378,22 +384,24 @@ const searchPosts = async (
   if (propertyId) {
     searchCriteria.property_id = propertyId;
   }
-  if (locations?.length) {
-    searchCriteria.location_id = In(locations.map((l) => l.id));
+  if (city?.length) {
+    searchCriteria.city_id = In(city.map((l) => l.id));
+  }
+  if (stateId) {
+    searchCriteria.state_id = stateId;
   }
   if (priceRange) {
-    searchCriteria.price = Between(priceRange.min, priceRange.max);
+    searchCriteria.price = IsNull() || Between(priceRange.min, priceRange.max);
   }
 
   if (keyword) {
-    searchCriteria.OR = [
-      { categoryId_title: Like(`%${keyword}%`) },
-      { property_title: Like(`%${keyword}%`) },
-      { location_title: Like(`%${keyword}%`) },
-    ];
+    searchCriteria.city_title = Like(`%${keyword}%`);
+    searchCriteria.state_title = Like(`%${keyword}%`);
+    searchCriteria.category_title = Like(`%${keyword}%`);
+    searchCriteria.property_title = Like(`%${keyword}%`);
   }
 
-  return Post.find({
+  const [posts, count] = await Post.findAndCount({
     where: searchCriteria,
     order: {
       is_sticky: 'DESC',
@@ -402,6 +410,8 @@ const searchPosts = async (
     take: limit,
     skip: offset,
   });
+
+  return { posts, count };
 };
 
 export {
