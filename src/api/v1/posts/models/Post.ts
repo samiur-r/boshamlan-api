@@ -64,6 +64,7 @@ export class Post extends BaseEntity implements IPost {
 
   @Column({
     default: 0,
+    type: 'float',
   })
   views: number;
 

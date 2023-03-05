@@ -411,6 +411,14 @@ const searchPosts = async (
     skip: offset,
   });
 
+  let postIds: number[] = [];
+
+  posts.forEach((post) => {
+    postIds = [...postIds, post.id];
+  });
+
+  if (postIds.length) await Post.update({ id: In(postIds) }, { views: () => 'views + .5' });
+
   return { posts, count };
 };
 
