@@ -17,6 +17,7 @@ import creditRoutes from './api/v1/credits';
 import accountRoutes from './api/v1/account';
 import searchRoutes from './api/v1/search';
 import locationRoutes from './api/v1/locations';
+import contentRoutes from './api/v1/content';
 
 const app: Express = express();
 
@@ -36,6 +37,7 @@ app.use('/api/v1/credits', creditRoutes);
 app.use('/api/v1/account', accountRoutes);
 app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/locations', locationRoutes);
+app.use('/api/v1/page-content', contentRoutes);
 
 app.use(errorHandlingMiddleware);
 

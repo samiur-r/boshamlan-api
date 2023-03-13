@@ -10,4 +10,12 @@ const updateLocationCountValue = async (id: number, opt: string) => {
   await Location.update({ id: location?.state_id }, { count: () => (opt === 'increment' ? 'count + 1' : 'count - 1') });
 };
 
-export { updateLocationCountValue };
+const findLocationArticleById = async (id: number) => {
+  const location = await Location.findOneBy({ id });
+
+  if (!location) throw new ErrorHandler(500, 'Something went wrong');
+
+  return location.article;
+};
+
+export { updateLocationCountValue, findLocationArticleById };

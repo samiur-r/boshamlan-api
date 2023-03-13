@@ -21,6 +21,9 @@ export class Location extends BaseEntity implements ILocation {
   })
   count: number;
 
+  @Column({ type: 'text', default: null })
+  article: string;
+
   @OneToMany('Post', 'location')
   post: IPost[];
 }
