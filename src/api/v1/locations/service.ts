@@ -18,4 +18,12 @@ const findLocationArticleById = async (id: number) => {
   return location.article;
 };
 
-export { updateLocationCountValue, findLocationArticleById };
+const findLocationById = async (id: number) => {
+  const location = await Location.findOneBy({ id });
+
+  if (!location) throw new ErrorHandler(500, 'Something went wrong');
+
+  return location;
+};
+
+export { findLocationById, updateLocationCountValue, findLocationArticleById };

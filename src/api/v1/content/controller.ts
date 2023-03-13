@@ -3,30 +3,41 @@ import { NextFunction, Request, Response } from 'express';
 
 import logger from '../../../utils/logger';
 import { findCategoryArticle } from '../categories/service';
-import { findLocationArticleById } from '../locations/service';
+import { findLocationArticleById, findLocationById } from '../locations/service';
 import { findPropertyTypeArticle } from '../property_types/service';
 
 const fetch = async (req: Request, res: Response, next: NextFunction) => {
   const { location, propertyType, category } = req.body;
+
   const articles = [];
   let meta_title = '';
   let meta_description = '';
 
   try {
-    if (location && location.length) {
-      const locationArticle = await findLocationArticleById(location[0].id);
+    if (location) {
+      const locationArticle = await findLocationArticleById(location.id);
       articles.push(locationArticle);
     }
 
-    if (propertyType && location && location.length) {
-      const isState = location[0].state_id === null;
+    if (propertyType && location) {
+      const isState = location.state_id === null;
 
       const { article, metaTitle, metaDescription } = await findPropertyTypeArticle(
         propertyType.id,
         isState,
         category.id,
       );
-      articles.push(article);
+
+      let articleData;
+
+      if (isState) {
+        articleData = article.replace(/\$state/g, location.title);
+      } else {
+        const locationObj = await findLocationById(location.state_id);
+        articleData = article.replace(/\$state/g, locationObj.title);
+        articleData = article.replace(/\$city/g, location.title);
+      }
+      articles.push(articleData);
       meta_title = metaTitle;
       meta_description = metaDescription;
     } else if (propertyType && !location?.length) {
@@ -41,8 +52,8 @@ const fetch = async (req: Request, res: Response, next: NextFunction) => {
     }
 
     if (category && !propertyType) {
-      if (location && location.length) {
-        const isState = location[0].state_id === null;
+      if (location) {
+        const isState = location.state_id === null;
 
         const { article, metaTitle, metaDescription } = await findCategoryArticle(category.id, isState);
         articles.push(article);
