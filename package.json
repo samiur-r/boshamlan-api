@@ -7,8 +7,8 @@
     "build": "pnpm tsc",
     "start:prod": "node dist/src/server.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "lint": "pnpm eslint src",
-    "lint:fix": "pnpm run lint -- --fix src",
+    "lint": "npm eslint src",
+    "lint:fix": "npm run lint -- --fix src",
     "format": "prettier --check src",
     "format:fix": "prettier --write src",
     "prepare": "husky install"
