@@ -5,8 +5,8 @@
   "main": "./src/server.ts",
   "scripts": {
     "build": "npx tsc",
-    "start:prod": "node dist/src/server.js",
-    "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "start": "node dist/src/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "lint": "npx eslint src",
     "lint:fix": "npm run lint -- --fix src",
     "format": "prettier --check src",
