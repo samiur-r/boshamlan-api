@@ -1,0 +1,1 @@
+{"version":3,"file":"vonage.js","sourceRoot":"","sources":["../../src/config/vonage.ts"],"names":[],"mappings":";;;;;AAAA,mDAA4C;AAE5C,oDAA6B;AAE7B,aAAa;AACb,MAAM,MAAM,GAAG,IAAI,mBAAM,CAAC;IACxB,MAAM,EAAE,eAAM,CAAC,YAAY;IAC3B,SAAS,EAAE,eAAM,CAAC,eAAe;CAClC,CAAC,CAAC;AAEH,kBAAe,MAAM,CAAC"}
