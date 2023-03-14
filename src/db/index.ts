@@ -25,7 +25,6 @@ const AppDataSource = new DataSource({
   synchronize: true,
   logging: false,
   migrationsRun: false,
-  ssl: true,
   entities: [
     User,
     Credit,
