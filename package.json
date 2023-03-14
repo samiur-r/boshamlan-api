@@ -4,10 +4,10 @@
   "description": "",
   "main": "./src/server.ts",
   "scripts": {
-    "build": "pnpm tsc",
+    "build": "npm tsc",
     "start:prod": "node dist/src/server.js",
     "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "lint": "npm eslint src",
+    "lint": "npx eslint src",
     "lint:fix": "npm run lint -- --fix src",
     "format": "prettier --check src",
     "format:fix": "prettier --write src",
