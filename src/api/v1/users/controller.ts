@@ -18,13 +18,13 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     await passwordSchema.validate(password, { abortEarly: false });
 
     const user = await findUserByPhone(phone);
-    if (!user) throw new ErrorHandler(403, 'رقم الهاتف أو كلمة المرور غير صحيحين'); // Incorrect phone or password'
+    if (!user) throw new ErrorHandler(403, 'Incorrect phone or password');
 
     if (user && user.status === 'not_verified')
       return res.status(200).json({ nextOperation: 'verify phone', userId: user.id });
 
     const isValidPassword = await verifyToken(password, user.password);
-    if (!isValidPassword) throw new ErrorHandler(403, 'رقم الهاتف أو كلمة المرور غير صحيحين'); // Incorrect phone or password'
+    if (!isValidPassword) throw new ErrorHandler(403, 'Incorrect phone or password');
 
     const userPayload = {
       id: user.id,
@@ -57,7 +57,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     await passwordSchema.validate(password, { abortEarly: false });
 
     const user = await findUserByPhone(phone);
-    if (user && user.status !== 'not_verified') throw new ErrorHandler(409, 'المستخدم موجود اصلا'); // User already exists
+    if (user && user.status !== 'not_verified') throw new ErrorHandler(409, 'User already exists');
 
     if (user && user.status === 'not_verified')
       return res.status(200).json({ nextOperation: 'verify mobile', userId: user.id });
@@ -72,11 +72,11 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
   } catch (error: any) {
     logger.error(`${error.name}: ${error.message}`);
     if (error.name === 'ValidationError') {
-      error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
+      error.message = 'Invalid payload passed';
       return next(error);
     }
     if (error.message === 'All SMS messages failed to send') {
-      error.message = 'فشل إرسال otp'; // Failed to send otp
+      error.message = 'Failed to send otp';
     }
     return next(error);
   }
@@ -112,12 +112,12 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
 
     const user = await findUserByPhone(phone);
 
-    if (!user) throw new ErrorHandler(404, 'لم يتم العثور على مستخدم بهذا الهاتف. الرجاء التسجيل'); // No user with this phone is found. Please register
+    if (!user) throw new ErrorHandler(404, 'No user with this phone is found. Please register');
 
     const hashedPassword = await hashPassword(password);
     await updateUserPassword(user, hashedPassword);
 
-    return res.status(200).json({ success: 'تم تحديث كلمة السر بنجاح' }); // Password updated successfully
+    return res.status(200).json({ success: 'Password updated successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
