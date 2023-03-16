@@ -6,7 +6,7 @@ import { Credit } from './model';
 
 const initCredits = async (user: IUser) => {
   const creditData = Credit.create({
-    free: 0,
+    free: 2,
     regular: 0,
     sticky: 0,
     agent: 0,
