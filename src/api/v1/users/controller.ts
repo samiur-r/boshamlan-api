@@ -43,7 +43,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     if (error.name === 'ValidationError') {
-      error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
+      error.message = 'Invalid payload passed';
     }
     return next(error);
   }
@@ -84,7 +84,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
 
 const logout = async (_req: Request, res: Response) => {
   res.clearCookie('token');
-  return res.status(200).json({ success: 'تم تسجيل الخروج بنجاح' }); // Logged out successfully
+  return res.status(200).json({ success: 'Logged out successfully' });
 };
 
 const doesUserExists = async (req: Request, res: Response, next: NextFunction) => {
@@ -94,7 +94,7 @@ const doesUserExists = async (req: Request, res: Response, next: NextFunction) =
     await phoneSchema.validate(phone, { abortEarly: false });
     const user = await findUserByPhone(phone);
 
-    if (!user) throw new ErrorHandler(404, 'لم يتم العثور على مستخدم بهذا الهاتف. الرجاء التسجيل'); // No user with this phone is found. Please register
+    if (!user) throw new ErrorHandler(404, 'No user with this phone is found. Please register');
 
     return res.status(200).json({ userId: user.id });
   } catch (error) {
