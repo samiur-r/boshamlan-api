@@ -67,7 +67,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     const userObj: IUser = await saveUser(phone, hashedPassword, 'not_verified');
     await sendOtpVerificationSms(phone, 'registration', userObj);
 
-    return res.status(200).json({ nextOperation: 'verify mobile', userId: userObj?.id });
+    return res.status(200).json({ userId: userObj?.id });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     logger.error(`${error.name}: ${error.message}`);
