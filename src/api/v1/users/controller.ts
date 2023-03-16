@@ -114,9 +114,7 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
 
     if (!user) throw new ErrorHandler(404, 'No user with this phone is found. Please register');
 
-    const hashedPassword = await hashPassword(password);
-    await updateUserPassword(user, hashedPassword);
-
+    await updateUserPassword(user, password);
     return res.status(200).json({ success: 'Password updated successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
