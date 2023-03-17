@@ -10,6 +10,9 @@ const config = {
   cookieSecret: process.env.COOKIE_SECRET ?? 'alpha_centauri',
   vonageApiKey: process.env.VONAGE_API_KEY ?? '',
   vonageApiSecret: process.env.VONAGE_API_SECRET ?? '',
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME ?? '',
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY ?? '',
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET ?? '',
   cookieOptions: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

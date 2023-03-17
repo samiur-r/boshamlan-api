@@ -1,6 +1,9 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
 import dayJs from 'dayjs';
 import path from 'path';
 import { Between, In, IsNull, LessThan, Like } from 'typeorm';
+import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import { deleteFile } from '../../../utils/deleteFile';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
@@ -159,11 +162,9 @@ const removePostMedia = async (id: number) => {
   const result = await Post.find({ where: { id }, select: { media: true, city_id: true }, relations: [] });
 
   if (result.length && result[0].media && result[0].media.length) {
-    const currentDirectory = __dirname;
-    const filePath = path.resolve(currentDirectory, '../../../../../boshamlan-frontend/public/images/posts');
-    result[0].media.forEach((file) => {
-      deleteFile(`${filePath}/${file}`);
-    });
+    for (const multimedia of result[0].media) {
+      await deleteMediaFromCloudinary(multimedia, 'posts');
+    }
   }
 };
 
@@ -189,10 +190,10 @@ const removeTempPostByTrackId = async (track_id: string) => {
 
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
 
-    if (post.media.length > 0) {
-      const currentDirectory = __dirname;
-      const filePath = path.resolve(currentDirectory, '../../../../../boshamlan-frontend/public/images/posts');
-      post.media.forEach((file) => deleteFile(`${filePath}/${file}`));
+    if (post.media && post.media.length) {
+      for (const multimedia of post.media) {
+        await deleteMediaFromCloudinary(multimedia, 'posts');
+      }
     }
     await TempPost.remove(post);
   } catch (error) {

@@ -1,3 +1,5 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
 import { NextFunction, Request, Response } from 'express';
 import ErrorHandler from '../../../utils/ErrorHandler';
 
@@ -22,6 +24,7 @@ import {
   updatePostViewCount,
 } from './service';
 import { IUser } from '../users/interfaces';
+import { deleteMediaFromCloudinary, uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -72,18 +75,12 @@ const fetchManyArchive = async (req: Request, res: Response, next: NextFunction)
 const insert = async (req: Request, res: Response, next: NextFunction) => {
   const { postInfo } = req.body;
   const userId = res.locals.user.payload.id;
-  const files = req.files as Express.Multer.File[];
-  postInfo.media = [];
+  const media: string[] = [];
+
   postInfo.title = `${postInfo.propertyTitle} ل${postInfo.categoryTitle} في ${postInfo.cityTitle}`;
   postInfo.isStickyPost = postInfo.isStickyPost === 'true';
   const endpoint = req.originalUrl.substring(13, req.originalUrl.length);
   const isTempPost = endpoint === 'temp';
-
-  if (files && files.length) {
-    files.forEach((file) => {
-      postInfo.media.push(file.filename);
-    });
-  }
 
   try {
     await postSchema.validate(postInfo);
@@ -91,11 +88,27 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
 
     if (isTempPost) {
+      if (postInfo?.multimedia && postInfo?.multimedia.length) {
+        for (const multimedia of postInfo.multimedia) {
+          const url = await uploadMediaToCloudinary(multimedia, 'posts');
+          if (url) media.push(url);
+        }
+      }
+      postInfo.media = media;
       const typeOfCredit = 'sticky';
       await saveTempPost(postInfo, user, typeOfCredit);
     } else {
       const { typeOfCredit, credit } = await typeOfCreditToDeduct(user.id, user.is_agent, postInfo.isStickyPost);
       if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
+
+      if (postInfo?.multimedia && postInfo?.multimedia.length) {
+        for (const multimedia of postInfo.multimedia) {
+          const url = await uploadMediaToCloudinary(multimedia, 'posts');
+          if (url) media.push(url);
+        }
+      }
+
+      postInfo.media = media;
 
       await savePost(postInfo, user, typeOfCredit);
       await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
@@ -113,19 +126,21 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
 
 const update = async (req: Request, res: Response, next: NextFunction) => {
   const { postInfo, postId } = req.body;
-  postInfo.media = [];
-  const files = req.files as Express.Multer.File[];
-
-  if (files && files.length) {
-    files.forEach((file) => {
-      postInfo.media.push(file.filename);
-    });
-  }
+  const media: string[] = [];
 
   try {
     if (!postId) throw new ErrorHandler(404, 'Post not found');
     await postSchema.validate(postInfo);
     await removePostMedia(postId);
+
+    if (postInfo?.multimedia && postInfo?.multimedia.length) {
+      for (const multimedia of postInfo.multimedia) {
+        const url = await uploadMediaToCloudinary(multimedia, 'posts');
+        if (url) media.push(url);
+      }
+    }
+    postInfo.media = media;
+
     await updatePost(postInfo, postId);
 
     return res.status(200).json({ success: 'Post Updated successfully' });

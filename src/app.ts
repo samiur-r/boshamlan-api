@@ -22,8 +22,8 @@ import contentRoutes from './api/v1/content';
 const app: Express = express();
 
 app.use(CookieParser(config.cookieSecret));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors(corsOptions));
 app.use(helmet());
 app.use(morganMiddleware);

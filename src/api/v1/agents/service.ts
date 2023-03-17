@@ -1,9 +1,7 @@
 /* eslint-disable no-param-reassign */
 import dayJs from 'dayjs';
-import * as path from 'path';
 import { LessThan, MoreThanOrEqual } from 'typeorm';
-
-import { deleteFile } from '../../../utils/deleteFile';
+import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
 
 import { IUser } from '../users/interfaces';
@@ -74,9 +72,7 @@ const updateAgent = async (agentInfo: AgentInfoType, userId: number) => {
   if (!agent) throw new ErrorHandler(404, `agent doesn't exists`);
 
   if (agent.logo_url) {
-    const currentDirectory = __dirname;
-    const filePath = path.resolve(currentDirectory, '../../../../../boshamlan-frontend/public/images/agents');
-    deleteFile(`${filePath}/${agent.logo_url}`);
+    await deleteMediaFromCloudinary(agent.logo_url, 'agents');
   }
 
   const agentData = Agent.create({

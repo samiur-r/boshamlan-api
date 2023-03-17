@@ -12,7 +12,7 @@ export const isUserAuth = async (req: Request, res: Response, next: NextFunction
     res.locals.user = user;
     next();
   } catch (err) {
-    next(new ErrorHandler(401, 'أنك غير مخول')); // You are not authorized
+    next(new ErrorHandler(401, 'You are not authorized'));
   }
 };
 
@@ -24,7 +24,7 @@ export const isRequestAuth = async (req: Request, res: Response, next: NextFunct
     await verifyJwt(token as string);
     next();
   } catch (err) {
-    next(new ErrorHandler(401, 'أنك غير مخول')); // You are not authorized
+    next(new ErrorHandler(401, 'You are not authorized'));
   }
 };
 
@@ -34,7 +34,7 @@ export const isAdminAuth = async (req: Request, res: Response, next: NextFunctio
 
   try {
     const { payload } = await verifyJwt(token);
-    if (!payload?.is_admin) throw new ErrorHandler(401, 'أنك غير مخول'); // You are not authorized
+    if (!payload?.is_admin) throw new ErrorHandler(401, 'You are not authorized');
     next();
   } catch (err) {
     next(err);
