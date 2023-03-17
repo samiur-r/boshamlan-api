@@ -3,7 +3,12 @@ import ErrorHandler from './ErrorHandler';
 import logger from './logger';
 
 const uploadMediaToCloudinary = async (imagePath: string, preset: string) => {
+  type ResourceType = 'image' | 'video' | 'raw' | 'auto';
+
+  const resourceType = imagePath.split('/')[0].split(':')[1];
+
   const options = {
+    resource_type: resourceType as ResourceType,
     upload_preset: preset,
     use_filename: true,
     unique_filename: false,
