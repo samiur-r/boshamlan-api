@@ -42,9 +42,13 @@ const deleteMediaFromCloudinary = async (imageURL: string, preset: string) => {
     const public_id = getPublicId(imageURL);
 
     if (!public_id) throw new ErrorHandler(500, 'Something went wrong');
+
+    const pathSegments = imageURL.split('/');
+    const resourceType = pathSegments[4];
+
     const result = await cloudinary.uploader.destroy(`${preset}/${public_id}`, {
       invalidate: true,
-      resource_type: 'image',
+      resource_type: resourceType,
     });
     return result;
   } catch (error) {
