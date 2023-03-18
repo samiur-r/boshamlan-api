@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { deleteMediaFromCloudinary, uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
+import { uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
 import { findPosts } from '../posts/service';

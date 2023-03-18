@@ -10,9 +10,18 @@ const optimizeImage = async (inputBase64: string): Promise<string> => {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const inputBuffer = Buffer.from(inputBase64.split(';base64,').pop()!, 'base64');
 
+    // Use Sharp to get the image's metadata
+    const metadata = await sharp(inputBuffer).metadata();
+
+    // If the image is smaller than 800 pixels, don't resize it
+    const width = metadata.width || 0;
+    const height = metadata.height || 0;
+    const resizeWidth = Math.min(width, 800);
+    const resizeHeight = Math.ceil(height * (resizeWidth / width));
+
     // Use Sharp to optimize the image
     const outputBuffer = await sharp(inputBuffer)
-      .resize(800) // resize the image to 800 pixels wide
+      .resize(resizeWidth, resizeHeight) // resize the image to 800 pixels wide
       .jpeg({ quality: 80 }) // compress the image to 80% quality JPEG
       .toBuffer();
 
@@ -25,44 +34,4 @@ const optimizeImage = async (inputBase64: string): Promise<string> => {
   }
 };
 
-const optimizeVideo = async (base64String: string): Promise<string> => {
-  try {
-    // Decode base64 string to binary buffer
-    const binaryBuffer = Buffer.from(base64String, 'base64');
-
-    // Create FFmpeg command and set output options
-    const inputStream = Readable.from(binaryBuffer);
-    const outputOptions = ['-vcodec', 'libx264', '-crf', '23', '-preset', 'veryslow'];
-
-    const stdout = await new Promise<Buffer>((resolve, reject) => {
-      const ffmpegCommand = ffmpeg(inputStream)
-        .outputOptions(outputOptions)
-        .toFormat('mp4')
-        .on('error', (err) => {
-          reject(err);
-        })
-        .on('end', () => {
-          logger.info('Video optimization complete!');
-        });
-
-      const writableStream = new stream.Writable({
-        write(chunk, encoding, callback) {
-          resolve(chunk);
-          callback();
-        },
-      });
-
-      ffmpegCommand.pipe(writableStream);
-    });
-
-    // Convert optimized video buffer back to base64
-    const optimizedBase64 = stdout.toString('base64');
-
-    return optimizedBase64;
-  } catch (err) {
-    logger.error(err);
-    return base64String;
-  }
-};
-
-export { optimizeImage, optimizeVideo };
+export { optimizeImage };

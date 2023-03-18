@@ -2,10 +2,10 @@ import cloudinary from '../config/cloudinary';
 import ErrorHandler from './ErrorHandler';
 import logger from './logger';
 
-const uploadMediaToCloudinary = async (imagePath: string, preset: string) => {
+const uploadMediaToCloudinary = async (mediaBase64str: string, preset: string) => {
   type ResourceType = 'image' | 'video' | 'raw' | 'auto';
 
-  const resourceType = imagePath.split('/')[0].split(':')[1];
+  const resourceType = mediaBase64str.split('/')[0].split(':')[1];
 
   const options = {
     resource_type: resourceType as ResourceType,
@@ -13,10 +13,18 @@ const uploadMediaToCloudinary = async (imagePath: string, preset: string) => {
     use_filename: true,
     unique_filename: false,
     overwrite: true,
+    transformation: [
+      {
+        if: resourceType === 'image' ? 'w_gt_720' : 'w_gt_500',
+        width: resourceType === 'image' ? 720 : 500,
+        crop: 'scale',
+      },
+      { quality: 'auto' },
+    ],
   };
 
   try {
-    const result = await cloudinary.uploader.upload(imagePath, options);
+    const result = await cloudinary.uploader.upload(mediaBase64str, options);
     return result.url;
   } catch (error) {
     logger.error(error);
