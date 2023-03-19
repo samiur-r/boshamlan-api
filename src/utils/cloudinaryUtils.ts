@@ -25,7 +25,7 @@ const uploadMediaToCloudinary = async (mediaBase64str: string, preset: string) =
 
   try {
     const result = await cloudinary.uploader.upload(mediaBase64str, options);
-    return result.url;
+    return result.secure_url;
   } catch (error) {
     logger.error(error);
     return false;
