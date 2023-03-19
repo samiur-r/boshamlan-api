@@ -25,7 +25,7 @@ import {
   updatePostViewCount,
 } from './service';
 import { IUser } from '../users/interfaces';
-import { deleteMediaFromCloudinary, uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
+import { uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -265,7 +265,6 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
 
 const increasePostCount = async (req: Request, res: Response, next: NextFunction) => {
   const { postId } = req.body;
-
   try {
     await updatePostViewCount(postId, 1);
     return res.status(200).json({ success: 'View count updates successfully' });

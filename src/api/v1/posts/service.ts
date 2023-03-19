@@ -1,10 +1,8 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 import dayJs from 'dayjs';
-import path from 'path';
 import { Between, In, IsNull, LessThan, Like } from 'typeorm';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
-import { deleteFile } from '../../../utils/deleteFile';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
 import { updateLocationCountValue } from '../locations/service';

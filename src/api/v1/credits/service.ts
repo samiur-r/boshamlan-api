@@ -68,8 +68,8 @@ const updateAgentCredit = async (ids: number[], value: number) => {
 };
 
 const findStickyCredits = async (userId: number) => {
-  const stickyCredits = await Credit.findOne({ where: { user: { id: userId } } });
-  return stickyCredits;
+  const credits = await Credit.findOne({ where: { user: { id: userId } } });
+  return credits;
 };
 
 export { initCredits, updateCredit, updateAgentCredit, findCreditByUserId, typeOfCreditToDeduct, findStickyCredits };

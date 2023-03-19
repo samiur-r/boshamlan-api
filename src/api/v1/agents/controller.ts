@@ -53,8 +53,10 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
     if (!user || !user.is_agent) throw new ErrorHandler(403, 'You are not an agent');
 
     await agentSchema.validate(agentInfo);
-    const url = await uploadMediaToCloudinary(agentInfo.logo, 'agents');
-    agentInfo.logo_url = url;
+    if (agentInfo.logo) {
+      const url = await uploadMediaToCloudinary(agentInfo.logo, 'agents');
+      agentInfo.logo_url = url;
+    }
     await updateAgent(agentInfo, user.id);
     return res.status(200).json({ success: 'Your info is updated successfully' });
   } catch (error) {
