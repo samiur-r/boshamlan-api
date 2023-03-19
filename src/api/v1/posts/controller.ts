@@ -7,6 +7,7 @@ import logger from '../../../utils/logger';
 import { findUserById } from '../users/service';
 import { findCreditByUserId, typeOfCreditToDeduct, updateCredit } from '../credits/service';
 import { postSchema } from './validation';
+import { IPost } from './interfaces';
 import {
   findArchivedPostById,
   findArchivedPostByUserId,
@@ -239,8 +240,8 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
   const userId = res.locals.user.payload.id;
 
   try {
-    if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
-    let post;
+    if (!postId) throw new ErrorHandler(404, 'Post not found');
+    let post: IPost | null;
 
     if (isArchive) post = await findArchivedPostById(parseInt(postId, 10));
     else post = await findPostById(parseInt(postId, 10));
@@ -249,8 +250,11 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
     const user = await findUserById(userId);
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
 
-    if (isArchive) await removeArchivedPost(post.id);
-    else await removePost(post.id);
+    if (isArchive) await removeArchivedPost(post.id, post);
+    else await removePost(post.id, post);
+
+    post.media = [];
+
     await saveDeletedPost(post, user);
     return res.status(200).json({ success: 'Post deleted successfully' });
   } catch (error) {

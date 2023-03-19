@@ -150,29 +150,36 @@ const saveTempPost = async (
   await TempPost.save(newPost);
 };
 
-const removePost = async (id: number) => {
-  await Post.delete(id);
-};
+const removePostMedia = async (id?: number, post?: IPost) => {
+  let result;
+  if (!post) {
+    const postObj = await Post.find({ where: { id }, select: { media: true }, relations: [] });
+    // eslint-disable-next-line prefer-destructuring
+    result = postObj && postObj.length ? postObj[0].media : undefined;
+  } else result = post?.media;
 
-const removeArchivedPost = async (id: number) => {
-  await ArchivePost.delete(id);
-};
-
-const removePostMedia = async (id: number) => {
-  const result = await Post.find({ where: { id }, select: { media: true, city_id: true }, relations: [] });
-
-  if (result.length && result[0].media && result[0].media.length) {
-    for (const multimedia of result[0].media) {
+  if (result && result.length) {
+    for (const multimedia of result) {
       await deleteMediaFromCloudinary(multimedia, 'posts');
     }
   }
+};
+
+const removePost = async (id: number, post?: IPost) => {
+  await Post.delete(id);
+  await removePostMedia(id, post);
+};
+
+const removeArchivedPost = async (id: number, post?: IPost) => {
+  await ArchivePost.delete(id);
+  await removePostMedia(id, post);
 };
 
 const moveExpiredPosts = async () => {
   const expiredPosts = await Post.find({ where: { expiry_date: LessThan(new Date()) } });
 
   expiredPosts.forEach(async (post) => {
-    await removePost(post.id);
+    await removePost(post.id, post);
     await saveArchivedPost(post, post.user);
     await updateLocationCountValue(post.city_id, 'decrement');
   });
