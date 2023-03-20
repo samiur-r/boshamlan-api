@@ -8,12 +8,12 @@ const findUserById = async (id: number) => {
   return user;
 };
 
-const findUserByPhone = async (phone: number) => {
+const findUserByPhone = async (phone: string) => {
   const user = await User.findOneBy({ phone });
   return user;
 };
 
-const saveUser = async (phone: number, hashedPassword: string, status: string) => {
+const saveUser = async (phone: string, hashedPassword: string, status: string) => {
   const newUser = User.create({
     phone,
     password: hashedPassword,

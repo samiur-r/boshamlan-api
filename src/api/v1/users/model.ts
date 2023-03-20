@@ -18,10 +18,8 @@ export class User extends BaseEntity implements IUser {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({
-    unique: true,
-  })
-  phone: number;
+  @Column({ type: 'bigint', unique: true, nullable: true })
+  phone: string;
 
   @Column()
   password: string;

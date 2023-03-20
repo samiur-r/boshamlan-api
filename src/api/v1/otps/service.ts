@@ -37,7 +37,7 @@ const updateOtpStatus = async (id: number, status: boolean) => {
   return otp;
 };
 
-const sendOtpVerificationSms = async (phone: number, type: string, user: IUser) => {
+const sendOtpVerificationSms = async (phone: string, type: string, user: IUser) => {
   const { otp, token, expirationTime } = await generateOtp();
   await sendSms(phone, otp);
 
