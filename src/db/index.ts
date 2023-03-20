@@ -25,9 +25,9 @@ const AppDataSource = new DataSource({
   synchronize: true,
   logging: false,
   migrationsRun: false,
-  // ssl: {
-  //   rejectUnauthorized: false,
-  // },
+  ssl: {
+    rejectUnauthorized: false,
+  },
   entities: [
     User,
     Credit,

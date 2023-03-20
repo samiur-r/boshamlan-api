@@ -7,6 +7,7 @@ import logger from './logger';
 
 async function scheduledTask() {
   try {
+    logger.info('Running cron job');
     const ids = await getExpiredAgentUserIds();
     await updateBulkIsUserAnAgent(ids, false);
     await updateAgentCredit(ids, 0);
@@ -16,7 +17,7 @@ async function scheduledTask() {
   }
 }
 
-const cronJob = cron.schedule('1 0 0 * * *', scheduledTask); // TODO: add { timezone: 'UTC' }
+const cronJob = cron.schedule('* * * * *', scheduledTask); // TODO: add { timezone: 'UTC' }
 
 cronJob.on('error', (err) => {
   logger.info('Cron job error:', err.message);
