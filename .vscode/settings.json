@@ -13,6 +13,7 @@
         "otps",
         "repost",
         "reposted",
+        "timestamptz",
         "topup",
         "trackid",
         "trandata",

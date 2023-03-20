@@ -17,7 +17,7 @@ async function scheduledTask() {
   }
 }
 
-const cronJob = cron.schedule('* * * * *', scheduledTask); // TODO: add { timezone: 'UTC' }
+const cronJob = cron.schedule('0 * * * *', scheduledTask); // TODO: add { timezone: 'UTC' }
 
 cronJob.on('error', (err) => {
   logger.info('Cron job error:', err.message);
