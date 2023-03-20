@@ -1,6 +1,5 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
-import dayJs from 'dayjs';
 import { Between, In, IsNull, LessThan, Like } from 'typeorm';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
@@ -32,6 +31,16 @@ const savePost = async (
   user: IUser,
   typeOfCredit: string,
 ) => {
+  const today = new Date();
+  const oneMonthFromToday = new Date(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate(),
+    today.getHours(),
+    today.getMinutes(),
+    today.getSeconds(),
+  );
+
   const newPost = Post.create({
     title: postInfo.title,
     city_id: postInfo.cityId,
@@ -44,7 +53,7 @@ const savePost = async (
     category_title: postInfo.categoryTitle,
     price: postInfo.price,
     description: postInfo.description,
-    expiry_date: dayJs().month(2),
+    expiry_date: oneMonthFromToday,
     media: postInfo.media,
     is_sticky: typeOfCredit === 'sticky',
     credit_type: typeOfCredit,
@@ -94,7 +103,7 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     category_title: postInfo.category_title,
     price: postInfo.price,
     description: postInfo.description,
-    expiry_date: dayJs().month(2),
+    expiry_date: postInfo.expiry_date,
     media: postInfo.media,
     is_sticky: false,
     credit_type: postInfo.credit_type,
@@ -125,6 +134,16 @@ const saveTempPost = async (
   user: IUser,
   typeOfCredit: string,
 ) => {
+  const today = new Date();
+  const oneMonthFromToday = new Date(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate(),
+    today.getHours(),
+    today.getMinutes(),
+    today.getSeconds(),
+  );
+
   const newPost = TempPost.create({
     track_id: postInfo.trackId,
     title: postInfo.title,
@@ -138,7 +157,7 @@ const saveTempPost = async (
     category_title: postInfo.categoryTitle,
     price: postInfo.price,
     description: postInfo.description,
-    expiry_date: dayJs().month(2),
+    expiry_date: oneMonthFromToday,
     media: postInfo.media,
     is_sticky: typeOfCredit === 'sticky',
     credit_type: typeOfCredit,

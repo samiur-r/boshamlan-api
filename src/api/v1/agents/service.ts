@@ -1,5 +1,4 @@
 /* eslint-disable no-param-reassign */
-import dayJs from 'dayjs';
 import { LessThan, MoreThanOrEqual } from 'typeorm';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
@@ -85,18 +84,27 @@ const updateAgent = async (agentInfo: AgentInfoType, userId: number) => {
 
 const initOrUpdateAgent = async (user: IUser) => {
   const agent = await findAgentByUserId(user.id);
+  const today = new Date();
+  const twoMonthsFromToday = new Date(
+    today.getFullYear(),
+    today.getMonth() + 2,
+    today.getDate(),
+    today.getHours(),
+    today.getMinutes(),
+    today.getSeconds(),
+  );
 
   let agentData;
 
   if (agent) {
     agentData = Agent.create({
       ...agent,
-      expiry_date: dayJs().month(3),
+      expiry_date: twoMonthsFromToday,
     });
   } else {
     agentData = Agent.create({
       name: 'agent',
-      expiry_date: dayJs().month(3),
+      expiry_date: twoMonthsFromToday,
       user,
     });
   }
