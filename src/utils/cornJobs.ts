@@ -29,7 +29,7 @@ async function scheduledTaskPerFiveMins() {
     users.forEach((user) => {
       slackMsg = `${slackMsg} \n\n ${user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''}`;
     });
-    await alertOnSlack('imp', slackMsg);
+    if (users && users.length) await alertOnSlack('imp', slackMsg);
   } catch (error) {
     logger.error(error.message);
   }
