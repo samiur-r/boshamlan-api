@@ -26,6 +26,8 @@ import {
 } from './service';
 import { IUser } from '../users/interfaces';
 import { uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
+import { alertOnSlack } from '../../../utils/slackUtils';
+import { sendSms } from '../../../utils/smsUtils';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -113,6 +115,20 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
 
       await savePost(postInfo, user, typeOfCredit);
       await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
+      if (typeOfCredit === 'free' && credit.free === 1) {
+        const slackMsg = `User consumed their free credits\n\n ${
+          user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+        }`;
+        await alertOnSlack('imp', slackMsg);
+        await sendSms(user.phone, 'You have consumed all of your free credits');
+      }
+      if (typeOfCredit === 'agent' && credit.agent === 1) {
+        const slackMsg = `Agent credit is now 0\n\n ${
+          user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+        }`;
+        await alertOnSlack('imp', slackMsg);
+        await sendSms(user.phone, 'Your agent credit is now 0');
+      }
     }
 
     return res.status(200).json({ success: 'Post created successfully' });
@@ -121,6 +137,10 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
     if (error.name === 'ValidationError') {
       error.message = 'Invalid payload passed';
     }
+    const slackMsg = `Failed to create post\n\n ${
+      postInfo?.phone ? `User: <https://wa.me/965${postInfo?.phone}|${postInfo?.phone}>` : ''
+    }`;
+    await alertOnSlack('non-imp', slackMsg);
     return next(error);
   }
 };

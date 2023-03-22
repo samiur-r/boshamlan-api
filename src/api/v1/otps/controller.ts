@@ -6,11 +6,21 @@ import { verifyToken } from '../../../utils/passwordUtils';
 import { findUserById, updateUserStatus } from '../users/service';
 import logger from '../../../utils/logger';
 import { initCredits } from '../credits/service';
+import { alertOnSlack } from '../../../utils/slackUtils';
+import { sendSms } from '../../../utils/smsUtils';
 
 const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   const { userId, otpCode, nextOperation } = req.body;
 
   try {
+    if (nextOperation) {
+      const user = await findUserById(userId);
+      const slackMsg = `Entered reset password OTP\n\n ${
+        user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+      }`;
+      await alertOnSlack('imp', slackMsg);
+    }
+
     const otpObj = await findOtpByUserId(userId);
     if (!otpObj) throw new ErrorHandler(500, 'Otp not found. Please try again with new otp');
 
@@ -27,7 +37,10 @@ const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
     if (!nextOperation) {
       await updateUserStatus(userId, 'verified');
       const user = await findUserById(userId);
-      if (user) await initCredits(user);
+      if (user) {
+        await initCredits(user);
+        await sendSms(user.phone, 'Congratulations! you have been registered successfully');
+      }
       return res.status(200).json({ success: 'Phone verified successfully' });
     }
     return res.status(200).json({ success: 'Otp verified successfully' });

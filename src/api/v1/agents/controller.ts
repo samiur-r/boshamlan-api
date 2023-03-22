@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
+import { alertOnSlack } from '../../../utils/slackUtils';
 import { findPosts } from '../posts/service';
 import { findUserById } from '../users/service';
 import { findAgentById, findAgentByUserId, findManyAgents, updateAgent } from './service';
@@ -58,6 +59,10 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
       agentInfo.logo_url = url;
     }
     await updateAgent(agentInfo, user.id);
+    const slackMsg = `Agent details edited\n\n ${
+      user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+    }`;
+    await alertOnSlack('imp', slackMsg);
     return res.status(200).json({ success: 'Your info is updated successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);

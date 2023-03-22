@@ -56,6 +56,11 @@ const updateBulkIsUserAnAgent = async (ids: number[], status: boolean) => {
   await User.update({ id: In(ids) }, { is_agent: status });
 };
 
+const findUnVerifiedUsers = async () => {
+  const users = await User.find({ where: { status: 'not_verified' } });
+  return users;
+};
+
 export {
   findUserById,
   findUserByPhone,
@@ -64,4 +69,5 @@ export {
   updateUserPassword,
   updateIsUserAnAgent,
   updateBulkIsUserAnAgent,
+  findUnVerifiedUsers,
 };

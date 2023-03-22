@@ -13,6 +13,8 @@ const config = {
   cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME ?? '',
   cloudinaryApiKey: process.env.CLOUDINARY_API_KEY ?? '',
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET ?? '',
+  slackWebHookImpUrl: process.env.SLACK_WEBHOOK_IMP ?? '',
+  slackWebHookNonImpUrl: process.env.SLACK_WEBHOOK_NON_IMP ?? '',
   cookieOptions: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

@@ -1,9 +1,13 @@
 /* eslint-disable no-param-reassign */
-import { LessThan, MoreThanOrEqual } from 'typeorm';
+import { In, LessThan, MoreThanOrEqual } from 'typeorm';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
+import logger from '../../../utils/logger';
+import { alertOnSlack } from '../../../utils/slackUtils';
+import { sendSms } from '../../../utils/smsUtils';
 
 import { IUser } from '../users/interfaces';
+import { User } from '../users/model';
 import { AgentInfoType, IAgent } from './interfaces';
 import { Agent } from './model';
 
@@ -116,8 +120,40 @@ const getExpiredAgentUserIds = async () => {
   const agents = await Agent.find({
     where: { expiry_date: LessThan(new Date()) },
   });
-  const userIds = agents.map((agent) => agent.user.id);
+
+  const userIds = agents.filter((agent) => agent.user.is_agent === true).map((agent) => agent.user.id);
+
   return userIds;
 };
 
-export { initOrUpdateAgent, findAgentByUserId, updateAgent, getExpiredAgentUserIds, findManyAgents, findAgentById };
+const fireAgentExpirationAlert = async (userIds: number[]) => {
+  const users = await User.find({
+    where: { id: In(userIds) },
+  });
+
+  // eslint-disable-next-line no-restricted-syntax
+  for (const user of users) {
+    const slackMsg = `Subscription ended.\n\n${
+      user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+    }`;
+
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await alertOnSlack('imp', slackMsg);
+      // eslint-disable-next-line no-await-in-loop
+      await sendSms(user.phone, 'Your subscription ended');
+    } catch (error) {
+      logger.error(`${error.name}: ${error.message}`);
+    }
+  }
+};
+
+export {
+  initOrUpdateAgent,
+  findAgentByUserId,
+  updateAgent,
+  getExpiredAgentUserIds,
+  findManyAgents,
+  findAgentById,
+  fireAgentExpirationAlert,
+};

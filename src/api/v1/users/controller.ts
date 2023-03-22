@@ -9,6 +9,8 @@ import { IUser } from './interfaces';
 import logger from '../../../utils/logger';
 import { phoneSchema, passwordSchema } from './validation';
 import { signJwt } from '../../../utils/jwtUtils';
+import { alertOnSlack } from '../../../utils/slackUtils';
+import { sendSms } from '../../../utils/smsUtils';
 
 const login = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
@@ -45,6 +47,8 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     if (error.name === 'ValidationError') {
       error.message = 'Invalid payload passed';
     }
+    const slackMsg = `Failed login attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+    await alertOnSlack('non-imp', slackMsg);
     return next(error);
   }
 };
@@ -73,6 +77,8 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     logger.error(`${error.name}: ${error.message}`);
     if (error.name === 'ValidationError') {
       error.message = 'Invalid payload passed';
+      const slackMsg = `Invalid user payload\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+      await alertOnSlack('non-imp', slackMsg);
       return next(error);
     }
     if (error.message === 'All SMS messages failed to send') {
@@ -115,6 +121,11 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
     if (!user) throw new ErrorHandler(404, 'No user with this phone is found. Please register');
 
     await updateUserPassword(user, password);
+    const slackMsg = `Password reset successfully\n\n ${
+      user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+    }`;
+    await alertOnSlack('imp', slackMsg);
+    await sendSms(user.phone, 'Password reset successfully');
     return res.status(200).json({ success: 'Password updated successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);

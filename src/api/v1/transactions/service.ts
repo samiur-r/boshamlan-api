@@ -1,3 +1,5 @@
+import { alertOnSlack } from '../../../utils/slackUtils';
+import { sendSms } from '../../../utils/smsUtils';
 import { IPackage } from '../packages/interfaces';
 import { IUser } from '../users/interfaces';
 import { Transaction } from './model';
@@ -36,6 +38,13 @@ const saveTransaction = async (payload: {
   });
 
   const transaction = await Transaction.save(newTransaction);
+
+  if (status === 'created') {
+    const slackMsg = `Payment created\n\n ${
+      user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+    }`;
+    await alertOnSlack('imp', slackMsg);
+  }
   return transaction;
 };
 
@@ -54,6 +63,44 @@ const editTransaction = async (trackId: number, reference_id: string, tran_id: s
     tran_id,
     status,
   });
+
+  let slackMsg = '';
+  let smsMsg = '';
+
+  if (transactionObj) {
+    let packageTitle = transactionObj.package_title || '';
+    packageTitle = packageTitle.slice(0, -1);
+
+    switch (packageTitle) {
+      case 'agent':
+        slackMsg = `Payment ${status === 'completed' ? 'successful. Subscription started.' : 'failed.'}\n\n ${
+          transactionObj?.user?.phone
+            ? `User: <https://wa.me/965${transactionObj?.user?.phone}|${transactionObj?.user?.phone}>`
+            : ''
+        }`;
+        smsMsg = `Payment ${status === 'completed' ? 'successful. Subscription started.' : 'failed.'}`;
+        break;
+      case 'stickyDirec':
+        slackMsg = `Payment ${status === 'completed' ? 'successful. Post sticked.' : 'failed.'}\n\n ${
+          transactionObj?.user?.phone
+            ? `User: <https://wa.me/965${transactionObj?.user?.phone}|${transactionObj?.user?.phone}>`
+            : ''
+        }`;
+        smsMsg = `Payment ${status === 'completed' ? 'successful. Post sticked.' : 'failed.'}`;
+        break;
+      default:
+        slackMsg = `Payment ${status === 'completed' ? 'successful.' : 'failed.'}\n\n ${
+          transactionObj?.user?.phone
+            ? `User: <https://wa.me/965${transactionObj?.user?.phone}|${transactionObj?.user?.phone}>`
+            : ''
+        }`;
+        smsMsg = `Payment ${status === 'completed' ? 'successful.' : 'failed.'}`;
+        break;
+    }
+  }
+
+  await alertOnSlack('imp', slackMsg);
+  await sendSms(transactionObj.user.phone, smsMsg);
   return { status: 200, data: transactionObj };
 };
 
@@ -66,6 +113,14 @@ const editTransactionStatus = async (trackId: string | null, status: string) => 
     ...transaction,
     status,
   });
+
+  const slackMsg = `Payment canceled.\n\n${
+    transaction?.user?.phone ? `User: <https://wa.me/965${transaction?.user?.phone}|${transaction?.user?.phone}>` : ''
+  }`;
+  const smsMsg = `Payment canceled`;
+
+  await alertOnSlack('imp', slackMsg);
+  await sendSms(transaction.user.phone, smsMsg);
   return { status: 200 };
 };
 

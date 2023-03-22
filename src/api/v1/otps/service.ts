@@ -1,4 +1,5 @@
-import { generateOtp, sendSms } from '../../../utils/otpUtils';
+import { generateOtp, sendSmsOtp } from '../../../utils/otpUtils';
+import { alertOnSlack } from '../../../utils/slackUtils';
 import { IUser } from '../users/interfaces';
 import { Otp } from './model';
 
@@ -39,7 +40,12 @@ const updateOtpStatus = async (id: number, status: boolean) => {
 
 const sendOtpVerificationSms = async (phone: string, type: string, user: IUser) => {
   const { otp, token, expirationTime } = await generateOtp();
-  await sendSms(phone, otp);
+  await sendSmsOtp(phone, otp);
+
+  if (type === 'password-reset') {
+    const slackMsg = `Password reset attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+    await alertOnSlack('imp', slackMsg);
+  }
 
   const otpObj = await findOtpByUserId(user.id);
   if (otpObj) await removeOtp(otpObj.id);
