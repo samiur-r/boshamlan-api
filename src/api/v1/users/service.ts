@@ -1,4 +1,4 @@
-import { In } from 'typeorm';
+import { In, LessThan } from 'typeorm';
 import { hashPassword } from '../../../utils/passwordUtils';
 import { IUser } from './interfaces';
 import { User } from './model';
@@ -57,7 +57,8 @@ const updateBulkIsUserAnAgent = async (ids: number[], status: boolean) => {
 };
 
 const findUnVerifiedUsers = async () => {
-  const users = await User.find({ where: { status: 'not_verified' } });
+  const lessThanFiveMins = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
+  const users = await User.find({ where: { status: 'not_verified', created_at: LessThan(lessThanFiveMins) } });
   return users;
 };
 
