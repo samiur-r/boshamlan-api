@@ -14,6 +14,8 @@ import { Post } from '../api/v1/posts/models/Post';
 import { ArchivePost } from '../api/v1/posts/models/ArchivePost';
 import { DeletedPost } from '../api/v1/posts/models/DeletedPost';
 import { TempPost } from '../api/v1/posts/models/TempPost';
+import { PostLog } from '../api/v1/logs/models/PostLog';
+import { UserLog } from '../api/v1/logs/models/UserLog';
 
 const AppDataSource = new DataSource({
   type: 'postgres',
@@ -25,9 +27,9 @@ const AppDataSource = new DataSource({
   synchronize: true,
   logging: false,
   migrationsRun: false,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  // ssl: {
+  //   rejectUnauthorized: false,
+  // },
   entities: [
     User,
     Credit,
@@ -42,6 +44,8 @@ const AppDataSource = new DataSource({
     ArchivePost,
     DeletedPost,
     TempPost,
+    PostLog,
+    UserLog,
   ],
 });
 
