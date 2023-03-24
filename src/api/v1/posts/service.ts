@@ -164,7 +164,8 @@ const saveTempPost = async (
     user,
   });
 
-  await TempPost.save(newPost);
+  const newTempPost = await TempPost.save(newPost);
+  return newTempPost;
 };
 
 const removePostMedia = async (id?: number, post?: IPost) => {

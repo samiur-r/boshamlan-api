@@ -11,6 +11,7 @@ import config from '../../../config';
 import aesDecrypt from '../../../utils/aesDecrypt';
 import { signJwt } from '../../../utils/jwtUtils';
 import { moveTempPost, removeTempPostByTrackId } from '../posts/service';
+import { saveUserLog } from '../logs/service';
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
   const { payload } = req.body;
@@ -21,47 +22,34 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
     const packageObj = await findPackageById(payload.packageId);
     payload.packageObj = packageObj;
     await saveTransaction(payload);
-    return res.status(200).json({ success: 'تم إنشاء المعاملة بنجاح' }); // Transaction  created successfully
+    logger.info(`Transaction created by user ${payload.user?.phone}`);
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: payload.trackId,
+        user: payload.user?.phone ?? undefined,
+        activity: 'Transaction created successfully',
+      },
+    ]);
+
+    return res.status(200).json({ success: 'Transaction  created successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     if (error.name === 'ValidationError') {
-      error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
-      return next(error);
+      error.message = 'Invalid payload passed';
     }
+    logger.error(`Transaction creation failed by user ${payload.user?.phone}`);
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: payload.trackId,
+        user: payload.user?.phone ?? undefined,
+        activity: 'Transaction creation failed',
+      },
+    ]);
     return next(error);
   }
 };
-
-// const update = async (req: Request, res: Response, next: NextFunction) => {
-//   const { trackId, referenceId, tranId, status, numOfCredits } = req.body;
-
-//   try {
-//     let nextOperation = false;
-//     let user;
-//     await transactionUpdateSchema.validate({ trackId, referenceId, tranId, status });
-//     const response = await editTransaction(trackId, referenceId.toString(), tranId.toString(), status);
-//     if (response.status === 404) throw new ErrorHandler(404, 'معرف المسار غير موجود'); // Track id not found
-//     if (status === 'completed' && response.data) {
-//       let { package_title: packageTitle } = response.data;
-//       packageTitle = packageTitle.slice(0, -1);
-//       await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits, 10));
-//       if (packageTitle === 'agent') {
-//         await updateIsUserAnAgent(response.data.user.id, true);
-//         await initOrUpdateAgent(response.data.user);
-//         nextOperation = true;
-//         user = response.data.user;
-//       }
-//     }
-//     return res.status(200).json({ success: 'Your payment was successfully processed', nextOperation, user });
-//   } catch (error) {
-//     logger.error(`${error.name}: ${error.message}`);
-//     if (error.name === 'ValidationError') {
-//       error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
-//       return next(error);
-//     }
-//     return next(error);
-//   }
-// };
 
 const updateStatus = async (req: Request, res: Response, next: NextFunction) => {
   const { trackId, status } = req.body;
@@ -69,12 +57,12 @@ const updateStatus = async (req: Request, res: Response, next: NextFunction) => 
   try {
     await transactionUpdateStatusSchema.validate({ trackId, status });
     const response = await editTransactionStatus(trackId, status);
-    if (response.status === 404) throw new ErrorHandler(404, 'معرف المسار غير موجود'); // Track id not found
-    return res.status(200).json({ success: 'تم تحديث المعاملة بنجاح' }); // Transaction  updated successfully
+    if (response.status === 404) throw new ErrorHandler(404, 'Track id not found');
+    return res.status(200).json({ success: 'Transaction  updated successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     if (error.name === 'ValidationError') {
-      error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
+      error.message = 'Invalid payload passed';
       return next(error);
     }
     return next(error);
@@ -113,6 +101,16 @@ const handleKpayResponse = async (req: Request, res: Response) => {
           status,
         );
 
+        logger.info(`Transaction ${response.data?.id} status updated to ${status}`);
+        await saveUserLog([
+          {
+            post_id: undefined,
+            transaction: response.data?.track_id,
+            user: response?.data?.user?.phone ?? undefined,
+            activity: `Transaction ${response.data?.track_id} status updated to ${status}`,
+          },
+        ]);
+
         if (status === 'completed' && response.data) {
           let { package_title: packageTitle } = response.data;
           packageTitle = packageTitle.slice(0, -1);
@@ -125,6 +123,16 @@ const handleKpayResponse = async (req: Request, res: Response) => {
             if (packageTitle === 'agent') {
               const user = await updateIsUserAnAgent(response.data.user.id, true);
               await initOrUpdateAgent(response.data.user);
+
+              logger.info(`Agent subscription initiated for user ${user.phone}`);
+              await saveUserLog([
+                {
+                  post_id: undefined,
+                  transaction: response.data?.track_id,
+                  user: user?.phone ?? undefined,
+                  activity: `Agent subscription initiated for user ${user.phone}`,
+                },
+              ]);
 
               res.clearCookie('token');
 
@@ -143,7 +151,16 @@ const handleKpayResponse = async (req: Request, res: Response) => {
           }
         }
       } catch (error) {
-        logger.error(error);
+        logger.error(`${error.name}: ${error.message}`);
+        logger.error(`Transaction failed for track id: ${trackId}`);
+        await saveUserLog([
+          {
+            post_id: undefined,
+            transaction: trackId ?? undefined,
+            user: undefined,
+            activity: `Transaction failed for tran id: ${trackId}`,
+          },
+        ]);
       }
     } else {
       status = 'canceled';
@@ -154,6 +171,15 @@ const handleKpayResponse = async (req: Request, res: Response) => {
       } catch (error) {
         logger.error(`${error.name}: ${error.message}`);
       }
+      logger.error(`Transaction failed for track id: ${trackId}`);
+      await saveUserLog([
+        {
+          post_id: undefined,
+          transaction: trackId ?? undefined,
+          user: undefined,
+          activity: `Transaction failed for track id: ${trackId}`,
+        },
+      ]);
     }
   }
   const message = `success=${!!isOperationSucceeded}`;
@@ -170,6 +196,15 @@ const handleKpayError = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
   }
+  logger.error(`Transaction failed for track id: ${trackId}`);
+  await saveUserLog([
+    {
+      post_id: undefined,
+      transaction: trackId ? (trackId as string) : undefined,
+      user: undefined,
+      activity: `Transaction failed for track id: ${trackId}`,
+    },
+  ]);
   return res.redirect(301, `${redirectUrl}success=false`);
 };
 

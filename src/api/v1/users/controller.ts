@@ -11,6 +11,7 @@ import { phoneSchema, passwordSchema } from './validation';
 import { signJwt } from '../../../utils/jwtUtils';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
+import { saveUserLog } from '../logs/service';
 
 const login = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
@@ -38,12 +39,21 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 
     const token = await signJwt(userPayload);
 
+    logger.info(`User: ${user?.phone} logged in successfully`);
+    await saveUserLog([
+      { post_id: undefined, transaction: undefined, user: user.phone, activity: 'Logged in successfully' },
+    ]);
+
     // @ts-ignore
     res.cookie('token', token, config.cookieOptions);
     return res.status(200).json({ success: userPayload }); // Logged in successfully
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
+    logger.error(`User: ${phone} logged in attempt failed`);
+    await saveUserLog([
+      { post_id: undefined, transaction: undefined, user: phone, activity: 'Logged in attempt failed' },
+    ]);
     if (error.name === 'ValidationError') {
       error.message = 'Invalid payload passed';
     }
@@ -71,6 +81,11 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     const userObj: IUser = await saveUser(phone, hashedPassword, 'not_verified');
     await sendOtpVerificationSms(phone, 'registration', userObj);
 
+    logger.info(`Registration attempt by user ${user?.phone}. Otp sent `);
+    await saveUserLog([
+      { post_id: undefined, transaction: undefined, user: phone, activity: 'Registration attempt. Otp sent' },
+    ]);
+
     return res.status(200).json({ nextOperation: true, userId: userObj?.id });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -84,6 +99,12 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     if (error.message === 'All SMS messages failed to send') {
       error.message = 'Failed to send otp';
     }
+
+    logger.error(`Registration attempt failed by user ${phone}`);
+    await saveUserLog([
+      { post_id: undefined, transaction: undefined, user: phone, activity: 'Registration attempt failed' },
+    ]);
+
     return next(error);
   }
 };
@@ -121,6 +142,12 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
     if (!user) throw new ErrorHandler(404, 'No user with this phone is found. Please register');
 
     await updateUserPassword(user, password);
+
+    logger.info(`Password reset attempt by user ${phone} successful`);
+    await saveUserLog([
+      { post_id: undefined, transaction: undefined, user: phone, activity: 'Password reset attempt successful' },
+    ]);
+
     const slackMsg = `Password reset successfully\n\n ${
       user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
     }`;
@@ -129,6 +156,10 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
     return res.status(200).json({ success: 'Password updated successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
+    logger.error(`Password reset attempt by user ${phone} failed`);
+    await saveUserLog([
+      { post_id: undefined, transaction: undefined, user: phone, activity: 'Password reset attempt failed' },
+    ]);
     return next(error);
   }
 };

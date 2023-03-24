@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
 import logger from '../../../utils/logger';
+import { saveUserLog } from '../logs/service';
 import { searchPosts } from '../posts/service';
 
 const search = async (req: Request, res: Response, next: NextFunction) => {
@@ -17,6 +18,18 @@ const search = async (req: Request, res: Response, next: NextFunction) => {
     else city = location;
   }
 
+  logger.info(
+    `User searched for city: ${city}, property type: ${propertyType}, category: ${category}, price range: ${priceRange} and keyword: ${keyword}`,
+  );
+  await saveUserLog([
+    {
+      post_id: undefined,
+      transaction: undefined,
+      user: undefined,
+      activity: `User searched for city: ${city}, property type: ${propertyType}, category: ${category}, price range: ${priceRange} and keyword: ${keyword}`,
+    },
+  ]);
+
   try {
     const { posts, count } = await searchPosts(
       limit,
@@ -28,9 +41,11 @@ const search = async (req: Request, res: Response, next: NextFunction) => {
       priceRange,
       keyword,
     );
+    logger.info(`Posts sent as the searched values successfully`);
     return res.status(200).json({ posts, count });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
+    logger.error(`Failed to send posts as searched for`);
     return next(error);
   }
 };

@@ -8,6 +8,7 @@ import logger from '../../../utils/logger';
 import { initCredits } from '../credits/service';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
+import { saveUserLog } from '../logs/service';
 
 const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   const { userId, otpCode, nextOperation } = req.body;
@@ -41,11 +42,40 @@ const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
         await initCredits(user);
         await sendSms(user.phone, 'Congratulations! you have been registered successfully');
       }
+
+      logger.info(`User ${user?.phone} has been verified`);
+      await saveUserLog([
+        {
+          post_id: undefined,
+          transaction: undefined,
+          user: user?.phone,
+          activity: `User ${user?.phone} has been verified`,
+        },
+      ]);
+
       return res.status(200).json({ success: 'Phone verified successfully' });
     }
+    logger.info(`User ${otpObj.user?.phone} verified OTP`);
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: undefined,
+        user: otpObj.user?.phone,
+        activity: `User ${otpObj.user?.phone} verified OTP`,
+      },
+    ]);
     return res.status(200).json({ success: 'Otp verified successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
+    logger.error(`Verification of OTP by User ${userId} failed`);
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: undefined,
+        user: userId,
+        activity: `Verification of OTP by User ${userId} failed`,
+      },
+    ]);
     return next(error);
   }
 };
@@ -59,12 +89,32 @@ const resendOtp = async (req: Request, res: Response, next: NextFunction) => {
     if (!user) throw new ErrorHandler(500, 'Unable to send otp. Please contact support');
 
     await sendOtpVerificationSms(user.phone, type, user);
+
+    logger.info(`Otp sent to user: ${user?.phone}`);
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: undefined,
+        user: user?.phone,
+        activity: `Otp sent to user: ${user?.phone}`,
+      },
+    ]);
+
     return res.status(200).json({ success: 'New otp sent to your phone' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     if (error.message === 'All SMS messages failed to send') {
       error.message = 'Failed to send otp';
     }
+    logger.error(`Otp failed to sent to user: ${userId}`);
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: undefined,
+        user: userId,
+        activity: `Otp failed to sent to user: ${userId}`,
+      },
+    ]);
     return next(error);
   }
 };
