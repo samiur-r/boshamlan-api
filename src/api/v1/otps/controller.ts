@@ -8,7 +8,7 @@ import logger from '../../../utils/logger';
 import { initCredits } from '../credits/service';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
-import { saveUserLog } from '../logs/service';
+import { saveUserLog } from '../user_logs/service';
 
 const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   const { userId, otpCode, nextOperation } = req.body;

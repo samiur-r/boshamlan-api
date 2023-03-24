@@ -11,7 +11,7 @@ import config from '../../../config';
 import aesDecrypt from '../../../utils/aesDecrypt';
 import { signJwt } from '../../../utils/jwtUtils';
 import { moveTempPost, removeTempPostByTrackId } from '../posts/service';
-import { saveUserLog } from '../logs/service';
+import { saveUserLog } from '../user_logs/service';
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
   const { payload } = req.body;

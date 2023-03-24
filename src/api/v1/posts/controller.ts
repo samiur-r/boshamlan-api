@@ -28,7 +28,7 @@ import { IUser } from '../users/interfaces';
 import { uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
-import { saveUserLog } from '../logs/service';
+import { saveUserLog } from '../user_logs/service';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   try {

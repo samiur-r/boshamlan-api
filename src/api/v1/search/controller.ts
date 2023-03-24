@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 
 import logger from '../../../utils/logger';
-import { saveUserLog } from '../logs/service';
+import { saveUserLog } from '../user_logs/service';
 import { searchPosts } from '../posts/service';
 
 const search = async (req: Request, res: Response, next: NextFunction) => {

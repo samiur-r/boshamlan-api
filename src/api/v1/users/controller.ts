@@ -11,7 +11,7 @@ import { phoneSchema, passwordSchema } from './validation';
 import { signJwt } from '../../../utils/jwtUtils';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
-import { saveUserLog } from '../logs/service';
+import { saveUserLog } from '../user_logs/service';
 
 const login = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
