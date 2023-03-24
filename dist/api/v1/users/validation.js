@@ -26,10 +26,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.passwordSchema = exports.phoneSchema = void 0;
 const yup = __importStar(require("yup"));
 exports.phoneSchema = yup
-    .number()
+    .string()
     .typeError('يجب أن يكون الهاتف رقمًا')
     .required('الهاتف هو حقل مطلوب')
-    .test('len', 'يجب أن يكون 8 أرقام', (val) => (val === null || val === void 0 ? void 0 : val.toString().length) === 10);
+    .test('len', 'يجب أن يكون 8 أرقام', (val) => (val === null || val === void 0 ? void 0 : val.toString().length) === 8);
 exports.passwordSchema = yup
     .string()
     .required('كلمة المرور هي حقل مطلوب')

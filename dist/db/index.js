@@ -15,6 +15,7 @@ const Post_1 = require("../api/v1/posts/models/Post");
 const ArchivePost_1 = require("../api/v1/posts/models/ArchivePost");
 const DeletedPost_1 = require("../api/v1/posts/models/DeletedPost");
 const TempPost_1 = require("../api/v1/posts/models/TempPost");
+const UserLog_1 = require("../api/v1/logs/models/UserLog");
 const AppDataSource = new typeorm_1.DataSource({
     type: 'postgres',
     host: process.env.PG_HOST || 'localhost',
@@ -42,6 +43,7 @@ const AppDataSource = new typeorm_1.DataSource({
         ArchivePost_1.ArchivePost,
         DeletedPost_1.DeletedPost,
         TempPost_1.TempPost,
+        UserLog_1.UserLog,
     ],
 });
 exports.default = AppDataSource;

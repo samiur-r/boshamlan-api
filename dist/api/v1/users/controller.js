@@ -21,6 +21,9 @@ const service_2 = require("../otps/service");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const validation_1 = require("./validation");
 const jwtUtils_1 = require("../../../utils/jwtUtils");
+const slackUtils_1 = require("../../../utils/slackUtils");
+const smsUtils_1 = require("../../../utils/smsUtils");
+const service_3 = require("../logs/service");
 const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { phone, password } = req.body;
     try {
@@ -28,12 +31,12 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
         yield validation_1.passwordSchema.validate(password, { abortEarly: false });
         const user = yield (0, service_1.findUserByPhone)(phone);
         if (!user)
-            throw new ErrorHandler_1.default(403, 'رقم الهاتف أو كلمة المرور غير صحيحين'); // Incorrect phone or password'
+            throw new ErrorHandler_1.default(403, 'Incorrect phone or password');
         if (user && user.status === 'not_verified')
             return res.status(200).json({ nextOperation: 'verify phone', userId: user.id });
         const isValidPassword = yield (0, passwordUtils_1.verifyToken)(password, user.password);
         if (!isValidPassword)
-            throw new ErrorHandler_1.default(403, 'رقم الهاتف أو كلمة المرور غير صحيحين'); // Incorrect phone or password'
+            throw new ErrorHandler_1.default(403, 'Incorrect phone or password');
         const userPayload = {
             id: user.id,
             phone: user.phone,
@@ -42,6 +45,10 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
             status: user.status,
         };
         const token = yield (0, jwtUtils_1.signJwt)(userPayload);
+        logger_1.default.info(`User: ${user === null || user === void 0 ? void 0 : user.phone} logged in successfully`);
+        yield (0, service_3.saveUserLog)([
+            { post_id: undefined, transaction: undefined, user: user.phone, activity: 'Logged in successfully' },
+        ]);
         // @ts-ignore
         res.cookie('token', token, config_1.default.cookieOptions);
         return res.status(200).json({ success: userPayload }); // Logged in successfully
@@ -49,9 +56,15 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
+        logger_1.default.error(`User: ${phone} logged in attempt failed`);
+        yield (0, service_3.saveUserLog)([
+            { post_id: undefined, transaction: undefined, user: phone, activity: 'Logged in attempt failed' },
+        ]);
         if (error.name === 'ValidationError') {
-            error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
+            error.message = 'Invalid payload passed';
         }
+        const slackMsg = `Failed login attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+        yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
         return next(error);
     }
 });
@@ -63,31 +76,41 @@ const register = (req, res, next) => __awaiter(void 0, void 0, void 0, function*
         yield validation_1.passwordSchema.validate(password, { abortEarly: false });
         const user = yield (0, service_1.findUserByPhone)(phone);
         if (user && user.status !== 'not_verified')
-            throw new ErrorHandler_1.default(409, 'المستخدم موجود اصلا'); // User already exists
+            throw new ErrorHandler_1.default(409, 'User already exists');
         if (user && user.status === 'not_verified')
             return res.status(200).json({ nextOperation: 'verify mobile', userId: user.id });
         const hashedPassword = yield (0, passwordUtils_1.hashPassword)(password);
         const userObj = yield (0, service_1.saveUser)(phone, hashedPassword, 'not_verified');
         yield (0, service_2.sendOtpVerificationSms)(phone, 'registration', userObj);
-        return res.status(200).json({ nextOperation: 'verify mobile', userId: userObj === null || userObj === void 0 ? void 0 : userObj.id });
+        logger_1.default.info(`Registration attempt by user ${user === null || user === void 0 ? void 0 : user.phone}. Otp sent `);
+        yield (0, service_3.saveUserLog)([
+            { post_id: undefined, transaction: undefined, user: phone, activity: 'Registration attempt. Otp sent' },
+        ]);
+        return res.status(200).json({ nextOperation: true, userId: userObj === null || userObj === void 0 ? void 0 : userObj.id });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
         if (error.name === 'ValidationError') {
-            error.message = 'مرت حمولة غير صالحة'; // Invalid payload passed
+            error.message = 'Invalid payload passed';
+            const slackMsg = `Invalid user payload\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+            yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
             return next(error);
         }
         if (error.message === 'All SMS messages failed to send') {
-            error.message = 'فشل إرسال otp'; // Failed to send otp
+            error.message = 'Failed to send otp';
         }
+        logger_1.default.error(`Registration attempt failed by user ${phone}`);
+        yield (0, service_3.saveUserLog)([
+            { post_id: undefined, transaction: undefined, user: phone, activity: 'Registration attempt failed' },
+        ]);
         return next(error);
     }
 });
 exports.register = register;
 const logout = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.clearCookie('token');
-    return res.status(200).json({ success: 'تم تسجيل الخروج بنجاح' }); // Logged out successfully
+    return res.status(200).json({ success: 'Logged out successfully' });
 });
 exports.logout = logout;
 const doesUserExists = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
@@ -96,7 +119,7 @@ const doesUserExists = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
         yield validation_1.phoneSchema.validate(phone, { abortEarly: false });
         const user = yield (0, service_1.findUserByPhone)(phone);
         if (!user)
-            throw new ErrorHandler_1.default(404, 'لم يتم العثور على مستخدم بهذا الهاتف. الرجاء التسجيل'); // No user with this phone is found. Please register
+            throw new ErrorHandler_1.default(404, 'No user with this phone is found. Please register');
         return res.status(200).json({ userId: user.id });
     }
     catch (error) {
@@ -112,13 +135,23 @@ const resetPassword = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         yield validation_1.passwordSchema.validate(password, { abortEarly: false });
         const user = yield (0, service_1.findUserByPhone)(phone);
         if (!user)
-            throw new ErrorHandler_1.default(404, 'لم يتم العثور على مستخدم بهذا الهاتف. الرجاء التسجيل'); // No user with this phone is found. Please register
-        const hashedPassword = yield (0, passwordUtils_1.hashPassword)(password);
-        yield (0, service_1.updateUserPassword)(user, hashedPassword);
-        return res.status(200).json({ success: 'تم تحديث كلمة السر بنجاح' }); // Password updated successfully
+            throw new ErrorHandler_1.default(404, 'No user with this phone is found. Please register');
+        yield (0, service_1.updateUserPassword)(user, password);
+        logger_1.default.info(`Password reset attempt by user ${phone} successful`);
+        yield (0, service_3.saveUserLog)([
+            { post_id: undefined, transaction: undefined, user: phone, activity: 'Password reset attempt successful' },
+        ]);
+        const slackMsg = `Password reset successfully\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+        yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
+        yield (0, smsUtils_1.sendSms)(user.phone, 'Password reset successfully');
+        return res.status(200).json({ success: 'Password updated successfully' });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
+        logger_1.default.error(`Password reset attempt by user ${phone} failed`);
+        yield (0, service_3.saveUserLog)([
+            { post_id: undefined, transaction: undefined, user: phone, activity: 'Password reset attempt failed' },
+        ]);
         return next(error);
     }
 });

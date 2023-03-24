@@ -4,11 +4,11 @@ exports.agentSchema = void 0;
 const yup_1 = require("yup");
 exports.agentSchema = (0, yup_1.object)({
     name: (0, yup_1.string)().required(),
-    description: (0, yup_1.string)(),
-    instagram: (0, yup_1.string)(),
-    twitter: (0, yup_1.string)(),
-    facebook: (0, yup_1.string)(),
-    email: (0, yup_1.string)().email(),
-    logo: (0, yup_1.mixed)(),
+    description: (0, yup_1.string)().nullable(),
+    instagram: (0, yup_1.string)().nullable(),
+    twitter: (0, yup_1.string)().nullable(),
+    facebook: (0, yup_1.string)().nullable(),
+    email: (0, yup_1.string)().email().nullable(),
+    logo: (0, yup_1.mixed)().nullable(),
 });
 //# sourceMappingURL=validation.js.map

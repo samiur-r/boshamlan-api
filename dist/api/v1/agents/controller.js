@@ -13,8 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.update = exports.fetchMany = exports.fetchById = exports.fetch = void 0;
+const cloudinaryUtils_1 = require("../../../utils/cloudinaryUtils");
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
+const slackUtils_1 = require("../../../utils/slackUtils");
 const service_1 = require("../posts/service");
 const service_2 = require("../users/service");
 const service_3 = require("./service");
@@ -61,15 +63,18 @@ exports.fetch = fetch;
 const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { agentInfo } = req.body;
     const userId = res.locals.user.payload.id;
-    const files = req.files;
-    if (files)
-        agentInfo.logo_url = files[0].filename;
     try {
         const user = yield (0, service_2.findUserById)(userId);
         if (!user || !user.is_agent)
             throw new ErrorHandler_1.default(403, 'You are not an agent');
         yield validation_1.agentSchema.validate(agentInfo);
+        if (agentInfo.logo) {
+            const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(agentInfo.logo, 'agents');
+            agentInfo.logo_url = url;
+        }
         yield (0, service_3.updateAgent)(agentInfo, user.id);
+        const slackMsg = `Agent details edited\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+        yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         return res.status(200).json({ success: 'Your info is updated successfully' });
     }
     catch (error) {

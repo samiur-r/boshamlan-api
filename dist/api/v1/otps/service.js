@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateOtpStatus = exports.findOtpByUserId = exports.removeOtp = exports.findOtpById = exports.sendOtpVerificationSms = void 0;
 const otpUtils_1 = require("../../../utils/otpUtils");
+const slackUtils_1 = require("../../../utils/slackUtils");
 const model_1 = require("./model");
 const findOtpById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const otp = yield model_1.Otp.findOneBy({ id });
@@ -43,7 +44,11 @@ const updateOtpStatus = (id, status) => __awaiter(void 0, void 0, void 0, functi
 exports.updateOtpStatus = updateOtpStatus;
 const sendOtpVerificationSms = (phone, type, user) => __awaiter(void 0, void 0, void 0, function* () {
     const { otp, token, expirationTime } = yield (0, otpUtils_1.generateOtp)();
-    yield (0, otpUtils_1.sendSms)(phone, otp);
+    yield (0, otpUtils_1.sendSmsOtp)(phone, otp);
+    if (type === 'password-reset') {
+        const slackMsg = `Password reset attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+        yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
+    }
     const otpObj = yield findOtpByUserId(user.id);
     if (otpObj)
         yield removeOtp(otpObj.id);

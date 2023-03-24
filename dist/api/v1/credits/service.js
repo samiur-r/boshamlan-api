@@ -18,7 +18,7 @@ const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const model_1 = require("./model");
 const initCredits = (user) => __awaiter(void 0, void 0, void 0, function* () {
     const creditData = model_1.Credit.create({
-        free: 0,
+        free: 2,
         regular: 0,
         sticky: 0,
         agent: 0,
@@ -72,8 +72,8 @@ const updateAgentCredit = (ids, value) => __awaiter(void 0, void 0, void 0, func
 });
 exports.updateAgentCredit = updateAgentCredit;
 const findStickyCredits = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const stickyCredits = yield model_1.Credit.findOne({ where: { user: { id: userId } } });
-    return stickyCredits;
+    const credits = yield model_1.Credit.findOne({ where: { user: { id: userId } } });
+    return credits;
 });
 exports.findStickyCredits = findStickyCredits;
 //# sourceMappingURL=service.js.map

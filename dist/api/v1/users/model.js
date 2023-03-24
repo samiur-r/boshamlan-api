@@ -18,10 +18,8 @@ __decorate([
     __metadata("design:type", Number)
 ], User.prototype, "id", void 0);
 __decorate([
-    (0, typeorm_1.Column)({
-        unique: true,
-    }),
-    __metadata("design:type", Number)
+    (0, typeorm_1.Column)({ type: 'bigint', unique: true, nullable: true }),
+    __metadata("design:type", String)
 ], User.prototype, "phone", void 0);
 __decorate([
     (0, typeorm_1.Column)(),

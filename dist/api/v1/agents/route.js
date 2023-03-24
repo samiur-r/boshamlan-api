@@ -28,12 +28,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const AuthMiddleware_1 = require("../../../middlewares/AuthMiddleware");
-const FileUploadMiddleware_1 = __importDefault(require("../../../middlewares/FileUploadMiddleware"));
 const AgentController = __importStar(require("./controller"));
 const router = express_1.default.Router();
 router.get('/', AuthMiddleware_1.isUserAuth, AgentController.fetch);
 router.get('/get-many', AgentController.fetchMany);
 router.get('/:id', AgentController.fetchById);
-router.post('/', [AuthMiddleware_1.isUserAuth, FileUploadMiddleware_1.default.any()], AgentController.update);
+router.post('/', AuthMiddleware_1.isUserAuth, AgentController.update);
 exports.default = router;
 //# sourceMappingURL=route.js.map

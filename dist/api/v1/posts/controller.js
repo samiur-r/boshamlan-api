@@ -19,6 +19,10 @@ const service_1 = require("../users/service");
 const service_2 = require("../credits/service");
 const validation_1 = require("./validation");
 const service_3 = require("./service");
+const cloudinaryUtils_1 = require("../../../utils/cloudinaryUtils");
+const slackUtils_1 = require("../../../utils/slackUtils");
+const smsUtils_1 = require("../../../utils/smsUtils");
+const service_4 = require("../logs/service");
 const fetchOne = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const post = yield (0, service_3.findPostById)(parseInt(req.params.id, 10));
@@ -70,33 +74,60 @@ exports.fetchManyArchive = fetchManyArchive;
 const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postInfo } = req.body;
     const userId = res.locals.user.payload.id;
-    const files = req.files;
-    postInfo.media = [];
+    const media = [];
     postInfo.title = `${postInfo.propertyTitle} ل${postInfo.categoryTitle} في ${postInfo.cityTitle}`;
     postInfo.isStickyPost = postInfo.isStickyPost === 'true';
     const endpoint = req.originalUrl.substring(13, req.originalUrl.length);
     const isTempPost = endpoint === 'temp';
-    if (files && files.length) {
-        files.forEach((file) => {
-            postInfo.media.push(file.filename);
-        });
-    }
+    const logs = [];
     try {
         yield validation_1.postSchema.validate(postInfo);
         const user = yield (0, service_1.findUserById)(userId);
         if (!user)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (isTempPost) {
+            if ((postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia) && (postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia.length)) {
+                for (const multimedia of postInfo.multimedia) {
+                    const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(multimedia, 'posts');
+                    if (url)
+                        media.push(url);
+                }
+            }
+            postInfo.media = media;
             const typeOfCredit = 'sticky';
-            yield (0, service_3.saveTempPost)(postInfo, user, typeOfCredit);
+            const tempPost = yield (0, service_3.saveTempPost)(postInfo, user, typeOfCredit);
+            logger_1.default.info(`User: ${user.phone} post: ${tempPost.id}, saved as temp`);
+            logs.push({ post_id: tempPost.id, transaction: undefined, user: user.phone, activity: 'Saved as temp post' });
         }
         else {
             const { typeOfCredit, credit } = yield (0, service_2.typeOfCreditToDeduct)(user.id, user.is_agent, postInfo.isStickyPost);
             if (!typeOfCredit)
                 throw new ErrorHandler_1.default(402, 'You do not have enough credit');
-            yield (0, service_3.savePost)(postInfo, user, typeOfCredit);
+            if ((postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia) && (postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia.length)) {
+                for (const multimedia of postInfo.multimedia) {
+                    const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(multimedia, 'posts');
+                    if (url)
+                        media.push(url);
+                }
+            }
+            postInfo.media = media;
+            const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit);
             yield (0, service_2.updateCredit)(userId, typeOfCredit, 1, 'SUB', credit);
+            logger_1.default.info(`User: ${user.phone} created new post: ${newPost.id}`);
+            logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
+            if (typeOfCredit === 'free' && credit.free === 1) {
+                const slackMsg = `User consumed their free credits\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+                yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
+                yield (0, smsUtils_1.sendSms)(user.phone, 'You have consumed all of your free credits');
+            }
+            if (typeOfCredit === 'agent' && credit.agent === 1) {
+                const slackMsg = `Agent credit is now 0\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+                yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
+                yield (0, smsUtils_1.sendSms)(user.phone, 'Your agent credit is now 0');
+            }
         }
+        if (logs && logs.length)
+            yield (0, service_4.saveUserLog)(logs);
         return res.status(200).json({ success: 'Post created successfully' });
     }
     catch (error) {
@@ -104,25 +135,42 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         if (error.name === 'ValidationError') {
             error.message = 'Invalid payload passed';
         }
+        const slackMsg = `Failed to create post\n\n ${(postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone) ? `User: <https://wa.me/965${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}|${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}>` : ''}`;
+        logs.push({ post_id: undefined, transaction: undefined, user: `${userId}`, activity: 'Failed to create post' });
+        yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
+        if (logs && logs.length)
+            yield (0, service_4.saveUserLog)(logs);
         return next(error);
     }
 });
 exports.insert = insert;
 const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _k;
     const { postInfo, postId } = req.body;
-    postInfo.media = [];
-    const files = req.files;
-    if (files && files.length) {
-        files.forEach((file) => {
-            postInfo.media.push(file.filename);
-        });
-    }
+    const media = [];
     try {
         if (!postId)
             throw new ErrorHandler_1.default(404, 'Post not found');
         yield validation_1.postSchema.validate(postInfo);
         yield (0, service_3.removePostMedia)(postId);
-        yield (0, service_3.updatePost)(postInfo, postId);
+        if ((postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia) && (postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia.length)) {
+            for (const multimedia of postInfo.multimedia) {
+                const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(multimedia, 'posts');
+                if (url)
+                    media.push(url);
+            }
+        }
+        postInfo.media = media;
+        const updatedPost = yield (0, service_3.updatePost)(postInfo, postId);
+        logger_1.default.info(`User: ${(_k = updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.user) === null || _k === void 0 ? void 0 : _k.phone} updated post: ${updatedPost.id}`);
+        yield (0, service_4.saveUserLog)([
+            {
+                post_id: updatedPost.id,
+                transaction: undefined,
+                user: updatedPost.user.phone,
+                activity: 'Post updated successfully',
+            },
+        ]);
         return res.status(200).json({ success: 'Post Updated successfully' });
     }
     catch (error) {
@@ -130,11 +178,15 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         if (error.name === 'ValidationError') {
             error.message = 'Invalid payload passed';
         }
+        yield (0, service_4.saveUserLog)([
+            { post_id: parseInt(postId, 10), transaction: undefined, user: undefined, activity: 'Post update failed' },
+        ]);
         return next(error);
     }
 });
 exports.update = update;
 const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _l;
     const userId = res.locals.user.payload.id;
     const { postId } = req.body;
     try {
@@ -152,6 +204,15 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
             throw new ErrorHandler_1.default(304, 'Post is already sticky');
         const user = yield (0, service_1.findUserById)(userId);
         yield (0, service_3.updatePostStickyVal)(post, true);
+        logger_1.default.info(`Post ${post.id} sticked by user ${user === null || user === void 0 ? void 0 : user.phone}`);
+        yield (0, service_4.saveUserLog)([
+            {
+                post_id: post.id,
+                transaction: undefined,
+                user: (_l = user === null || user === void 0 ? void 0 : user.phone) !== null && _l !== void 0 ? _l : undefined,
+                activity: 'Post sticked successfully',
+            },
+        ]);
         let creditType = post.credit_type;
         if (creditType === 'agent' && !(user === null || user === void 0 ? void 0 : user.is_agent))
             creditType = 'regular';
@@ -161,11 +222,16 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
+        logger_1.default.error(`Post ${postId} stick attempt by user ${userId} failed`);
+        yield (0, service_4.saveUserLog)([
+            { post_id: parseInt(postId, 10), transaction: undefined, user: userId, activity: 'Post stick attempt failed' },
+        ]);
         return next(error);
     }
 });
 exports.updatePostToStick = updatePostToStick;
 const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _m;
     const userId = res.locals.user.payload.id;
     const { postId } = req.body;
     try {
@@ -208,10 +274,23 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         yield (0, service_2.updateCredit)(userId, typeOfCredit, 1, 'SUB', credit);
         const repostCount = post.repost_count + 1;
         yield (0, service_3.updatePostRepostVals)(newPost, true, repostCount);
+        logger_1.default.info(`Post ${post.id} reposted by user ${user === null || user === void 0 ? void 0 : user.phone}`);
+        yield (0, service_4.saveUserLog)([
+            {
+                post_id: post.id,
+                transaction: undefined,
+                user: (_m = user === null || user === void 0 ? void 0 : user.phone) !== null && _m !== void 0 ? _m : undefined,
+                activity: 'Post reposted successfully',
+            },
+        ]);
         return res.status(200).json({ success: 'Post is reposted successfully' });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
+        logger_1.default.error(`Post ${postId} repost by user ${userId} failed`);
+        yield (0, service_4.saveUserLog)([
+            { post_id: parseInt(postId, 10), transaction: undefined, user: userId, activity: 'Post repost failed' },
+        ]);
         return next(error);
     }
 });
@@ -221,7 +300,7 @@ const deletePost = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
     const userId = res.locals.user.payload.id;
     try {
         if (!postId)
-            throw new ErrorHandler_1.default(404, 'Invalid payload passed');
+            throw new ErrorHandler_1.default(404, 'Post not found');
         let post;
         if (isArchive)
             post = yield (0, service_3.findArchivedPostById)(parseInt(postId, 10));
@@ -233,14 +312,28 @@ const deletePost = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
         if (!user)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (isArchive)
-            yield (0, service_3.removeArchivedPost)(post.id);
+            yield (0, service_3.removeArchivedPost)(post.id, post);
         else
-            yield (0, service_3.removePost)(post.id);
+            yield (0, service_3.removePost)(post.id, post);
+        post.media = [];
         yield (0, service_3.saveDeletedPost)(post, user);
+        logger_1.default.info(`Post ${postId} deleted by user ${user.phone}`);
+        yield (0, service_4.saveUserLog)([
+            { post_id: parseInt(postId, 10), transaction: undefined, user: `${user.phone}`, activity: 'Post deleted' },
+        ]);
         return res.status(200).json({ success: 'Post deleted successfully' });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
+        logger_1.default.error(`Post ${postId} delete attempt by user ${userId} failed`);
+        yield (0, service_4.saveUserLog)([
+            {
+                post_id: parseInt(postId, 10),
+                transaction: undefined,
+                user: `${userId}`,
+                activity: 'Post delete attempt failed',
+            },
+        ]);
         return next(error);
     }
 });

@@ -14,7 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.search = void 0;
 const logger_1 = __importDefault(require("../../../utils/logger"));
-const service_1 = require("../posts/service");
+const service_1 = require("../logs/service");
+const service_2 = require("../posts/service");
 const search = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { limit, offset, location, propertyType, category, priceRange, keyword } = req.body;
     const propertyId = propertyType ? propertyType.id : undefined;
@@ -29,12 +30,23 @@ const search = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         else
             city = location;
     }
+    logger_1.default.info(`User searched for city: ${city}, property type: ${propertyType}, category: ${category}, price range: ${priceRange} and keyword: ${keyword}`);
+    yield (0, service_1.saveUserLog)([
+        {
+            post_id: undefined,
+            transaction: undefined,
+            user: undefined,
+            activity: `User searched for city: ${city}, property type: ${propertyType}, category: ${category}, price range: ${priceRange} and keyword: ${keyword}`,
+        },
+    ]);
     try {
-        const { posts, count } = yield (0, service_1.searchPosts)(limit, offset, city, stateId, propertyId, categoryId, priceRange, keyword);
+        const { posts, count } = yield (0, service_2.searchPosts)(limit, offset, city, stateId, propertyId, categoryId, priceRange, keyword);
+        logger_1.default.info(`Posts sent as the searched values successfully`);
         return res.status(200).json({ posts, count });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
+        logger_1.default.error(`Failed to send posts as searched for`);
         return next(error);
     }
 });

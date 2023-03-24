@@ -24,7 +24,7 @@ const isUserAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
         next();
     }
     catch (err) {
-        next(new ErrorHandler_1.default(401, 'أنك غير مخول')); // You are not authorized
+        next(new ErrorHandler_1.default(401, 'You are not authorized'));
     }
 });
 exports.isUserAuth = isUserAuth;
@@ -36,7 +36,7 @@ const isRequestAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         next();
     }
     catch (err) {
-        next(new ErrorHandler_1.default(401, 'أنك غير مخول')); // You are not authorized
+        next(new ErrorHandler_1.default(401, 'You are not authorized'));
     }
 });
 exports.isRequestAuth = isRequestAuth;
@@ -46,7 +46,7 @@ const isAdminAuth = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
     try {
         const { payload } = yield (0, jwtUtils_1.verifyJwt)(token);
         if (!(payload === null || payload === void 0 ? void 0 : payload.is_admin))
-            throw new ErrorHandler_1.default(401, 'أنك غير مخول'); // You are not authorized
+            throw new ErrorHandler_1.default(401, 'You are not authorized');
         next();
     }
     catch (err) {

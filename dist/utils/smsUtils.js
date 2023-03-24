@@ -12,21 +12,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendSmsOtp = exports.generateOtp = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
+exports.sendSms = void 0;
 const vonage_1 = __importDefault(require("../config/vonage"));
-const generateOtp = () => __awaiter(void 0, void 0, void 0, function* () {
-    const otp = Math.floor(Math.random() * 9000 + 1000);
-    const token = yield bcrypt_1.default.hash(otp.toString(), 10);
-    const expirationTime = new Date(new Date().getTime() + 10 * 60000); // 10 minutes
-    return { otp, token, expirationTime };
-});
-exports.generateOtp = generateOtp;
-const sendSmsOtp = (phone, otp) => __awaiter(void 0, void 0, void 0, function* () {
+const logger_1 = __importDefault(require("./logger"));
+const sendSms = (phone, msg) => __awaiter(void 0, void 0, void 0, function* () {
+    logger_1.default.info(`Sending sms to ${phone}: ${msg}`);
     const from = 'Boshamlan';
     const to = `+965${phone}`;
-    const text = `OTP: ${otp}. Valid for 10 minutes.`;
+    const text = msg;
     yield vonage_1.default.sms.send({ to, from, text });
 });
-exports.sendSmsOtp = sendSmsOtp;
-//# sourceMappingURL=otpUtils.js.map
+exports.sendSms = sendSms;
+//# sourceMappingURL=smsUtils.js.map

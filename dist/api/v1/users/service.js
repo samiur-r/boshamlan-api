@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateBulkIsUserAnAgent = exports.updateIsUserAnAgent = exports.updateUserPassword = exports.updateUserStatus = exports.saveUser = exports.findUserByPhone = exports.findUserById = void 0;
+exports.findUnVerifiedUsers = exports.updateBulkIsUserAnAgent = exports.updateIsUserAnAgent = exports.updateUserPassword = exports.updateUserStatus = exports.saveUser = exports.findUserByPhone = exports.findUserById = void 0;
 const typeorm_1 = require("typeorm");
 const passwordUtils_1 = require("../../../utils/passwordUtils");
 const model_1 = require("./model");
@@ -54,4 +54,10 @@ const updateBulkIsUserAnAgent = (ids, status) => __awaiter(void 0, void 0, void 
     yield model_1.User.update({ id: (0, typeorm_1.In)(ids) }, { is_agent: status });
 });
 exports.updateBulkIsUserAnAgent = updateBulkIsUserAnAgent;
+const findUnVerifiedUsers = () => __awaiter(void 0, void 0, void 0, function* () {
+    const lessThanFiveMins = new Date(Date.now() - 1 * 60 * 1000); // 5 minutes ago
+    const users = yield model_1.User.find({ where: { status: 'not_verified', created_at: (0, typeorm_1.MoreThan)(lessThanFiveMins) } });
+    return users;
+});
+exports.findUnVerifiedUsers = findUnVerifiedUsers;
 //# sourceMappingURL=service.js.map

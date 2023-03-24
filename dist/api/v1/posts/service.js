@@ -13,10 +13,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updatePost = exports.removePost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = void 0;
-const dayjs_1 = __importDefault(require("dayjs"));
-const path_1 = __importDefault(require("path"));
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
 const typeorm_1 = require("typeorm");
-const deleteFile_1 = require("../../../utils/deleteFile");
+const cloudinaryUtils_1 = require("../../../utils/cloudinaryUtils");
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const service_1 = require("../locations/service");
@@ -26,6 +26,8 @@ const DeletedPost_1 = require("./models/DeletedPost");
 const Post_1 = require("./models/Post");
 const TempPost_1 = require("./models/TempPost");
 const savePost = (postInfo, user, typeOfCredit) => __awaiter(void 0, void 0, void 0, function* () {
+    const today = new Date();
+    const oneMonthFromToday = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
     const newPost = Post_1.Post.create({
         title: postInfo.title,
         city_id: postInfo.cityId,
@@ -38,7 +40,7 @@ const savePost = (postInfo, user, typeOfCredit) => __awaiter(void 0, void 0, voi
         category_title: postInfo.categoryTitle,
         price: postInfo.price,
         description: postInfo.description,
-        expiry_date: (0, dayjs_1.default)().month(2),
+        expiry_date: oneMonthFromToday,
         media: postInfo.media,
         is_sticky: typeOfCredit === 'sticky',
         credit_type: typeOfCredit,
@@ -86,7 +88,7 @@ const saveDeletedPost = (postInfo, user) => __awaiter(void 0, void 0, void 0, fu
         category_title: postInfo.category_title,
         price: postInfo.price,
         description: postInfo.description,
-        expiry_date: (0, dayjs_1.default)().month(2),
+        expiry_date: postInfo.expiry_date,
         media: postInfo.media,
         is_sticky: false,
         credit_type: postInfo.credit_type,
@@ -99,6 +101,8 @@ const saveDeletedPost = (postInfo, user) => __awaiter(void 0, void 0, void 0, fu
 });
 exports.saveDeletedPost = saveDeletedPost;
 const saveTempPost = (postInfo, user, typeOfCredit) => __awaiter(void 0, void 0, void 0, function* () {
+    const today = new Date();
+    const oneMonthFromToday = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
     const newPost = TempPost_1.TempPost.create({
         track_id: postInfo.trackId,
         title: postInfo.title,
@@ -112,38 +116,46 @@ const saveTempPost = (postInfo, user, typeOfCredit) => __awaiter(void 0, void 0,
         category_title: postInfo.categoryTitle,
         price: postInfo.price,
         description: postInfo.description,
-        expiry_date: (0, dayjs_1.default)().month(2),
+        expiry_date: oneMonthFromToday,
         media: postInfo.media,
         is_sticky: typeOfCredit === 'sticky',
         credit_type: typeOfCredit,
         user,
     });
-    yield TempPost_1.TempPost.save(newPost);
+    const newTempPost = yield TempPost_1.TempPost.save(newPost);
+    return newTempPost;
 });
 exports.saveTempPost = saveTempPost;
-const removePost = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    yield Post_1.Post.delete(id);
-});
-exports.removePost = removePost;
-const removeArchivedPost = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    yield ArchivePost_1.ArchivePost.delete(id);
-});
-exports.removeArchivedPost = removeArchivedPost;
-const removePostMedia = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield Post_1.Post.find({ where: { id }, select: { media: true, city_id: true }, relations: [] });
-    if (result.length && result[0].media && result[0].media.length) {
-        const currentDirectory = __dirname;
-        const filePath = path_1.default.resolve(currentDirectory, '../../../../../boshamlan-frontend/public/images/posts');
-        result[0].media.forEach((file) => {
-            (0, deleteFile_1.deleteFile)(`${filePath}/${file}`);
-        });
+const removePostMedia = (id, post) => __awaiter(void 0, void 0, void 0, function* () {
+    let result;
+    if (!post) {
+        const postObj = yield Post_1.Post.find({ where: { id }, select: { media: true }, relations: [] });
+        // eslint-disable-next-line prefer-destructuring
+        result = postObj && postObj.length ? postObj[0].media : undefined;
+    }
+    else
+        result = post === null || post === void 0 ? void 0 : post.media;
+    if (result && result.length) {
+        for (const multimedia of result) {
+            yield (0, cloudinaryUtils_1.deleteMediaFromCloudinary)(multimedia, 'posts');
+        }
     }
 });
 exports.removePostMedia = removePostMedia;
+const removePost = (id, post) => __awaiter(void 0, void 0, void 0, function* () {
+    yield Post_1.Post.delete(id);
+    yield removePostMedia(id, post);
+});
+exports.removePost = removePost;
+const removeArchivedPost = (id, post) => __awaiter(void 0, void 0, void 0, function* () {
+    yield ArchivePost_1.ArchivePost.delete(id);
+    yield removePostMedia(id, post);
+});
+exports.removeArchivedPost = removeArchivedPost;
 const moveExpiredPosts = () => __awaiter(void 0, void 0, void 0, function* () {
     const expiredPosts = yield Post_1.Post.find({ where: { expiry_date: (0, typeorm_1.LessThan)(new Date()) } });
     expiredPosts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
-        yield removePost(post.id);
+        yield removePost(post.id, post);
         yield saveArchivedPost(post, post.user);
         yield (0, service_1.updateLocationCountValue)(post.city_id, 'decrement');
     }));
@@ -158,10 +170,10 @@ const removeTempPostByTrackId = (track_id) => __awaiter(void 0, void 0, void 0, 
         const post = yield TempPost_1.TempPost.findOneBy({ track_id });
         if (!post)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
-        if (post.media.length > 0) {
-            const currentDirectory = __dirname;
-            const filePath = path_1.default.resolve(currentDirectory, '../../../../../boshamlan-frontend/public/images/posts');
-            post.media.forEach((file) => (0, deleteFile_1.deleteFile)(`${filePath}/${file}`));
+        if (post.media && post.media.length) {
+            for (const multimedia of post.media) {
+                yield (0, cloudinaryUtils_1.deleteMediaFromCloudinary)(multimedia, 'posts');
+            }
         }
         yield TempPost_1.TempPost.remove(post);
     }
