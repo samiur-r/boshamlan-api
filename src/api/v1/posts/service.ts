@@ -316,7 +316,7 @@ const updatePost = async (
 
   if (!post) throw new ErrorHandler(500, 'Something went wrong');
 
-  const newPost = await Post.save({
+  await Post.save({
     ...post,
     city_id: postInfo.cityId,
     city_title: postInfo.cityTitle,
@@ -333,7 +333,7 @@ const updatePost = async (
 
   await updateLocationCountValue(postInfo.cityId, 'increment');
 
-  return newPost;
+  return post;
 };
 
 const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {

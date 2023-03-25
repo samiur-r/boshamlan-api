@@ -81,7 +81,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     const userObj: IUser = await saveUser(phone, hashedPassword, 'not_verified');
     await sendOtpVerificationSms(phone, 'registration', userObj);
 
-    logger.info(`Registration attempt by user ${user?.phone}. Otp sent `);
+    logger.info(`Registration attempt by user ${phone}. Otp sent `);
     await saveUserLog([
       { post_id: undefined, transaction: undefined, user: phone, activity: 'Registration attempt. Otp sent' },
     ]);

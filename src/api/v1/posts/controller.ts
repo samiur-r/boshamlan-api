@@ -177,12 +177,12 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
     postInfo.media = media;
 
     const updatedPost = await updatePost(postInfo, postId);
-    logger.info(`User: ${updatedPost?.user?.phone} updated post: ${updatedPost.id}`);
+    logger.info(`User: ${updatedPost.phone} updated post: ${updatedPost.id}`);
     await saveUserLog([
       {
         post_id: updatedPost.id,
         transaction: undefined,
-        user: updatedPost.user.phone,
+        user: updatedPost?.phone,
         activity: 'Post updated successfully',
       },
     ]);
