@@ -5,14 +5,15 @@ import logger from '../../../utils/logger';
 import { findAdminByPhone, saveAdmin } from './service';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import { signJwt } from '../../../utils/jwtUtils';
+import config from '../../../config';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
-  const { phone, password } = req.body;
+  const { phone, password, name } = req.body;
 
   try {
     const hashedPassword = await hashPassword(password);
 
-    await saveAdmin(phone, hashedPassword);
+    await saveAdmin(phone, hashedPassword, name);
     return res.status(200).json({ success: 'New admin created successfully' });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
@@ -34,14 +35,16 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     const adminPayload = {
       id: admin.id,
       phone: admin.phone,
+      name: admin.name,
       is_super: admin.is_super,
+      admin_status: true,
     };
 
     const token = await signJwt(adminPayload);
 
     // @ts-ignore
     res.cookie('token', token, config.cookieOptions);
-    return res.status(200).json({ success: 'Logged in successfully' });
+    return res.status(200).json({ success: adminPayload });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);

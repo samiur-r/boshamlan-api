@@ -5,6 +5,9 @@ export class Admin extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column()
+  name: string;
+
   @Column({ type: 'bigint', unique: true })
   phone: string;
 
