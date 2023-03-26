@@ -1,4 +1,4 @@
-import { UserLog } from './models/UserLog';
+import { UserLog } from './model';
 
 const saveUserLog = async (
   logs: Array<{

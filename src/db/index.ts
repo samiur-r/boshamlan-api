@@ -14,7 +14,7 @@ import { Post } from '../api/v1/posts/models/Post';
 import { ArchivePost } from '../api/v1/posts/models/ArchivePost';
 import { DeletedPost } from '../api/v1/posts/models/DeletedPost';
 import { TempPost } from '../api/v1/posts/models/TempPost';
-import { UserLog } from '../api/v1/user_logs/models/UserLog';
+import { UserLog } from '../api/v1/user_logs/model';
 
 const AppDataSource = new DataSource({
   type: 'postgres',
@@ -25,10 +25,10 @@ const AppDataSource = new DataSource({
   database: process.env.POSTGRES_DB || 'boshamlan_dev',
   synchronize: true,
   logging: false,
-  migrationsRun: false,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+  // migrationsRun: false,
+  // ssl: {
+  //   rejectUnauthorized: false,
+  // },
   entities: [
     User,
     Credit,
