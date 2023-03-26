@@ -15,6 +15,7 @@ import { ArchivePost } from '../api/v1/posts/models/ArchivePost';
 import { DeletedPost } from '../api/v1/posts/models/DeletedPost';
 import { TempPost } from '../api/v1/posts/models/TempPost';
 import { UserLog } from '../api/v1/user_logs/model';
+import { Admin } from '../api/v1/admin/model';
 
 const AppDataSource = new DataSource({
   type: 'postgres',
@@ -44,6 +45,7 @@ const AppDataSource = new DataSource({
     DeletedPost,
     TempPost,
     UserLog,
+    Admin,
   ],
 });
 

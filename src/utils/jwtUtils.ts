@@ -2,7 +2,11 @@ import * as jose from 'jose';
 
 import config from '../config';
 
-const signJwt = async (user: { id: number; phone: string; is_admin: boolean; is_agent: boolean; status: string }) => {
+const signJwt = async (
+  user:
+    | { id: number; phone: string; is_admin: boolean; is_agent: boolean; status: string }
+    | { id: number; phone: string; is_super: boolean },
+) => {
   const secret = new TextEncoder().encode(config.jwtSecret);
   const alg = 'HS256';
 
