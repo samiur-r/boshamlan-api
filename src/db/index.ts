@@ -26,10 +26,10 @@ const AppDataSource = new DataSource({
   database: process.env.POSTGRES_DB || 'boshamlan_dev',
   synchronize: true,
   logging: false,
-  // migrationsRun: false,
-  // ssl: {
-  //   rejectUnauthorized: false,
-  // },
+  migrationsRun: false,
+  ssl: {
+    rejectUnauthorized: false,
+  },
   entities: [
     User,
     Credit,
