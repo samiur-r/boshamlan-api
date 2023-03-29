@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 import { Between, In, IsNull, LessThan, Like } from 'typeorm';
@@ -12,6 +13,13 @@ import { ArchivePost } from './models/ArchivePost';
 import { DeletedPost } from './models/DeletedPost';
 import { Post } from './models/Post';
 import { TempPost } from './models/TempPost';
+
+interface PostsWithUser extends IPost {
+  user_phone?: string;
+  posted_date?: string;
+  public_date?: string;
+  expired_date?: string;
+}
 
 const savePost = async (
   postInfo: {
@@ -448,33 +456,42 @@ const searchPosts = async (
   return { posts, count };
 };
 
-interface PostsWithUser extends IPost {
-  user_id?: number;
-}
-
 const filterPostsForAdmin = async (typeOfPost: string) => {
   let posts;
   let totalPosts;
 
   try {
     if (typeOfPost === 'active') {
-      const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount();
+      const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
+        order: {
+          created_at: 'DESC',
+        },
+      });
       posts = postList;
       totalPosts = count;
     } else if (typeOfPost === 'archived') {
-      const [postList, count]: [PostsWithUser[] | null, number] = await ArchivePost.findAndCount();
+      const [postList, count]: [PostsWithUser[] | null, number] = await ArchivePost.findAndCount({
+        order: {
+          created_at: 'DESC',
+        },
+      });
       posts = postList;
       totalPosts = count;
     } else if (typeOfPost === 'deleted') {
-      const [postList, count]: [PostsWithUser[] | null, number] = await DeletedPost.findAndCount();
+      const [postList, count]: [PostsWithUser[] | null, number] = await DeletedPost.findAndCount({
+        order: {
+          created_at: 'DESC',
+        },
+      });
       posts = postList;
       totalPosts = count;
     }
 
     posts?.forEach((post) => {
-      // eslint-disable-next-line no-param-reassign
-      post.user_id = post.user?.id;
-      // eslint-disable-next-line no-param-reassign
+      post.posted_date = post.updated_at.toISOString().slice(0, 10);
+      post.public_date = post.created_at.toISOString().slice(0, 10);
+      post.expired_date = post.expiry_date.toISOString().slice(0, 10);
+      post.user_phone = post.user?.phone;
       delete post.user;
     });
   } catch (error) {
