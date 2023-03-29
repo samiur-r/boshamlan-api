@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
-import { Between, In, IsNull, LessThan, Like } from 'typeorm';
+import { Between, In, IsNull, LessThan, LessThanOrEqual, Like, MoreThanOrEqual } from 'typeorm';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
@@ -456,36 +456,79 @@ const searchPosts = async (
   return { posts, count };
 };
 
-const filterPostsForAdmin = async (typeOfPost: string) => {
+const filterPostsForAdmin = async (
+  locationToFilter: number,
+  categoryToFilter: number,
+  propertyTypeToFilter: number,
+  fromPriceToFilter: number | undefined,
+  toPriceToFilter: number | undefined,
+  fromCreationDateToFilter: Date | undefined,
+  toCreationDateToFilter: Date | undefined,
+  stickyStatusToFilter: number,
+  userTypeToFilter: string | undefined,
+  orderByToFilter: string,
+  postStatusToFilter: string,
+) => {
   let posts;
-  let totalPosts;
+  const where: any = {};
+  const order: any = {};
+
+  if (locationToFilter) where.city_id = locationToFilter;
+  if (categoryToFilter) where.category_id = categoryToFilter;
+  if (propertyTypeToFilter) where.property_id = propertyTypeToFilter;
+
+  if (fromPriceToFilter && toPriceToFilter) where.price = Between(fromPriceToFilter, toPriceToFilter);
+  else if (fromPriceToFilter) where.price = MoreThanOrEqual(fromPriceToFilter);
+  else if (toPriceToFilter) where.price = LessThanOrEqual(toPriceToFilter);
+
+  if (fromCreationDateToFilter && toCreationDateToFilter)
+    where.created_at = Between(fromCreationDateToFilter, toCreationDateToFilter);
+  else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(fromCreationDateToFilter);
+  else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(toCreationDateToFilter);
+
+  if (stickyStatusToFilter === -1) where.is_sticky = false;
+  else if (stickyStatusToFilter === 1) where.is_sticky = true;
+
+  switch (orderByToFilter) {
+    case 'Created':
+      order.created_at = 'ASC';
+      break;
+    case 'Sticked':
+      order.is_sticky = 'ASC';
+      break;
+    case 'Repost Date':
+      order.updated_at = 'ASC';
+      break;
+    case 'City':
+      order.city_id = 'ASC';
+      break;
+    case 'Property Type':
+      order.property_id = 'ASC';
+      break;
+    case 'Category':
+      order.category_id = 'ASC';
+      break;
+    default:
+      order.updated_at = 'ASC';
+      break;
+  }
 
   try {
-    if (typeOfPost === 'active') {
-      const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
-        order: {
-          created_at: 'DESC',
-        },
-      });
+    if (postStatusToFilter === 'Active') {
+      const postList: PostsWithUser[] | null = await Post.find({ where, order });
       posts = postList;
-      totalPosts = count;
-    } else if (typeOfPost === 'archived') {
-      const [postList, count]: [PostsWithUser[] | null, number] = await ArchivePost.findAndCount({
-        order: {
-          created_at: 'DESC',
-        },
-      });
+    } else if (postStatusToFilter === 'Archived') {
+      const postList: PostsWithUser[] | null = await ArchivePost.find({ where, order });
       posts = postList;
-      totalPosts = count;
-    } else if (typeOfPost === 'deleted') {
-      const [postList, count]: [PostsWithUser[] | null, number] = await DeletedPost.findAndCount({
-        order: {
-          created_at: 'DESC',
-        },
-      });
+    } else if (postStatusToFilter === 'Deleted') {
+      const postList: PostsWithUser[] | null = await DeletedPost.find({ where, order });
       posts = postList;
-      totalPosts = count;
     }
+
+    if (userTypeToFilter && userTypeToFilter === 'regular')
+      posts = posts?.filter((post) => post.user?.is_agent === false);
+    else if (userTypeToFilter && userTypeToFilter === 'agent')
+      posts = posts?.filter((post) => post.user?.is_agent === true);
 
     posts?.forEach((post) => {
       post.posted_date = post.updated_at.toISOString().slice(0, 10);
@@ -498,7 +541,7 @@ const filterPostsForAdmin = async (typeOfPost: string) => {
     logger.error(`${error.name}: ${error.message}`);
   }
 
-  return { posts, totalPosts };
+  return posts;
 };
 
 export {

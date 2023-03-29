@@ -59,10 +59,35 @@ const logout = async (_req: Request, res: Response) => {
 };
 
 const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
-  const { typeOfPost } = req.body;
+  const {
+    locationToFilter,
+    categoryToFilter,
+    propertyTypeToFilter,
+    fromPriceToFilter,
+    toPriceToFilter,
+    fromCreationDateToFilter,
+    toCreationDateToFilter,
+    stickyStatusToFilter,
+    userTypeToFilter,
+    orderByToFilter,
+    postStatusToFilter,
+  } = req.body;
+
   try {
-    const { posts, totalPosts } = await filterPostsForAdmin(typeOfPost);
-    return res.status(200).json({ posts, totalPosts });
+    const posts = await filterPostsForAdmin(
+      locationToFilter,
+      categoryToFilter,
+      propertyTypeToFilter,
+      fromPriceToFilter,
+      toPriceToFilter,
+      fromCreationDateToFilter,
+      toCreationDateToFilter,
+      stickyStatusToFilter,
+      userTypeToFilter,
+      orderByToFilter,
+      postStatusToFilter,
+    );
+    return res.status(200).json({ posts });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
