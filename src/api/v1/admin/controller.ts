@@ -6,6 +6,7 @@ import { findAdminByPhone, saveAdmin } from './service';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import { signJwt } from '../../../utils/jwtUtils';
 import config from '../../../config';
+import { filterPostsForAdmin } from '../posts/service';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -57,4 +58,15 @@ const logout = async (_req: Request, res: Response) => {
   return res.status(200).json({ success: 'Logged out successfully' });
 };
 
-export { register, login, logout };
+const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
+  const { typeOfPost } = req.body;
+  try {
+    const { posts, totalPosts } = await filterPostsForAdmin(typeOfPost);
+    return res.status(200).json({ posts, totalPosts });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export { register, login, logout, filterPosts };

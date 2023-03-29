@@ -448,6 +448,42 @@ const searchPosts = async (
   return { posts, count };
 };
 
+interface PostsWithUser extends IPost {
+  user_id?: number;
+}
+
+const filterPostsForAdmin = async (typeOfPost: string) => {
+  let posts;
+  let totalPosts;
+
+  try {
+    if (typeOfPost === 'active') {
+      const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount();
+      posts = postList;
+      totalPosts = count;
+    } else if (typeOfPost === 'archived') {
+      const [postList, count]: [PostsWithUser[] | null, number] = await ArchivePost.findAndCount();
+      posts = postList;
+      totalPosts = count;
+    } else if (typeOfPost === 'deleted') {
+      const [postList, count]: [PostsWithUser[] | null, number] = await DeletedPost.findAndCount();
+      posts = postList;
+      totalPosts = count;
+    }
+
+    posts?.forEach((post) => {
+      // eslint-disable-next-line no-param-reassign
+      post.user_id = post.user?.id;
+      // eslint-disable-next-line no-param-reassign
+      delete post.user;
+    });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+  }
+
+  return { posts, totalPosts };
+};
+
 export {
   savePost,
   moveExpiredPosts,
@@ -469,4 +505,5 @@ export {
   updatePostRepostVals,
   updatePostViewCount,
   searchPosts,
+  filterPostsForAdmin,
 };
