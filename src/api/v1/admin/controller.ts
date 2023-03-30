@@ -20,10 +20,10 @@ import {
 import { filterUsersForAdmin, findUserById } from '../users/service';
 import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
 import { UserLog } from '../user_logs/model';
-import { IUser } from '../users/interfaces';
 import { findCreditByUserId } from '../credits/service';
 import { findTransactionsByUserId } from '../transactions/service';
 import { findAgentByUserId } from '../agents/service';
+import { Credit } from '../credits/model';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -209,4 +209,22 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { register, login, logout, filterPosts, stickPost, deletePost, fetchLogs, filterUsers };
+const updateCredit = async (req: Request, res: Response, next: NextFunction) => {
+  const { creditAmount, creditType, userId } = req.body;
+
+  try {
+    const credit = await findCreditByUserId(userId);
+    if (!credit) throw new ErrorHandler(401, 'Credit record not found');
+
+    await Credit.save({
+      ...credit,
+      [creditType]: creditAmount,
+    });
+    return res.status(200).json({ success: 'Credit updated successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export { register, login, logout, filterPosts, stickPost, deletePost, fetchLogs, filterUsers, updateCredit };
