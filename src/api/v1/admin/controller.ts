@@ -15,8 +15,9 @@ import {
   saveDeletedPost,
   updatePostStickyVal,
 } from '../posts/service';
-import { IPost } from '../posts/interfaces';
 import { findUserById } from '../users/service';
+import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
+import { UserLog } from '../user_logs/model';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -154,4 +155,18 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { register, login, logout, filterPosts, stickPost, deletePost };
+const fetchLogs = async (req: Request, res: Response, next: NextFunction) => {
+  const { postId, user } = req.body;
+  let logs: UserLog[] = [];
+
+  try {
+    if (postId) logs = await fetchLogsByPostId(postId);
+    else if (user) logs = await fetchLogsByUser(user);
+    return res.status(200).json({ logs });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export { register, login, logout, filterPosts, stickPost, deletePost, fetchLogs };

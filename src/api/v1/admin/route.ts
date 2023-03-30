@@ -11,5 +11,6 @@ router.post('/register', isSuperAdminAuth, AdminController.register);
 router.post('/filter-posts', isAdminAuth, AdminController.filterPosts);
 router.post('/stick-post', isAdminAuth, AdminController.stickPost);
 router.delete('/delete-post', isAdminAuth, AdminController.deletePost);
+router.post('/get-logs', isAdminAuth, AdminController.fetchLogs);
 
 export default router;
