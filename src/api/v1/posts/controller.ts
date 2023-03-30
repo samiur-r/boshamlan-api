@@ -259,6 +259,8 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     const post = await findArchivedPostById(postId);
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
 
+    if (userId && post.user && post.user.id !== userId) throw new ErrorHandler(401, 'You are not authorized');
+
     const user = await findUserById(userId);
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
 
@@ -325,6 +327,9 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
     else post = await findPostById(parseInt(postId, 10));
 
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
+
+    if (userId && post.user && post.user.id !== userId) throw new ErrorHandler(401, 'You are not authorized');
+
     const user = await findUserById(userId);
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
 
