@@ -53,6 +53,11 @@ const findTransactionByTrackId = async (track_id: string) => {
   return transaction;
 };
 
+const findTransactionsByUserId = async (userId: number) => {
+  const transaction = await Transaction.find({ where: { user: { id: userId } } });
+  return transaction;
+};
+
 const editTransaction = async (trackId: number, reference_id: string, tran_id: string, status: string) => {
   const transaction = await findTransactionByTrackId(trackId.toString());
   if (!transaction) return { status: 404 };
@@ -124,4 +129,4 @@ const editTransactionStatus = async (trackId: string | null, status: string) => 
   return { status: 200 };
 };
 
-export { saveTransaction, editTransaction, editTransactionStatus };
+export { saveTransaction, editTransaction, editTransactionStatus, findTransactionsByUserId };

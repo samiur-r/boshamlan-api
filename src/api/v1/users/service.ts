@@ -62,6 +62,12 @@ const findUnVerifiedUsers = async () => {
   return users;
 };
 
+const filterUsersForAdmin = async () => {
+  const users = await User.find();
+
+  return users;
+};
+
 export {
   findUserById,
   findUserByPhone,
@@ -71,4 +77,5 @@ export {
   updateIsUserAnAgent,
   updateBulkIsUserAnAgent,
   findUnVerifiedUsers,
+  filterUsersForAdmin
 };

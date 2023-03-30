@@ -1,8 +1,10 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-param-reassign */
 import { NextFunction, Request, Response } from 'express';
 
 import { hashPassword, verifyToken } from '../../../utils/passwordUtils';
 import logger from '../../../utils/logger';
-import { findAdminByPhone, saveAdmin } from './service';
+import { findAdminByPhone, getPaymentHistory, getPostHistory, saveAdmin } from './service';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import { signJwt } from '../../../utils/jwtUtils';
 import config from '../../../config';
@@ -15,9 +17,13 @@ import {
   saveDeletedPost,
   updatePostStickyVal,
 } from '../posts/service';
-import { findUserById } from '../users/service';
+import { filterUsersForAdmin, findUserById } from '../users/service';
 import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
 import { UserLog } from '../user_logs/model';
+import { IUser } from '../users/interfaces';
+import { findCreditByUserId } from '../credits/service';
+import { findTransactionsByUserId } from '../transactions/service';
+import { findAgentByUserId } from '../agents/service';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -169,4 +175,38 @@ const fetchLogs = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { register, login, logout, filterPosts, stickPost, deletePost, fetchLogs };
+const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users: any = await filterUsersForAdmin();
+
+    // eslint-disable-next-line no-restricted-syntax
+    for (const user of users) {
+      delete user?.password;
+      const credits = await findCreditByUserId(user.id);
+      const transactions = await findTransactionsByUserId(user.id);
+      const payment = getPaymentHistory(transactions);
+      const postHistory = await getPostHistory(user.id);
+
+      if (credits) user.credits = credits;
+      else user.credits = { free: 0, regular: 0, sticky: 0, agent: 0 };
+
+      if (user.is_agent) {
+        const agent = await findAgentByUserId(user.id);
+        const subscription = agent
+          ? `${agent.created_at.toISOString().slice(0, 10)} - ${agent.expiry_date.toISOString().slice(0, 10)}`
+          : '-';
+        user.subscription = subscription;
+      } else user.subscription = '-';
+
+      user.payment = payment;
+      user.post = postHistory;
+      user.registered = user.created_at.toISOString().slice(0, 10);
+    }
+    return res.status(200).json({ users });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export { register, login, logout, filterPosts, stickPost, deletePost, fetchLogs, filterUsers };
