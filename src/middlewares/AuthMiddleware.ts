@@ -33,8 +33,9 @@ export const isAdminAuth = async (req: Request, res: Response, next: NextFunctio
   const { token } = signedCookies;
 
   try {
-    const { payload } = await verifyJwt(token);
-    if (!payload?.admin_status) throw new ErrorHandler(401, 'You are not authorized');
+    const user = await verifyJwt(token);
+    res.locals.user = user;
+    if (!user.payload?.admin_status) throw new ErrorHandler(401, 'You are not authorized');
     next();
   } catch (err) {
     next(err);

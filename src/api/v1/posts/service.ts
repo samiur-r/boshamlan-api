@@ -286,22 +286,23 @@ const findArchivedPostByUserId = async (limit: number, offset: number | undefine
   return { archivePosts, archiveCount };
 };
 
-const findPostById = async (id: number, userId?: number) => {
-  const post: IPost | null = await Post.findOneBy({ id });
+const findPostById = async (id: number) => {
+  const post: any = await Post.findOneBy({ id });
 
   if (post) {
     post.phone = post?.user?.phone;
-
-    if (userId && post.user?.id !== userId) throw new ErrorHandler(401, 'You are not authorized');
-    delete post?.user;
+    delete post?.user?.password;
   }
   return post;
 };
 
 const findArchivedPostById = async (id: number) => {
-  const post: IPost | null = await ArchivePost.findOneBy({ id });
+  const post: any = await ArchivePost.findOneBy({ id });
 
-  delete post?.user;
+  if (post) {
+    post.phone = post?.user?.phone;
+    delete post?.user?.password;
+  }
 
   return post;
 };
@@ -320,8 +321,12 @@ const updatePost = async (
     description: string;
     media: string[];
   },
-  post: IPost,
+  postId: number,
 ) => {
+  const post = await findPostById(postId);
+
+  if (!post) throw new ErrorHandler(401, 'Post not found');
+
   await Post.save({
     ...post,
     city_id: postInfo.cityId,
@@ -489,13 +494,13 @@ const filterPostsForAdmin = async (
 
   switch (orderByToFilter) {
     case 'Created':
-      order.created_at = 'ASC';
+      order.created_at = 'DESC';
       break;
     case 'Sticked':
       order.is_sticky = 'ASC';
       break;
     case 'Repost Date':
-      order.updated_at = 'ASC';
+      order.updated_at = 'DESC';
       break;
     case 'City':
       order.city_id = 'ASC';
@@ -507,7 +512,7 @@ const filterPostsForAdmin = async (
       order.category_id = 'ASC';
       break;
     default:
-      order.updated_at = 'ASC';
+      order.updated_at = 'DESC';
       break;
   }
 

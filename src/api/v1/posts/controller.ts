@@ -29,14 +29,16 @@ import { uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
 import { saveUserLog } from '../user_logs/service';
+import { checkAuthorization } from '../../../utils/checkAuthorization';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
-  const userId = res.locals?.user?.payload?.id;
+  const user = res.locals?.user?.payload;
 
   try {
-    const post = await findPostById(parseInt(req.params.id, 10), userId);
-
+    const post = await findPostById(parseInt(req.params.id, 10));
     if (!post) throw new ErrorHandler(404, 'Post not found');
+
+    checkAuthorization(user, post.id);
 
     return res.status(200).json({ success: post });
   } catch (error) {
@@ -163,14 +165,14 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
 
 const update = async (req: Request, res: Response, next: NextFunction) => {
   const { postInfo, postId } = req.body;
-  const userId = res.locals?.user?.payload?.id;
+  const user = res.locals?.user?.payload;
   const media: string[] = [];
 
   try {
     const post = await findPostById(postId);
     if (!post) throw new ErrorHandler(404, 'Post not found');
 
-    if (userId && post.user && post.user.id !== userId) throw new ErrorHandler(401, 'You are not authorized');
+    checkAuthorization(user, post.id);
 
     await postSchema.validate(postInfo);
     await removePostMedia(postId);
@@ -183,7 +185,7 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
     }
     postInfo.media = media;
 
-    const updatedPost = await updatePost(postInfo, post);
+    const updatedPost = await updatePost(postInfo, postId);
     logger.info(`User: ${updatedPost.phone} updated post: ${updatedPost.id}`);
     await saveUserLog([
       {
@@ -259,8 +261,6 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     const post = await findArchivedPostById(postId);
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
 
-    if (userId && post.user && post.user.id !== userId) throw new ErrorHandler(401, 'You are not authorized');
-
     const user = await findUserById(userId);
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
 
@@ -327,8 +327,6 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
     else post = await findPostById(parseInt(postId, 10));
 
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
-
-    if (userId && post.user && post.user.id !== userId) throw new ErrorHandler(401, 'You are not authorized');
 
     const user = await findUserById(userId);
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
