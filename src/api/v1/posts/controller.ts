@@ -31,8 +31,10 @@ import { sendSms } from '../../../utils/smsUtils';
 import { saveUserLog } from '../user_logs/service';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = res.locals?.user?.payload?.id;
+
   try {
-    const post = await findPostById(parseInt(req.params.id, 10));
+    const post = await findPostById(parseInt(req.params.id, 10), userId);
 
     if (!post) throw new ErrorHandler(404, 'Post not found');
 
@@ -161,10 +163,15 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
 
 const update = async (req: Request, res: Response, next: NextFunction) => {
   const { postInfo, postId } = req.body;
+  const userId = res.locals?.user?.payload?.id;
   const media: string[] = [];
 
   try {
-    if (!postId) throw new ErrorHandler(404, 'Post not found');
+    const post = await findPostById(postId);
+    if (!post) throw new ErrorHandler(404, 'Post not found');
+
+    if (userId && post.user && post.user.id !== userId) throw new ErrorHandler(401, 'You are not authorized');
+
     await postSchema.validate(postInfo);
     await removePostMedia(postId);
 
@@ -176,7 +183,7 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
     }
     postInfo.media = media;
 
-    const updatedPost = await updatePost(postInfo, postId);
+    const updatedPost = await updatePost(postInfo, post);
     logger.info(`User: ${updatedPost.phone} updated post: ${updatedPost.id}`);
     await saveUserLog([
       {

@@ -286,11 +286,13 @@ const findArchivedPostByUserId = async (limit: number, offset: number | undefine
   return { archivePosts, archiveCount };
 };
 
-const findPostById = async (id: number) => {
+const findPostById = async (id: number, userId?: number) => {
   const post: IPost | null = await Post.findOneBy({ id });
 
   if (post) {
     post.phone = post?.user?.phone;
+
+    if (userId && post.user?.id !== userId) throw new ErrorHandler(401, 'You are not authorized');
     delete post?.user;
   }
   return post;
@@ -318,12 +320,8 @@ const updatePost = async (
     description: string;
     media: string[];
   },
-  postId: number,
+  post: IPost,
 ) => {
-  const post = await findPostById(postId);
-
-  if (!post) throw new ErrorHandler(500, 'Something went wrong');
-
   await Post.save({
     ...post,
     city_id: postInfo.cityId,
