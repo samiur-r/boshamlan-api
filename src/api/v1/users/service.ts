@@ -1,4 +1,4 @@
-import { In, MoreThan } from 'typeorm';
+import { Between, In, LessThanOrEqual, MoreThan, MoreThanOrEqual } from 'typeorm';
 import { hashPassword } from '../../../utils/passwordUtils';
 import { IUser } from './interfaces';
 import { User } from './model';
@@ -62,8 +62,41 @@ const findUnVerifiedUsers = async () => {
   return users;
 };
 
-const filterUsersForAdmin = async () => {
-  const users = await User.find();
+const filterUsersForAdmin = async (
+  statusToFilter: string | number,
+  phoneToFilter: string,
+  adminCommentToFilter: string,
+  fromCreationDateToFilter: Date | null,
+  toCreationDateToFilter: Date | null,
+) => {
+  const where: any = {};
+
+  if (statusToFilter) {
+    switch (statusToFilter) {
+      case 'User':
+        where.is_agent = false;
+        break;
+      case 'Agent':
+        where.is_agent = true;
+        break;
+      case 'Verified':
+        where.status = 'verified';
+        break;
+      case 'Not Verified':
+        where.status = 'not_verified';
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (phoneToFilter) where.phone = phoneToFilter;
+  if (adminCommentToFilter) where.admin_comment = adminCommentToFilter;
+  if (fromCreationDateToFilter && toCreationDateToFilter)
+    where.created_at = Between(fromCreationDateToFilter, toCreationDateToFilter);
+  else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(fromCreationDateToFilter);
+  else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(toCreationDateToFilter);
+  const users = await User.find({ where });
 
   return users;
 };
@@ -77,5 +110,5 @@ export {
   updateIsUserAnAgent,
   updateBulkIsUserAnAgent,
   findUnVerifiedUsers,
-  filterUsersForAdmin
+  filterUsersForAdmin,
 };

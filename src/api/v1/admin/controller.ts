@@ -88,6 +88,7 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
     userTypeToFilter,
     orderByToFilter,
     postStatusToFilter,
+    userId,
   } = req.body;
 
   try {
@@ -103,6 +104,7 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
       userTypeToFilter,
       orderByToFilter,
       postStatusToFilter,
+      userId,
     );
     return res.status(200).json({ posts });
   } catch (error) {
@@ -175,9 +177,26 @@ const fetchLogs = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+// TODO: refactor the controller so that its non blocking
+
 const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
+  const {
+    statusToFilter,
+    phoneToFilter,
+    adminCommentToFilter,
+    fromCreationDateToFilter,
+    toCreationDateToFilter,
+    orderByToFilter,
+  } = req.body;
+
   try {
-    const users: any = await filterUsersForAdmin();
+    let users: any = await filterUsersForAdmin(
+      statusToFilter,
+      phoneToFilter,
+      adminCommentToFilter,
+      fromCreationDateToFilter,
+      toCreationDateToFilter,
+    );
 
     // eslint-disable-next-line no-restricted-syntax
     for (const user of users) {
@@ -202,6 +221,51 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       user.post = postHistory;
       user.registered = user.created_at.toISOString().slice(0, 10);
     }
+
+    if (statusToFilter && statusToFilter === 'Has Regular Credits') {
+      users = users.filter((user: { credits: { regular: number } }) => user.credits.regular > 0);
+    } else if (statusToFilter && statusToFilter === 'Has Sticky Credits') {
+      users = users.filter((user: { credits: { sticky: number } }) => user.credits.sticky > 0);
+    } else if (statusToFilter && statusToFilter === 'Has Agent Credits') {
+      users = users.filter((user: { credits: { agent: number } }) => user.credits.agent > 0);
+    } else if (statusToFilter && statusToFilter === 'Zero Free') {
+      users = users.filter((user: { credits: { free: number } }) => user.credits.free === 0);
+    }
+
+    if (orderByToFilter && orderByToFilter === 'Total Posts') {
+      users.sort((a: { post: { total: number } }, b: { post: { total: number } }) => a.post.total > b.post.total);
+    } else if (orderByToFilter && orderByToFilter === 'Active Posts') {
+      users.sort((a: { post: { active: number } }, b: { post: { active: number } }) => a.post.active > b.post.active);
+    } else if (orderByToFilter && orderByToFilter === 'Archived Posts') {
+      users.sort(
+        (a: { post: { archived: number } }, b: { post: { archived: number } }) => a.post.archived > b.post.archived,
+      );
+    } else if (orderByToFilter && orderByToFilter === 'Trashed Posts') {
+      users.sort(
+        (a: { post: { deleted: number } }, b: { post: { deleted: number } }) => a.post.deleted > b.post.deleted,
+      );
+    } else if (orderByToFilter && orderByToFilter === 'Registered') {
+      users.sort((a: { status: string }, b: { status: string }) => {
+        if (a.status === 'verified' && b.status === 'not_verified') {
+          return -1;
+        }
+        if (a.status === 'not_verified' && b.status === 'verified') {
+          return 1;
+        }
+        return 0;
+      });
+    } else if (orderByToFilter && orderByToFilter === 'Mobile') {
+      users.sort((a: { phone: number }, b: { phone: number }) => {
+        if (a.phone < b.phone) {
+          return -1;
+        }
+        if (a.phone > b.phone) {
+          return 1;
+        }
+        return 0;
+      });
+    }
+
     return res.status(200).json({ users });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);

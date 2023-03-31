@@ -348,8 +348,18 @@ const updatePost = async (
 };
 
 const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {
+  const today = new Date();
+  const oneMonthFromToday = new Date(
+    today.getFullYear(),
+    today.getMonth() + 1,
+    today.getDate(),
+    today.getHours(),
+    today.getMinutes(),
+    today.getSeconds(),
+  );
   const newPost = Post.create({
     ...post,
+    expiry_date: oneMonthFromToday,
     is_sticky: isSticky,
   });
   await Post.save(newPost);
@@ -471,10 +481,15 @@ const filterPostsForAdmin = async (
   userTypeToFilter: string | undefined,
   orderByToFilter: string,
   postStatusToFilter: string,
+  userId: string | undefined,
 ) => {
   let posts;
   const where: any = {};
   const order: any = {};
+
+  if (userId) {
+    where.user = { id: parseInt(userId, 10) };
+  }
 
   if (locationToFilter) where.city_id = locationToFilter;
   if (categoryToFilter) where.category_id = categoryToFilter;
@@ -491,6 +506,8 @@ const filterPostsForAdmin = async (
 
   if (stickyStatusToFilter === -1) where.is_sticky = false;
   else if (stickyStatusToFilter === 1) where.is_sticky = true;
+
+  console.log(where);
 
   switch (orderByToFilter) {
     case 'Created':
