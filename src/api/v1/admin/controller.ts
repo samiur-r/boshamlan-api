@@ -23,14 +23,16 @@ import {
   findUserByPhone,
   findUserWithAgentInfo,
   updateUser,
+  updateUserStatus,
 } from '../users/service';
 import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
 import { UserLog } from '../user_logs/model';
-import { findCreditByUserId } from '../credits/service';
+import { findCreditByUserId, initCredits } from '../credits/service';
 import { findTransactionsByUserId } from '../transactions/service';
 import { findAgentById, findAgentByUserId } from '../agents/service';
 import { Credit } from '../credits/model';
 import { Agent } from '../agents/model';
+import { sendSms } from '../../../utils/smsUtils';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -389,6 +391,25 @@ const editAgent = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const verifyUser = async (req: Request, res: Response, next: NextFunction) => {
+  const { userId } = req.body;
+
+  try {
+    if (!userId) throw new ErrorHandler(404, 'Invalid agent id or name');
+    const user = await findUserById(userId);
+    if (!user) throw new ErrorHandler(401, 'Agent not found');
+
+    await updateUserStatus(userId, 'verified');
+    await initCredits(user);
+    await sendSms(user.phone, 'Congratulations! you have been registered successfully');
+
+    return res.status(200).json({ success: 'User verified successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
 export {
   register,
   login,
@@ -403,4 +424,5 @@ export {
   fetchUserWithAgentInfo,
   editUser,
   editAgent,
+  verifyUser,
 };

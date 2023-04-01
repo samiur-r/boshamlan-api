@@ -18,5 +18,6 @@ router.post('/update-credit', isAdminAuth, AdminController.updateCredit);
 router.post('/get-user-info', isAdminAuth, AdminController.fetchUserWithAgentInfo);
 router.put('/edit-user', isAdminAuth, AdminController.editUser);
 router.put('/edit-agent', isAdminAuth, AdminController.editAgent);
+router.post('/verify-user', isAdminAuth, AdminController.verifyUser);
 
 export default router;
