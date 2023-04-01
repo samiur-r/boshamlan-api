@@ -8,4 +8,5 @@ export const agentSchema = object({
   facebook: string().nullable(),
   email: string().email().nullable(),
   logo: mixed().nullable(),
+  website: string().nullable(),
 });

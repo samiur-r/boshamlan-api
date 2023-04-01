@@ -507,8 +507,6 @@ const filterPostsForAdmin = async (
   if (stickyStatusToFilter === -1) where.is_sticky = false;
   else if (stickyStatusToFilter === 1) where.is_sticky = true;
 
-  console.log(where);
-
   switch (orderByToFilter) {
     case 'Created':
       order.created_at = 'DESC';

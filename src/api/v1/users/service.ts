@@ -101,6 +101,29 @@ const filterUsersForAdmin = async (
   return users;
 };
 
+const findUserWithAgentInfo = async (userId: number) => {
+  const userWithAgentInfo: any = await User.findOne({
+    where: { id: userId },
+    relations: ['agent'],
+  });
+
+  if (userWithAgentInfo) delete userWithAgentInfo?.password;
+  if (userWithAgentInfo && userWithAgentInfo.agent.length) delete userWithAgentInfo?.agent[0]?.user.password;
+  return userWithAgentInfo;
+};
+
+const updateUser = async (userObj: IUser, phone: string, adminComment: string | undefined, password: string) => {
+  const updatedUser = await User.save({
+    ...userObj,
+    phone,
+    admin_comment: adminComment,
+  });
+
+  if (password) {
+    await updateUserPassword(updatedUser, password);
+  }
+};
+
 export {
   findUserById,
   findUserByPhone,
@@ -111,4 +134,6 @@ export {
   updateBulkIsUserAnAgent,
   findUnVerifiedUsers,
   filterUsersForAdmin,
+  findUserWithAgentInfo,
+  updateUser,
 };

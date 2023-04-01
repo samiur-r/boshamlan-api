@@ -17,13 +17,20 @@ import {
   saveDeletedPost,
   updatePostStickyVal,
 } from '../posts/service';
-import { filterUsersForAdmin, findUserById } from '../users/service';
+import {
+  filterUsersForAdmin,
+  findUserById,
+  findUserByPhone,
+  findUserWithAgentInfo,
+  updateUser,
+} from '../users/service';
 import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
 import { UserLog } from '../user_logs/model';
 import { findCreditByUserId } from '../credits/service';
 import { findTransactionsByUserId } from '../transactions/service';
-import { findAgentByUserId } from '../agents/service';
+import { findAgentById, findAgentByUserId } from '../agents/service';
 import { Credit } from '../credits/model';
+import { Agent } from '../agents/model';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -273,6 +280,40 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const fetchUser = async (req: Request, res: Response, next: NextFunction) => {
+  const { userId } = req.body;
+
+  try {
+    const user: any = await findUserById(userId);
+    delete user?.password;
+
+    const credits = await findCreditByUserId(user.id);
+    const transactions = await findTransactionsByUserId(user.id);
+    const payment = getPaymentHistory(transactions);
+    const postHistory = await getPostHistory(user.id);
+
+    if (credits) user.credits = credits;
+    else user.credits = { free: 0, regular: 0, sticky: 0, agent: 0 };
+
+    if (user.is_agent) {
+      const agent = await findAgentByUserId(user.id);
+      const subscription = agent
+        ? `${agent.created_at.toISOString().slice(0, 10)} - ${agent.expiry_date.toISOString().slice(0, 10)}`
+        : '-';
+      user.subscription = subscription;
+    } else user.subscription = '-';
+
+    user.payment = payment;
+    user.post = postHistory;
+    user.registered = user.created_at.toISOString().slice(0, 10);
+
+    return res.status(200).json({ user });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
 const updateCredit = async (req: Request, res: Response, next: NextFunction) => {
   const { creditAmount, creditType, userId } = req.body;
 
@@ -291,4 +332,75 @@ const updateCredit = async (req: Request, res: Response, next: NextFunction) => 
   }
 };
 
-export { register, login, logout, filterPosts, stickPost, deletePost, fetchLogs, filterUsers, updateCredit };
+const fetchUserWithAgentInfo = async (req: Request, res: Response, next: NextFunction) => {
+  const { userId } = req.body;
+
+  try {
+    const user = await findUserWithAgentInfo(userId);
+    if (!user) throw new ErrorHandler(401, 'User not found');
+    return res.status(200).json({ user });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+const editUser = async (req: Request, res: Response, next: NextFunction) => {
+  const { phone, adminComment, password } = req.body;
+
+  try {
+    const user = await findUserByPhone(phone);
+    if (!user) throw new ErrorHandler(401, 'User not found');
+
+    await updateUser(user, phone, adminComment, password);
+
+    return res.status(200).json({ success: 'User updated successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+const editAgent = async (req: Request, res: Response, next: NextFunction) => {
+  const { agentId, name, email, instagram, facebook, twitter, website, description } = req.body;
+
+  try {
+    if (!agentId || !name) throw new ErrorHandler(404, 'Invalid agent id or name');
+    const agent = await findAgentById(agentId);
+    if (!agent) throw new ErrorHandler(401, 'Agent not found');
+
+    const agentData = Agent.create({
+      ...agent,
+      name,
+      email,
+      instagram,
+      facebook,
+      twitter,
+      website,
+      description,
+    });
+
+    await Agent.save(agentData);
+
+    return res.status(200).json({ success: 'Agent updated successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export {
+  register,
+  login,
+  logout,
+  filterPosts,
+  stickPost,
+  deletePost,
+  fetchLogs,
+  filterUsers,
+  updateCredit,
+  fetchUser,
+  fetchUserWithAgentInfo,
+  editUser,
+  editAgent,
+};
