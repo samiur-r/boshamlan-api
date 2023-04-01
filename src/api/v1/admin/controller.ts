@@ -28,11 +28,12 @@ import {
 import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
 import { UserLog } from '../user_logs/model';
 import { findCreditByUserId, initCredits } from '../credits/service';
-import { findTransactionsByUserId } from '../transactions/service';
+import { filterTransactionsForAdmin, findTransactionsByUserId } from '../transactions/service';
 import { findAgentById, findAgentByUserId } from '../agents/service';
 import { Credit } from '../credits/model';
 import { Agent } from '../agents/model';
 import { sendSms } from '../../../utils/smsUtils';
+import { Transaction } from '../transactions/model';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -410,6 +411,24 @@ const verifyUser = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const fetchTransactions = async (req: Request, res: Response, next: NextFunction) => {
+  const { statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId } = req.body;
+
+  try {
+    const transactions = await filterTransactionsForAdmin(
+      statusToFilter,
+      typeToFilter,
+      fromCreationDateToFilter,
+      toCreationDateToFilter,
+      userId,
+    );
+    return res.status(200).json({ transactions });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
 export {
   register,
   login,
@@ -425,4 +444,5 @@ export {
   editUser,
   editAgent,
   verifyUser,
+  fetchTransactions,
 };

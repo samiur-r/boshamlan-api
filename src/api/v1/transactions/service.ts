@@ -1,3 +1,4 @@
+import { Between, MoreThanOrEqual, LessThanOrEqual, Like } from 'typeorm';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
 import { IPackage } from '../packages/interfaces';
@@ -129,4 +130,53 @@ const editTransactionStatus = async (trackId: string | null, status: string) => 
   return { status: 200 };
 };
 
-export { saveTransaction, editTransaction, editTransactionStatus, findTransactionsByUserId };
+const filterTransactionsForAdmin = async (
+  statusToFilter: string,
+  typeToFilter: string,
+  fromCreationDateToFilter: Date | undefined,
+  toCreationDateToFilter: Date | undefined,
+  userId: string,
+) => {
+  const where: any = {};
+
+  if (userId) {
+    where.user = { id: parseInt(userId, 10) };
+  }
+
+  if (statusToFilter && statusToFilter !== '-') where.status = statusToFilter.toLowerCase();
+  if (typeToFilter && typeToFilter !== '-') {
+    switch (typeToFilter) {
+      case 'Regular':
+        where.package_title = Like('regular%');
+        break;
+      case 'Sticky':
+        where.package_title = Like('sticky%');
+        break;
+      case 'Sticky Direct':
+        where.package_title = 'stickyDirect';
+        break;
+      case 'Agent':
+        where.package_title = Like('agent%');
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (fromCreationDateToFilter && toCreationDateToFilter)
+    where.created_at = Between(fromCreationDateToFilter, toCreationDateToFilter);
+  else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(fromCreationDateToFilter);
+  else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(toCreationDateToFilter);
+
+  const transactions = await Transaction.find({ where, order: { created_at: 'desc' } });
+
+  return transactions;
+};
+
+export {
+  saveTransaction,
+  editTransaction,
+  editTransactionStatus,
+  findTransactionsByUserId,
+  filterTransactionsForAdmin,
+};
