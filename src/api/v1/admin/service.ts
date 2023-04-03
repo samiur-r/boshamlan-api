@@ -95,7 +95,9 @@ const getUserSummary = async () => {
     (user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === yesterday,
   ).length;
 
-  return { totalUsers, verifiedToday, verifiedYesterday, notVerifiedToday, notVerifiedYesterday };
+  const activeAgents = users.filter((user) => user.is_agent).length;
+
+  return { totalUsers, activeAgents, verifiedToday, verifiedYesterday, notVerifiedToday, notVerifiedYesterday };
 };
 
 const getPostSummary = async () => {
