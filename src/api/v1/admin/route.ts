@@ -20,5 +20,6 @@ router.put('/edit-user', isAdminAuth, AdminController.editUser);
 router.put('/edit-agent', isAdminAuth, AdminController.editAgent);
 router.post('/verify-user', isAdminAuth, AdminController.verifyUser);
 router.post('/get-transactions', isAdminAuth, AdminController.fetchTransactions);
+router.get('/dashboard', isAdminAuth, AdminController.fetchDashboardInfo);
 
 export default router;

@@ -4,7 +4,16 @@ import { NextFunction, Request, Response } from 'express';
 
 import { hashPassword, verifyToken } from '../../../utils/passwordUtils';
 import logger from '../../../utils/logger';
-import { findAdminByPhone, getPaymentHistory, getPostHistory, saveAdmin } from './service';
+import {
+  findAdminByPhone,
+  geCreditsSummary,
+  getPaymentHistory,
+  getPostHistory,
+  getPostSummary,
+  getTransactionSummary,
+  getUserSummary,
+  saveAdmin,
+} from './service';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import { signJwt } from '../../../utils/jwtUtils';
 import config from '../../../config';
@@ -429,6 +438,19 @@ const fetchTransactions = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+const fetchDashboardInfo = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userSummary = await getUserSummary();
+    const postSummary = await getPostSummary();
+    const transactionSummary = await getTransactionSummary();
+    const creditSummary = await geCreditsSummary();
+    return res.status(200).json({ userSummary, postSummary, transactionSummary, creditSummary });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
 export {
   register,
   login,
@@ -445,4 +467,5 @@ export {
   editAgent,
   verifyUser,
   fetchTransactions,
+  fetchDashboardInfo,
 };
