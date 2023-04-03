@@ -25,7 +25,7 @@ const config_1 = __importDefault(require("../../../config"));
 const aesDecrypt_1 = __importDefault(require("../../../utils/aesDecrypt"));
 const jwtUtils_1 = require("../../../utils/jwtUtils");
 const service_6 = require("../posts/service");
-const service_7 = require("../logs/service");
+const service_7 = require("../user_logs/service");
 const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f;
     const { payload } = req.body;

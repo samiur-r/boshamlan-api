@@ -10,5 +10,6 @@ exports.agentSchema = (0, yup_1.object)({
     facebook: (0, yup_1.string)().nullable(),
     email: (0, yup_1.string)().email().nullable(),
     logo: (0, yup_1.mixed)().nullable(),
+    website: (0, yup_1.string)().nullable(),
 });
 //# sourceMappingURL=validation.js.map

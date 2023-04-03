@@ -21,7 +21,7 @@ const logger_1 = __importDefault(require("../../../utils/logger"));
 const service_3 = require("../credits/service");
 const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
-const service_4 = require("../logs/service");
+const service_4 = require("../user_logs/service");
 const verifyOtp = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const { userId, otpCode, nextOperation } = req.body;

@@ -12,7 +12,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updatePost = exports.removePost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = void 0;
+exports.filterPostsForAdmin = exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updatePost = exports.removePost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = void 0;
+/* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 const typeorm_1 = require("typeorm");
@@ -227,32 +228,38 @@ const findArchivedPostByUserId = (limit, offset, userId) => __awaiter(void 0, vo
 });
 exports.findArchivedPostByUserId = findArchivedPostByUserId;
 const findPostById = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     const post = yield Post_1.Post.findOneBy({ id });
     if (post) {
         post.phone = (_a = post === null || post === void 0 ? void 0 : post.user) === null || _a === void 0 ? void 0 : _a.phone;
-        post === null || post === void 0 ? true : delete post.user;
+        (_b = post === null || post === void 0 ? void 0 : post.user) === null || _b === void 0 ? true : delete _b.password;
     }
     return post;
 });
 exports.findPostById = findPostById;
 const findArchivedPostById = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    var _c, _d;
     const post = yield ArchivePost_1.ArchivePost.findOneBy({ id });
-    post === null || post === void 0 ? true : delete post.user;
+    if (post) {
+        post.phone = (_c = post === null || post === void 0 ? void 0 : post.user) === null || _c === void 0 ? void 0 : _c.phone;
+        (_d = post === null || post === void 0 ? void 0 : post.user) === null || _d === void 0 ? true : delete _d.password;
+    }
     return post;
 });
 exports.findArchivedPostById = findArchivedPostById;
 const updatePost = (postInfo, postId) => __awaiter(void 0, void 0, void 0, function* () {
     const post = yield findPostById(postId);
     if (!post)
-        throw new ErrorHandler_1.default(500, 'Something went wrong');
-    const newPost = yield Post_1.Post.save(Object.assign(Object.assign({}, post), { city_id: postInfo.cityId, city_title: postInfo.cityTitle, state_id: postInfo.stateId, state_title: postInfo.stateTitle, property_id: postInfo.propertyId, property_title: postInfo.propertyTitle, category_id: postInfo.categoryId, category_title: postInfo.categoryTitle, price: postInfo.price, description: postInfo.description, media: postInfo.media }));
+        throw new ErrorHandler_1.default(401, 'Post not found');
+    yield Post_1.Post.save(Object.assign(Object.assign({}, post), { city_id: postInfo.cityId, city_title: postInfo.cityTitle, state_id: postInfo.stateId, state_title: postInfo.stateTitle, property_id: postInfo.propertyId, property_title: postInfo.propertyTitle, category_id: postInfo.categoryId, category_title: postInfo.categoryTitle, price: postInfo.price, description: postInfo.description, media: postInfo.media }));
     yield (0, service_1.updateLocationCountValue)(postInfo.cityId, 'increment');
-    return newPost;
+    return post;
 });
 exports.updatePost = updatePost;
 const updatePostStickyVal = (post, isSticky) => __awaiter(void 0, void 0, void 0, function* () {
-    const newPost = Post_1.Post.create(Object.assign(Object.assign({}, post), { is_sticky: isSticky }));
+    const today = new Date();
+    const oneMonthFromToday = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
+    const newPost = Post_1.Post.create(Object.assign(Object.assign({}, post), { expiry_date: oneMonthFromToday, is_sticky: isSticky }));
     yield Post_1.Post.save(newPost);
 });
 exports.updatePostStickyVal = updatePostStickyVal;
@@ -333,4 +340,88 @@ const searchPosts = (limit, offset, city, stateId, propertyId, categoryId, price
     return { posts, count };
 });
 exports.searchPosts = searchPosts;
+const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    let posts;
+    const where = {};
+    const order = {};
+    if (userId) {
+        where.user = { id: parseInt(userId, 10) };
+    }
+    if (locationToFilter)
+        where.city_id = locationToFilter;
+    if (categoryToFilter)
+        where.category_id = categoryToFilter;
+    if (propertyTypeToFilter)
+        where.property_id = propertyTypeToFilter;
+    if (fromPriceToFilter && toPriceToFilter)
+        where.price = (0, typeorm_1.Between)(fromPriceToFilter, toPriceToFilter);
+    else if (fromPriceToFilter)
+        where.price = (0, typeorm_1.MoreThanOrEqual)(fromPriceToFilter);
+    else if (toPriceToFilter)
+        where.price = (0, typeorm_1.LessThanOrEqual)(toPriceToFilter);
+    if (fromCreationDateToFilter && toCreationDateToFilter)
+        where.created_at = (0, typeorm_1.Between)(fromCreationDateToFilter, toCreationDateToFilter);
+    else if (fromCreationDateToFilter)
+        where.created_at = (0, typeorm_1.MoreThanOrEqual)(fromCreationDateToFilter);
+    else if (toCreationDateToFilter)
+        where.created_at = (0, typeorm_1.LessThanOrEqual)(toCreationDateToFilter);
+    if (stickyStatusToFilter === -1)
+        where.is_sticky = false;
+    else if (stickyStatusToFilter === 1)
+        where.is_sticky = true;
+    switch (orderByToFilter) {
+        case 'Created':
+            order.created_at = 'DESC';
+            break;
+        case 'Sticked':
+            order.is_sticky = 'ASC';
+            break;
+        case 'Repost Date':
+            order.updated_at = 'DESC';
+            break;
+        case 'City':
+            order.city_id = 'ASC';
+            break;
+        case 'Property Type':
+            order.property_id = 'ASC';
+            break;
+        case 'Category':
+            order.category_id = 'ASC';
+            break;
+        default:
+            order.updated_at = 'DESC';
+            break;
+    }
+    try {
+        if (postStatusToFilter === 'Active') {
+            const postList = yield Post_1.Post.find({ where, order });
+            posts = postList;
+        }
+        else if (postStatusToFilter === 'Archived') {
+            const postList = yield ArchivePost_1.ArchivePost.find({ where, order });
+            posts = postList;
+        }
+        else if (postStatusToFilter === 'Deleted') {
+            const postList = yield DeletedPost_1.DeletedPost.find({ where, order });
+            posts = postList;
+        }
+        if (userTypeToFilter && userTypeToFilter === 'regular')
+            posts = posts === null || posts === void 0 ? void 0 : posts.filter((post) => { var _a; return ((_a = post.user) === null || _a === void 0 ? void 0 : _a.is_agent) === false; });
+        else if (userTypeToFilter && userTypeToFilter === 'agent')
+            posts = posts === null || posts === void 0 ? void 0 : posts.filter((post) => { var _a; return ((_a = post.user) === null || _a === void 0 ? void 0 : _a.is_agent) === true; });
+        posts === null || posts === void 0 ? void 0 : posts.forEach((post) => {
+            var _a;
+            post.posted_date = post.updated_at.toISOString().slice(0, 10);
+            post.public_date = post.created_at.toISOString().slice(0, 10);
+            post.expired_date = post.expiry_date.toISOString().slice(0, 10);
+            post.user_phone = (_a = post.user) === null || _a === void 0 ? void 0 : _a.phone;
+            delete post.user;
+        });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+    }
+    return posts;
+});
+exports.filterPostsForAdmin = filterPostsForAdmin;
 //# sourceMappingURL=service.js.map

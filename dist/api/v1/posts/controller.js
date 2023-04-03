@@ -22,12 +22,16 @@ const service_3 = require("./service");
 const cloudinaryUtils_1 = require("../../../utils/cloudinaryUtils");
 const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
-const service_4 = require("../logs/service");
+const service_4 = require("../user_logs/service");
+const checkAuthorization_1 = require("../../../utils/checkAuthorization");
 const fetchOne = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const user = (_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.user) === null || _b === void 0 ? void 0 : _b.payload;
     try {
         const post = yield (0, service_3.findPostById)(parseInt(req.params.id, 10));
         if (!post)
             throw new ErrorHandler_1.default(404, 'Post not found');
+        (0, checkAuthorization_1.checkAuthorization)(user, post.id);
         return res.status(200).json({ success: post });
     }
     catch (error) {
@@ -37,14 +41,14 @@ const fetchOne = (req, res, next) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.fetchOne = fetchOne;
 const fetchMany = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g;
-    const limit = ((_a = req.query) === null || _a === void 0 ? void 0 : _a.limit) ? parseInt(req.query.limit, 10) : 10;
-    const offset = ((_b = req.query) === null || _b === void 0 ? void 0 : _b.offset) ? parseInt(req.query.offset, 10) : undefined;
+    var _c, _d, _e, _f, _g, _h, _j;
+    const limit = ((_c = req.query) === null || _c === void 0 ? void 0 : _c.limit) ? parseInt(req.query.limit, 10) : 10;
+    const offset = ((_d = req.query) === null || _d === void 0 ? void 0 : _d.offset) ? parseInt(req.query.offset, 10) : undefined;
     // eslint-disable-next-line no-nested-ternary
-    const userId = ((_e = (_d = (_c = res === null || res === void 0 ? void 0 : res.locals) === null || _c === void 0 ? void 0 : _c.user) === null || _d === void 0 ? void 0 : _d.payload) === null || _e === void 0 ? void 0 : _e.id)
+    const userId = ((_g = (_f = (_e = res === null || res === void 0 ? void 0 : res.locals) === null || _e === void 0 ? void 0 : _e.user) === null || _f === void 0 ? void 0 : _f.payload) === null || _g === void 0 ? void 0 : _g.id)
         ? res.locals.user.payload.id
-        : ((_f = req.query) === null || _f === void 0 ? void 0 : _f.userId)
-            ? parseInt((_g = req.query) === null || _g === void 0 ? void 0 : _g.userId, 10)
+        : ((_h = req.query) === null || _h === void 0 ? void 0 : _h.userId)
+            ? parseInt((_j = req.query) === null || _j === void 0 ? void 0 : _j.userId, 10)
             : undefined;
     try {
         const { posts, count } = yield (0, service_3.findPosts)(limit, offset, userId);
@@ -57,9 +61,9 @@ const fetchMany = (req, res, next) => __awaiter(void 0, void 0, void 0, function
 });
 exports.fetchMany = fetchMany;
 const fetchManyArchive = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _h, _j;
-    const limit = ((_h = req.query) === null || _h === void 0 ? void 0 : _h.limit) ? parseInt(req.query.limit, 10) : 10;
-    const offset = ((_j = req.query) === null || _j === void 0 ? void 0 : _j.offset) ? parseInt(req.query.offset, 10) : undefined;
+    var _k, _l;
+    const limit = ((_k = req.query) === null || _k === void 0 ? void 0 : _k.limit) ? parseInt(req.query.limit, 10) : 10;
+    const offset = ((_l = req.query) === null || _l === void 0 ? void 0 : _l.offset) ? parseInt(req.query.offset, 10) : undefined;
     const userId = res.locals.user.payload.id;
     try {
         const resPosts = yield (0, service_3.findArchivedPostByUserId)(limit, offset, userId);
@@ -145,12 +149,15 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
 });
 exports.insert = insert;
 const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _k;
+    var _m, _o;
     const { postInfo, postId } = req.body;
+    const user = (_o = (_m = res.locals) === null || _m === void 0 ? void 0 : _m.user) === null || _o === void 0 ? void 0 : _o.payload;
     const media = [];
     try {
-        if (!postId)
+        const post = yield (0, service_3.findPostById)(postId);
+        if (!post)
             throw new ErrorHandler_1.default(404, 'Post not found');
+        (0, checkAuthorization_1.checkAuthorization)(user, post.id);
         yield validation_1.postSchema.validate(postInfo);
         yield (0, service_3.removePostMedia)(postId);
         if ((postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia) && (postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia.length)) {
@@ -162,12 +169,12 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         }
         postInfo.media = media;
         const updatedPost = yield (0, service_3.updatePost)(postInfo, postId);
-        logger_1.default.info(`User: ${(_k = updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.user) === null || _k === void 0 ? void 0 : _k.phone} updated post: ${updatedPost.id}`);
+        logger_1.default.info(`User: ${updatedPost.phone} updated post: ${updatedPost.id}`);
         yield (0, service_4.saveUserLog)([
             {
                 post_id: updatedPost.id,
                 transaction: undefined,
-                user: updatedPost.user.phone,
+                user: updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.phone,
                 activity: 'Post updated successfully',
             },
         ]);
@@ -186,7 +193,7 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
 });
 exports.update = update;
 const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _l;
+    var _p;
     const userId = res.locals.user.payload.id;
     const { postId } = req.body;
     try {
@@ -209,7 +216,7 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
             {
                 post_id: post.id,
                 transaction: undefined,
-                user: (_l = user === null || user === void 0 ? void 0 : user.phone) !== null && _l !== void 0 ? _l : undefined,
+                user: (_p = user === null || user === void 0 ? void 0 : user.phone) !== null && _p !== void 0 ? _p : undefined,
                 activity: 'Post sticked successfully',
             },
         ]);
@@ -231,7 +238,7 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
 });
 exports.updatePostToStick = updatePostToStick;
 const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _m;
+    var _q;
     const userId = res.locals.user.payload.id;
     const { postId } = req.body;
     try {
@@ -279,7 +286,7 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             {
                 post_id: post.id,
                 transaction: undefined,
-                user: (_m = user === null || user === void 0 ? void 0 : user.phone) !== null && _m !== void 0 ? _m : undefined,
+                user: (_q = user === null || user === void 0 ? void 0 : user.phone) !== null && _q !== void 0 ? _q : undefined,
                 activity: 'Post reposted successfully',
             },
         ]);

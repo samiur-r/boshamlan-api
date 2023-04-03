@@ -1,0 +1,1 @@
+{"version":3,"file":"checkAuthorization.js","sourceRoot":"","sources":["../../src/utils/checkAuthorization.ts"],"names":[],"mappings":";;;;;;AAAA,kEAA0C;AAEnC,MAAM,kBAAkB,GAAG,CAAC,IAAS,EAAE,IAAS,EAAE,EAAE;IACzD,IAAI,IAAI,IAAI,CAAC,IAAI,CAAC,YAAY,IAAI,IAAI,CAAC,EAAE,KAAK,IAAI;QAAE,MAAM,IAAI,sBAAY,CAAC,GAAG,EAAE,wBAAwB,CAAC,CAAC;AAC5G,CAAC,CAAC;AAFW,QAAA,kBAAkB,sBAE7B"}

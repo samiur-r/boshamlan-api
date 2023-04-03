@@ -9,7 +9,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.editTransactionStatus = exports.editTransaction = exports.saveTransaction = void 0;
+exports.filterTransactionsForAdmin = exports.findTransactionsByUserId = exports.editTransactionStatus = exports.editTransaction = exports.saveTransaction = void 0;
+const typeorm_1 = require("typeorm");
 const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
 const model_1 = require("./model");
@@ -35,6 +36,11 @@ const findTransactionByTrackId = (track_id) => __awaiter(void 0, void 0, void 0,
     const transaction = yield model_1.Transaction.findOne({ where: { track_id } });
     return transaction;
 });
+const findTransactionsByUserId = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield model_1.Transaction.find({ where: { user: { id: userId } } });
+    return transaction;
+});
+exports.findTransactionsByUserId = findTransactionsByUserId;
 const editTransaction = (trackId, reference_id, tran_id, status) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     const transaction = yield findTransactionByTrackId(trackId.toString());
@@ -89,4 +95,39 @@ const editTransactionStatus = (trackId, status) => __awaiter(void 0, void 0, voi
     return { status: 200 };
 });
 exports.editTransactionStatus = editTransactionStatus;
+const filterTransactionsForAdmin = (statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const where = {};
+    if (userId) {
+        where.user = { id: parseInt(userId, 10) };
+    }
+    if (statusToFilter && statusToFilter !== '-')
+        where.status = statusToFilter.toLowerCase();
+    if (typeToFilter && typeToFilter !== '-') {
+        switch (typeToFilter) {
+            case 'Regular':
+                where.package_title = (0, typeorm_1.Like)('regular%');
+                break;
+            case 'Sticky':
+                where.package_title = (0, typeorm_1.Like)('sticky%');
+                break;
+            case 'Sticky Direct':
+                where.package_title = 'stickyDirect';
+                break;
+            case 'Agent':
+                where.package_title = (0, typeorm_1.Like)('agent%');
+                break;
+            default:
+                break;
+        }
+    }
+    if (fromCreationDateToFilter && toCreationDateToFilter)
+        where.created_at = (0, typeorm_1.Between)(fromCreationDateToFilter, toCreationDateToFilter);
+    else if (fromCreationDateToFilter)
+        where.created_at = (0, typeorm_1.MoreThanOrEqual)(fromCreationDateToFilter);
+    else if (toCreationDateToFilter)
+        where.created_at = (0, typeorm_1.LessThanOrEqual)(toCreationDateToFilter);
+    const transactions = yield model_1.Transaction.find({ where, order: { created_at: 'desc' } });
+    return transactions;
+});
+exports.filterTransactionsForAdmin = filterTransactionsForAdmin;
 //# sourceMappingURL=service.js.map

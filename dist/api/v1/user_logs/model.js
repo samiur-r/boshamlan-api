@@ -9,66 +9,40 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Agent = void 0;
+exports.UserLog = void 0;
 const typeorm_1 = require("typeorm");
-const model_1 = require("../users/model");
-let Agent = class Agent extends typeorm_1.BaseEntity {
+let UserLog = class UserLog extends typeorm_1.BaseEntity {
 };
 __decorate([
     (0, typeorm_1.PrimaryGeneratedColumn)(),
     __metadata("design:type", Number)
-], Agent.prototype, "id", void 0);
+], UserLog.prototype, "id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Number)
+], UserLog.prototype, "post_id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], UserLog.prototype, "transaction", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", String)
+], UserLog.prototype, "user", void 0);
 __decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", String)
-], Agent.prototype, "name", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Agent.prototype, "description", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Agent.prototype, "email", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Agent.prototype, "instagram", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Agent.prototype, "twitter", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Agent.prototype, "facebook", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Agent.prototype, "website", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Agent.prototype, "logo_url", void 0);
-__decorate([
-    (0, typeorm_1.Column)(),
-    __metadata("design:type", Date)
-], Agent.prototype, "expiry_date", void 0);
-__decorate([
-    (0, typeorm_1.OneToOne)(() => model_1.User, { nullable: false, eager: true }),
-    (0, typeorm_1.JoinColumn)({ name: 'user_id' }),
-    __metadata("design:type", Object)
-], Agent.prototype, "user", void 0);
+], UserLog.prototype, "activity", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)
-], Agent.prototype, "created_at", void 0);
+], UserLog.prototype, "created_at", void 0);
 __decorate([
     (0, typeorm_1.UpdateDateColumn)(),
     __metadata("design:type", Date)
-], Agent.prototype, "updated_at", void 0);
-Agent = __decorate([
-    (0, typeorm_1.Entity)('agents')
-], Agent);
-exports.Agent = Agent;
+], UserLog.prototype, "updated_at", void 0);
+UserLog = __decorate([
+    (0, typeorm_1.Entity)('user_logs')
+], UserLog);
+exports.UserLog = UserLog;
 //# sourceMappingURL=model.js.map

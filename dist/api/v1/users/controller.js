@@ -23,7 +23,7 @@ const validation_1 = require("./validation");
 const jwtUtils_1 = require("../../../utils/jwtUtils");
 const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
-const service_3 = require("../logs/service");
+const service_3 = require("../user_logs/service");
 const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { phone, password } = req.body;
     try {
@@ -82,7 +82,7 @@ const register = (req, res, next) => __awaiter(void 0, void 0, void 0, function*
         const hashedPassword = yield (0, passwordUtils_1.hashPassword)(password);
         const userObj = yield (0, service_1.saveUser)(phone, hashedPassword, 'not_verified');
         yield (0, service_2.sendOtpVerificationSms)(phone, 'registration', userObj);
-        logger_1.default.info(`Registration attempt by user ${user === null || user === void 0 ? void 0 : user.phone}. Otp sent `);
+        logger_1.default.info(`Registration attempt by user ${phone}. Otp sent `);
         yield (0, service_3.saveUserLog)([
             { post_id: undefined, transaction: undefined, user: phone, activity: 'Registration attempt. Otp sent' },
         ]);

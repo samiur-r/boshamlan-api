@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.search = void 0;
 const logger_1 = __importDefault(require("../../../utils/logger"));
-const service_1 = require("../logs/service");
+const service_1 = require("../user_logs/service");
 const service_2 = require("../posts/service");
 const search = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { limit, offset, location, propertyType, category, priceRange, keyword } = req.body;

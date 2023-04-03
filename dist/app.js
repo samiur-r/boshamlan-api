@@ -21,6 +21,7 @@ const account_1 = __importDefault(require("./api/v1/account"));
 const search_1 = __importDefault(require("./api/v1/search"));
 const locations_1 = __importDefault(require("./api/v1/locations"));
 const content_1 = __importDefault(require("./api/v1/content"));
+const admin_1 = __importDefault(require("./api/v1/admin"));
 const app = (0, express_1.default)();
 app.use((0, cookie_parser_1.default)(config_1.default.cookieSecret));
 app.use(express_1.default.json({ limit: '50mb' }));
@@ -38,6 +39,7 @@ app.use('/api/v1/account', account_1.default);
 app.use('/api/v1/search', search_1.default);
 app.use('/api/v1/locations', locations_1.default);
 app.use('/api/v1/page-content', content_1.default);
+app.use('/api/v1/admin', admin_1.default);
 app.use(ErrorHandlingMiddleware_1.default);
 exports.default = app;
 //# sourceMappingURL=app.js.map
