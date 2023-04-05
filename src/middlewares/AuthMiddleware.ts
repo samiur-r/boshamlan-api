@@ -33,6 +33,8 @@ export const isAdminAuth = async (req: Request, res: Response, next: NextFunctio
   const { token } = signedCookies;
 
   try {
+    if (!token) throw new ErrorHandler(401, 'You are not authorized');
+
     const user = await verifyJwt(token);
     res.locals.user = user;
     if (!user.payload?.admin_status) throw new ErrorHandler(401, 'You are not authorized');
@@ -47,6 +49,8 @@ export const isSuperAdminAuth = async (req: Request, res: Response, next: NextFu
   const { token } = signedCookies;
 
   try {
+    if (!token) throw new ErrorHandler(401, 'You are not authorized');
+
     const { payload } = await verifyJwt(token);
     if (!payload?.admin_status || !payload?.is_super) throw new ErrorHandler(401, 'You are not authorized');
     next();

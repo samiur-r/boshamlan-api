@@ -1,4 +1,4 @@
-import { Between, In, LessThanOrEqual, MoreThan, MoreThanOrEqual } from 'typeorm';
+import { Between, Equal, In, LessThanOrEqual, MoreThan, MoreThanOrEqual } from 'typeorm';
 import { hashPassword } from '../../../utils/passwordUtils';
 import { IUser } from './interfaces';
 import { User } from './model';
@@ -68,6 +68,7 @@ const filterUsersForAdmin = async (
   adminCommentToFilter: string,
   fromCreationDateToFilter: Date | null,
   toCreationDateToFilter: Date | null,
+  offset: number,
 ) => {
   const where: any = {};
 
@@ -85,6 +86,18 @@ const filterUsersForAdmin = async (
       case 'Not Verified':
         where.status = 'not_verified';
         break;
+      case 'Has Regular Credits':
+        where.credits = { regular: MoreThan(0) };
+        break;
+      case 'Has Sticky Credits':
+        where.credits = { sticky: MoreThan(0) };
+        break;
+      case 'Has Agent Credits':
+        where.credits = { agent: MoreThan(0) };
+        break;
+      case 'Zero Free':
+        where.credits = { free: Equal(0) };
+        break;
       default:
         break;
     }
@@ -96,9 +109,15 @@ const filterUsersForAdmin = async (
     where.created_at = Between(fromCreationDateToFilter, toCreationDateToFilter);
   else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(fromCreationDateToFilter);
   else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(toCreationDateToFilter);
-  const users = await User.find({ where });
 
-  return users;
+  const [users, count] = await User.findAndCount({
+    where,
+    take: 10,
+    skip: offset,
+    relations: ['posts', 'archive_posts', 'deleted_posts', 'credits', 'transactions'],
+  });
+
+  return { users, count };
 };
 
 const findUserWithAgentInfo = async (userId: number) => {

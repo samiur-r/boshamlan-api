@@ -12,6 +12,8 @@ import { IUser } from './interfaces';
 import { IOtp } from '../otps/interfaces';
 import { ITransaction } from '../transactions/interfaces';
 import { IAgent } from '../agents/interfaces';
+import { IPost } from '../posts/interfaces';
+import { ICredit } from '../credits/interfaces';
 
 @Entity('users')
 export class User extends BaseEntity implements IUser {
@@ -46,10 +48,22 @@ export class User extends BaseEntity implements IUser {
   otp: IOtp[];
 
   @OneToMany('Transaction', 'user')
-  transaction: ITransaction[];
+  transactions: ITransaction[];
 
   @OneToMany('Agent', 'user')
   agent: IAgent;
+
+  @OneToMany('Post', 'user')
+  posts: IPost;
+
+  @OneToMany('ArchivePost', 'user')
+  archive_posts: IPost;
+
+  @OneToMany('DeletedPost', 'user')
+  deleted_posts: IPost;
+
+  @OneToMany('Credit', 'user')
+  credits: ICredit;
 
   @CreateDateColumn()
   created_at: Date;
