@@ -233,7 +233,7 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       is_agent: user.is_agent,
       adminComment: user.admin_comment,
       registered: user.created_at.toISOString().slice(0, 10),
-      postHistory: {
+      post: {
         active: user.posts?.length,
         repost: user.posts.filter((post: IPost) => post.is_reposted).length,
         archived: user.archive_posts?.length,
