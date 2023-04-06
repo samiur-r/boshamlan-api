@@ -114,10 +114,10 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
     orderByToFilter,
     postStatusToFilter,
     userId,
+    offset,
   } = req.body;
-
   try {
-    const posts = await filterPostsForAdmin(
+    const { posts, totalPages } = await filterPostsForAdmin(
       locationToFilter,
       categoryToFilter,
       propertyTypeToFilter,
@@ -130,8 +130,9 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
       orderByToFilter,
       postStatusToFilter,
       userId,
+      offset,
     );
-    return res.status(200).json({ posts });
+    return res.status(200).json({ posts, totalPages });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

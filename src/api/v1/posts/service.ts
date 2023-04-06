@@ -482,8 +482,10 @@ const filterPostsForAdmin = async (
   orderByToFilter: string,
   postStatusToFilter: string,
   userId: string | undefined,
+  offset: number,
 ) => {
   let posts;
+  let totalPosts;
   const where: any = {};
   const order: any = {};
 
@@ -512,19 +514,19 @@ const filterPostsForAdmin = async (
       order.created_at = 'DESC';
       break;
     case 'Sticked':
-      order.is_sticky = 'ASC';
+      order.is_sticky = 'DESC';
       break;
     case 'Repost Date':
       order.updated_at = 'DESC';
       break;
     case 'City':
-      order.city_id = 'ASC';
+      order.city_id = 'DESC';
       break;
     case 'Property Type':
-      order.property_id = 'ASC';
+      order.property_id = 'DESC';
       break;
     case 'Category':
-      order.category_id = 'ASC';
+      order.category_id = 'DESC';
       break;
     default:
       order.updated_at = 'DESC';
@@ -533,14 +535,32 @@ const filterPostsForAdmin = async (
 
   try {
     if (postStatusToFilter === 'Active') {
-      const postList: PostsWithUser[] | null = await Post.find({ where, order });
+      const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
+        where,
+        order,
+        skip: offset,
+        take: 10,
+      });
       posts = postList;
+      totalPosts = count;
     } else if (postStatusToFilter === 'Archived') {
-      const postList: PostsWithUser[] | null = await ArchivePost.find({ where, order });
+      const [postList, count]: [PostsWithUser[] | null, number] = await ArchivePost.findAndCount({
+        where,
+        order,
+        skip: offset,
+        take: 10,
+      });
       posts = postList;
+      totalPosts = count;
     } else if (postStatusToFilter === 'Deleted') {
-      const postList: PostsWithUser[] | null = await DeletedPost.find({ where, order });
+      const [postList, count]: [PostsWithUser[] | null, number] = await DeletedPost.findAndCount({
+        where,
+        order,
+        skip: offset,
+        take: 10,
+      });
       posts = postList;
+      totalPosts = count;
     }
 
     if (userTypeToFilter && userTypeToFilter === 'regular')
@@ -558,8 +578,8 @@ const filterPostsForAdmin = async (
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
   }
-
-  return posts;
+  const totalPages = totalPosts ? Math.ceil(totalPosts / 10) : null;
+  return { posts, totalPages };
 };
 
 export {
