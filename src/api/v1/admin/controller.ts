@@ -399,17 +399,18 @@ const verifyUser = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const fetchTransactions = async (req: Request, res: Response, next: NextFunction) => {
-  const { statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId } = req.body;
+  const { statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId, offset } = req.body;
 
   try {
-    const transactions = await filterTransactionsForAdmin(
+    const { transactions, totalPages } = await filterTransactionsForAdmin(
       statusToFilter,
       typeToFilter,
       fromCreationDateToFilter,
       toCreationDateToFilter,
       userId,
+      offset,
     );
-    return res.status(200).json({ transactions });
+    return res.status(200).json({ transactions, totalPages });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

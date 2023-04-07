@@ -136,6 +136,7 @@ const filterTransactionsForAdmin = async (
   fromCreationDateToFilter: Date | undefined,
   toCreationDateToFilter: Date | undefined,
   userId: string,
+  offset: number,
 ) => {
   const where: any = {};
 
@@ -168,9 +169,15 @@ const filterTransactionsForAdmin = async (
   else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(fromCreationDateToFilter);
   else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(toCreationDateToFilter);
 
-  const transactions = await Transaction.find({ where, order: { created_at: 'desc' } });
+  const [transactions, count] = await Transaction.findAndCount({
+    where,
+    order: { created_at: 'desc' },
+    skip: offset,
+    take: 10,
+  });
 
-  return transactions;
+  const totalPages = Math.ceil(count / 10);
+  return { transactions, totalPages };
 };
 
 export {
