@@ -37,7 +37,7 @@ export class User extends BaseEntity implements IUser {
   @Column({
     default: false,
   })
-  is_admin: boolean;
+  is_blocked: boolean;
 
   @Column({
     nullable: true,

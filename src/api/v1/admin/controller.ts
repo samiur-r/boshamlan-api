@@ -3,6 +3,7 @@
 /* eslint-disable no-param-reassign */
 import { NextFunction, Request, Response } from 'express';
 
+import axios from 'axios';
 import { hashPassword, verifyToken } from '../../../utils/passwordUtils';
 import logger from '../../../utils/logger';
 import {
@@ -36,19 +37,17 @@ import {
   updateUserStatus,
 } from '../users/service';
 import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
-import { UserLog } from '../user_logs/model';
 import { findCreditByUserId, initCredits } from '../credits/service';
 import { filterTransactionsForAdmin, findTransactionsByUserId } from '../transactions/service';
 import { findAgentById, findAgentByUserId } from '../agents/service';
 import { Credit } from '../credits/model';
 import { Agent } from '../agents/model';
 import { sendSms } from '../../../utils/smsUtils';
-import { Transaction } from '../transactions/model';
-import axios from 'axios';
-import { IUser } from '../users/interfaces';
 import { IPost } from '../posts/interfaces';
 import { ITransaction } from '../transactions/interfaces';
 import sortFunctions from '../../../utils/sortUsersFunctions';
+import { User } from '../users/model';
+import { getSocketIo } from '../../../utils/socketIO';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -190,13 +189,13 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const fetchLogs = async (req: Request, res: Response, next: NextFunction) => {
-  const { postId, user } = req.body;
-  let logs: UserLog[] = [];
+  const { postId, user, offset } = req.body;
+  let response: any;
 
   try {
-    if (postId) logs = await fetchLogsByPostId(postId);
-    else if (user) logs = await fetchLogsByUser(user);
-    return res.status(200).json({ logs });
+    if (postId) response = await fetchLogsByPostId(postId, offset);
+    else if (user) response = await fetchLogsByUser(user, offset);
+    return res.status(200).json({ logs: response.logs, totalPages: response.totalPages });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
@@ -233,6 +232,7 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       status: user.status,
       is_agent: user.is_agent,
       adminComment: user.admin_comment,
+      is_blocked: user.is_blocked,
       registered: user.created_at.toISOString().slice(0, 10),
       post: {
         active: user.posts?.length,
@@ -443,6 +443,35 @@ const fetchTestItems = async (req: Request, res: Response, next: NextFunction) =
   }
 };
 
+const updateUserBlockStatus = async (req: Request, res: Response, next: NextFunction) => {
+  const { userId, status } = req.body;
+
+  try {
+    if (!userId) throw new ErrorHandler(404, 'Invalid user id');
+    const user = await findUserById(userId);
+    if (!user) throw new ErrorHandler(401, 'User not found');
+
+    if (user.is_blocked && status) throw new ErrorHandler(403, 'User is already blocked');
+
+    if (!user.is_blocked && status === false) throw new ErrorHandler(403, 'You can not unblock a non blocked user');
+
+    await User.save({
+      ...user,
+      is_blocked: status,
+    });
+
+    if (status) {
+      const socketIo: any = await getSocketIo();
+      socketIo.emit('userBlocked', { user: user.phone });
+    }
+
+    return res.status(200).json({ success: `User ${status === true ? ' blocked' : ' unblocked'} successfully` });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
 export {
   register,
   login,
@@ -461,4 +490,5 @@ export {
   fetchTransactions,
   fetchDashboardInfo,
   fetchTestItems,
+  updateUserBlockStatus,
 };

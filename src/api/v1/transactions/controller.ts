@@ -139,7 +139,6 @@ const handleKpayResponse = async (req: Request, res: Response) => {
               const userPayload = {
                 id: user.id,
                 phone: user.phone,
-                is_admin: user.is_admin,
                 is_agent: user.is_agent,
                 status: user.status,
               };

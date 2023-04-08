@@ -26,13 +26,14 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     if (user && user.status === 'not_verified')
       return res.status(200).json({ nextOperation: 'verify phone', userId: user.id });
 
+    if (user && user.is_blocked) throw new ErrorHandler(403, 'You are blocked');
+
     const isValidPassword = await verifyToken(password, user.password);
     if (!isValidPassword) throw new ErrorHandler(403, 'Incorrect phone or password');
 
     const userPayload = {
       id: user.id,
       phone: user.phone,
-      is_admin: user.is_admin,
       is_agent: user.is_agent,
       status: user.status,
     };
