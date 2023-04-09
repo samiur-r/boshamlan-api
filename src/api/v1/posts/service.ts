@@ -63,6 +63,7 @@ const savePost = async (
     price: postInfo.price,
     description: postInfo.description,
     expiry_date: oneMonthFromToday,
+    sticked_date: typeOfCredit === 'sticky' ? today : undefined,
     media: postInfo.media,
     is_sticky: typeOfCredit === 'sticky',
     credit_type: typeOfCredit,
@@ -360,6 +361,7 @@ const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {
   );
   const newPost = Post.create({
     ...post,
+    sticked_date: isSticky ? today : undefined,
     expiry_date: oneMonthFromToday,
     is_sticky: isSticky,
   });
@@ -379,10 +381,13 @@ const updatePostViewCount = async (id: number, count: number) => {
 };
 
 const updatePostRepostVals = async (post: IPost, isReposted: boolean, repostCount: number) => {
+  const today = new Date();
+
   const newPost = Post.create({
     ...post,
     is_reposted: isReposted,
     repost_count: repostCount,
+    repost_date: isReposted ? today : undefined,
   });
   await Post.save(newPost);
 };

@@ -78,6 +78,12 @@ export class Post extends BaseEntity implements IPost {
   })
   repost_count: number;
 
+  @Column({ nullable: true })
+  sticked_date: Date;
+
+  @Column()
+  repost_date: Date;
+
   @Column()
   expiry_date: Date;
 

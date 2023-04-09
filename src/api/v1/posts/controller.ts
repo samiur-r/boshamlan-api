@@ -209,12 +209,14 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const updatePostToStick = async (req: Request, res: Response, next: NextFunction) => {
-  const userId = res.locals.user.payload.id;
+  const user = res.locals.user.payload;
   const { postId } = req.body;
 
   try {
+    if (!user) throw new ErrorHandler(500, 'Something went wrong');
     if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
-    const credit = await findCreditByUserId(userId);
+
+    const credit = await findCreditByUserId(user.id);
     if (!credit) throw new ErrorHandler(500, 'Something went wrong');
 
     if (credit.sticky < 1) throw new ErrorHandler(402, 'You do not have enough credit');
@@ -222,8 +224,6 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
     const post = await findPostById(parseInt(postId, 10));
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
     if (post.is_sticky) throw new ErrorHandler(304, 'Post is already sticky');
-
-    const user = await findUserById(userId);
 
     await updatePostStickyVal(post, true);
     logger.info(`Post ${post.id} sticked by user ${user?.phone}`);
@@ -238,33 +238,36 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
 
     let creditType = post.credit_type;
     if (creditType === 'agent' && !user?.is_agent) creditType = 'regular';
-    const updatedCredit = await updateCredit(userId, post.credit_type, 1, 'ADD', credit);
-    await updateCredit(userId, 'sticky', 1, 'SUB', updatedCredit);
+    const updatedCredit = await updateCredit(user.id, post.credit_type, 1, 'ADD', credit);
+    await updateCredit(user.id, 'sticky', 1, 'SUB', updatedCredit);
 
     return res.status(200).json({ success: 'Post is sticked successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
-    logger.error(`Post ${postId} stick attempt by user ${userId} failed`);
+    logger.error(`Post ${postId} stick attempt by user ${user.phone} failed`);
     await saveUserLog([
-      { post_id: parseInt(postId, 10), transaction: undefined, user: userId, activity: 'Post stick attempt failed' },
+      {
+        post_id: parseInt(postId, 10),
+        transaction: undefined,
+        user: user.phone,
+        activity: 'Post stick attempt failed',
+      },
     ]);
     return next(error);
   }
 };
 
 const rePost = async (req: Request, res: Response, next: NextFunction) => {
-  const userId = res.locals.user.payload.id;
+  const user = res.locals.user.payload;
   const { postId } = req.body;
 
   try {
+    if (!user) throw new ErrorHandler(500, 'Something went wrong');
     if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
     const post = await findArchivedPostById(postId);
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
 
-    const user = await findUserById(userId);
-    if (!user) throw new ErrorHandler(500, 'Something went wrong');
-
-    const credit = await findCreditByUserId(userId);
+    const credit = await findCreditByUserId(user.id);
     if (!credit) throw new ErrorHandler(500, 'Something went wrong');
 
     let typeOfCredit;
@@ -287,12 +290,12 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
       categoryTitle: post.category_title,
       price: post.price,
       description: post.description,
-      media: post.media,
+      media: post.media
     };
 
     const newPost = await savePost(postInfo, user as IUser, typeOfCredit);
     await removeArchivedPost(post.id);
-    await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
+    await updateCredit(user.id, typeOfCredit, 1, 'SUB', credit);
     const repostCount = post.repost_count + 1;
     await updatePostRepostVals(newPost, true, repostCount);
     logger.info(`Post ${post.id} reposted by user ${user?.phone}`);
@@ -307,9 +310,9 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     return res.status(200).json({ success: 'Post is reposted successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
-    logger.error(`Post ${postId} repost by user ${userId} failed`);
+    logger.error(`Post ${postId} repost by user ${user.phone} failed`);
     await saveUserLog([
-      { post_id: parseInt(postId, 10), transaction: undefined, user: userId, activity: 'Post repost failed' },
+      { post_id: parseInt(postId, 10), transaction: undefined, user: user.phone, activity: 'Post repost failed' },
     ]);
     return next(error);
   }
