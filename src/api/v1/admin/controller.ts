@@ -26,7 +26,6 @@ import {
   removeAllPostsOfUser,
   removeArchivedPost,
   removePost,
-  removePostMedia,
   saveDeletedPost,
   updatePostStickyVal,
 } from '../posts/service';
@@ -338,10 +337,10 @@ const fetchUserWithAgentInfo = async (req: Request, res: Response, next: NextFun
 };
 
 const editUser = async (req: Request, res: Response, next: NextFunction) => {
-  const { phone, adminComment, password } = req.body;
+  const { id, phone, adminComment, password } = req.body;
 
   try {
-    const user = await findUserByPhone(phone);
+    const user = await findUserById(id);
     if (!user) throw new ErrorHandler(401, 'User not found');
 
     await updateUser(user, phone, adminComment, password);
@@ -478,19 +477,6 @@ const updateUserBlockStatus = async (req: Request, res: Response, next: NextFunc
   }
 };
 
-const test = async (req: Request, res: Response, next: NextFunction) => {
-  const { userId } = req.body;
-
-  try {
-    await removeAllPostsOfUser(userId);
-
-    return res.status(200).json({});
-  } catch (error) {
-    logger.error(`${error.name}: ${error.message}`);
-    return next(error);
-  }
-};
-
 export {
   register,
   login,
@@ -510,5 +496,4 @@ export {
   fetchDashboardInfo,
   fetchTestItems,
   updateUserBlockStatus,
-  test,
 };

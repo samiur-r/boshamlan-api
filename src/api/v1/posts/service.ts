@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
-import { Between, In, IsNull, LessThan, LessThanOrEqual, Like, MoreThanOrEqual } from 'typeorm';
+import { Between, In, IsNull, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual } from 'typeorm';
 import cloudinary from '../../../config/cloudinary';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
@@ -562,6 +562,16 @@ const filterPostsForAdmin = async (
       });
       posts = postList;
       totalPosts = count;
+    } else if (postStatusToFilter === 'Reposted') {
+      where.repost_count = MoreThan(0);
+      const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
+        where,
+        order,
+        skip: offset,
+        take: 10,
+      });
+      posts = postList;
+      totalPosts = count;
     }
 
     if (userTypeToFilter && userTypeToFilter === 'regular')
@@ -594,6 +604,7 @@ const removeAllPostsOfUser = async (userId: number) => {
   const mediaUrls = allPosts.reduce((acc, post) => [...acc, ...post.media] as any, []);
 
   const promises = allPosts.map(async (post) => {
+    post.media = [];
     await saveDeletedPost(post, user);
   });
 
