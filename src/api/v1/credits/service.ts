@@ -1,4 +1,4 @@
-import { In } from 'typeorm';
+import { In, MoreThan } from 'typeorm';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import { IUser } from '../users/interfaces';
 import { ICredit } from './interfaces';
@@ -68,8 +68,28 @@ const updateAgentCredit = async (ids: number[], value: number) => {
 };
 
 const findStickyCredits = async (userId: number) => {
-  const credits = await Credit.findOne({ where: { user: { id: userId } } });
+  const credits = await Credit.findOne({ where: { user: { id: userId }, sticky: MoreThan(0) } });
   return credits;
 };
 
-export { initCredits, updateCredit, updateAgentCredit, findCreditByUserId, typeOfCreditToDeduct, findStickyCredits };
+const setCreditsToZeroByUserId = async (userId: number) => {
+  const credits = await Credit.findOne({ where: { user: { id: userId } } });
+
+  await Credit.save({
+    ...credits,
+    regular: 0,
+    free: 0,
+    sticky: 0,
+    agent: 0,
+  });
+};
+
+export {
+  initCredits,
+  updateCredit,
+  updateAgentCredit,
+  findCreditByUserId,
+  typeOfCreditToDeduct,
+  findStickyCredits,
+  setCreditsToZeroByUserId,
+};

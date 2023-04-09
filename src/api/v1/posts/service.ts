@@ -2,6 +2,7 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
 import { Between, In, IsNull, LessThan, LessThanOrEqual, Like, MoreThanOrEqual } from 'typeorm';
+import cloudinary from '../../../config/cloudinary';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
@@ -582,6 +583,33 @@ const filterPostsForAdmin = async (
   return { posts, totalPages };
 };
 
+const removeAllPostsOfUser = async (userId: number) => {
+  const activePosts = await findPostByUserId(userId);
+  const archivedPosts = await ArchivePost.find({ where: { user: { id: userId } } });
+  const user = await findUserById(userId);
+
+  if (!user) throw new ErrorHandler(500, 'Something went wrong');
+
+  const allPosts = [...activePosts, ...archivedPosts];
+  const mediaUrls = allPosts.reduce((acc, post) => [...acc, ...post.media] as any, []);
+
+  const promises = allPosts.map(async (post) => {
+    await saveDeletedPost(post, user);
+  });
+
+  await Promise.allSettled(
+    mediaUrls.map(async (url: string) => {
+      const publicId = url.split('/').pop()?.split('.')[0];
+
+      if (publicId) await cloudinary.uploader.destroy(`posts/${publicId}`);
+    }),
+  );
+
+  await Promise.all(promises);
+  await Post.remove(activePosts as any);
+  await ArchivePost.remove(archivedPosts as any);
+};
+
 export {
   savePost,
   moveExpiredPosts,
@@ -604,4 +632,5 @@ export {
   updatePostViewCount,
   searchPosts,
   filterPostsForAdmin,
+  removeAllPostsOfUser,
 };

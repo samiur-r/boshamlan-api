@@ -23,8 +23,10 @@ import {
   filterPostsForAdmin,
   findArchivedPostById,
   findPostById,
+  removeAllPostsOfUser,
   removeArchivedPost,
   removePost,
+  removePostMedia,
   saveDeletedPost,
   updatePostStickyVal,
 } from '../posts/service';
@@ -37,7 +39,7 @@ import {
   updateUserStatus,
 } from '../users/service';
 import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
-import { findCreditByUserId, initCredits } from '../credits/service';
+import { findCreditByUserId, initCredits, setCreditsToZeroByUserId } from '../credits/service';
 import { filterTransactionsForAdmin, findTransactionsByUserId } from '../transactions/service';
 import { findAgentById, findAgentByUserId } from '../agents/service';
 import { Credit } from '../credits/model';
@@ -457,15 +459,32 @@ const updateUserBlockStatus = async (req: Request, res: Response, next: NextFunc
 
     await User.save({
       ...user,
+      is_agent: status ? false : user.is_agent,
       is_blocked: status,
     });
 
     if (status) {
       const socketIo: any = await getSocketIo();
       socketIo.emit('userBlocked', { user: user.phone });
+
+      await removeAllPostsOfUser(userId);
+      await setCreditsToZeroByUserId(userId);
     }
 
     return res.status(200).json({ success: `User ${status === true ? ' blocked' : ' unblocked'} successfully` });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+const test = async (req: Request, res: Response, next: NextFunction) => {
+  const { userId } = req.body;
+
+  try {
+    await removeAllPostsOfUser(userId);
+
+    return res.status(200).json({});
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
@@ -491,4 +510,5 @@ export {
   fetchDashboardInfo,
   fetchTestItems,
   updateUserBlockStatus,
+  test,
 };
