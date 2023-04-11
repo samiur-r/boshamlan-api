@@ -290,7 +290,9 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
       categoryTitle: post.category_title,
       price: post.price,
       description: post.description,
-      media: post.media
+      media: post.media,
+      sticked_date: post.sticked_date,
+      repost_date: post.repost_date,
     };
 
     const newPost = await savePost(postInfo, user as IUser, typeOfCredit);

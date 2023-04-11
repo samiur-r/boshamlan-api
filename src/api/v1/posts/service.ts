@@ -20,6 +20,8 @@ interface PostsWithUser extends IPost {
   posted_date?: string;
   public_date?: string;
   expired_date?: string;
+  reposted_date?: string | null;
+  sticky_date?: string | null;
 }
 
 const savePost = async (
@@ -89,10 +91,10 @@ const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
     price: postInfo.price,
     description: postInfo.description,
     expiry_date: postInfo.expiry_date,
-    is_reposted: postInfo.is_reposted,
+    sticked_date: postInfo.sticked_date,
+    repost_date: postInfo.repost_date,
     repost_count: postInfo.repost_count,
     media: postInfo.media,
-    is_sticky: false,
     credit_type: postInfo.credit_type,
     user,
   });
@@ -114,10 +116,10 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     price: postInfo.price,
     description: postInfo.description,
     expiry_date: postInfo.expiry_date,
+    sticked_date: postInfo.sticked_date,
+    repost_date: postInfo.repost_date,
     media: postInfo.media,
-    is_sticky: false,
     credit_type: postInfo.credit_type,
-    is_reposted: postInfo.is_reposted,
     repost_count: postInfo.repost_count,
     user,
   });
@@ -588,6 +590,8 @@ const filterPostsForAdmin = async (
       post.posted_date = post.updated_at.toISOString().slice(0, 10);
       post.public_date = post.created_at.toISOString().slice(0, 10);
       post.expired_date = post.expiry_date.toISOString().slice(0, 10);
+      post.reposted_date = post.repost_date ? post.repost_date.toISOString().slice(0, 10) : null;
+      post.sticky_date = post.sticked_date ? post.sticked_date.toISOString().slice(0, 10) : null;
       post.user_phone = post.user?.phone;
       delete post.user;
     });

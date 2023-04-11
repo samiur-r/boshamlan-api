@@ -15,11 +15,13 @@ export interface IPost {
   price: number;
   description: string;
   media: string[];
-  is_sticky: boolean;
+  is_sticky?: boolean;
   credit_type: string;
   views: number;
-  is_reposted: boolean;
+  is_reposted?: boolean;
   repost_count: number;
+  sticked_date?: any;
+  repost_date?: any;
   expiry_date: Date;
   created_at: Date;
   updated_at: Date;

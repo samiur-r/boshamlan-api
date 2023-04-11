@@ -56,9 +56,6 @@ export class ArchivePost extends BaseEntity implements IPost {
   @Column({ nullable: true })
   description: string;
 
-  @Column({ default: false })
-  is_sticky: boolean;
-
   @Column({ nullable: true })
   credit_type: string;
 
@@ -67,6 +64,9 @@ export class ArchivePost extends BaseEntity implements IPost {
     type: 'float',
   })
   views: number;
+
+  @Column({ default: false })
+  is_sticky: boolean;
 
   @Column({
     default: false,
@@ -80,6 +80,12 @@ export class ArchivePost extends BaseEntity implements IPost {
 
   @Column()
   expiry_date: Date;
+
+  @Column({ nullable: true })
+  sticked_date: Date;
+
+  @Column({ nullable: true })
+  repost_date: Date;
 
   @Column('text', { array: true, nullable: true })
   media: string[];
