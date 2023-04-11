@@ -16,6 +16,7 @@ import { Post } from './models/Post';
 import { TempPost } from './models/TempPost';
 
 interface PostsWithUser extends IPost {
+  post_type?: string;
   user_phone?: string;
   posted_date?: string;
   public_date?: string;
@@ -38,6 +39,8 @@ const savePost = async (
     price: number;
     description: string;
     media: string[];
+    views?: number;
+    repost_count?: number;
   },
   user: IUser,
   typeOfCredit: string,
@@ -69,6 +72,8 @@ const savePost = async (
     media: postInfo.media,
     is_sticky: typeOfCredit === 'sticky',
     credit_type: typeOfCredit,
+    views: postInfo.views ?? 0,
+    repost_count: postInfo.repost_count ?? 0,
     user,
   });
 
@@ -96,6 +101,7 @@ const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
     repost_count: postInfo.repost_count,
     media: postInfo.media,
     credit_type: postInfo.credit_type,
+    views: postInfo.views,
     user,
   });
 
@@ -121,6 +127,7 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     media: postInfo.media,
     credit_type: postInfo.credit_type,
     repost_count: postInfo.repost_count,
+    views: postInfo.views,
     user,
   });
   await updateLocationCountValue(postInfo.city_id, 'decrement');
@@ -302,6 +309,17 @@ const findPostById = async (id: number) => {
 
 const findArchivedPostById = async (id: number) => {
   const post: any = await ArchivePost.findOneBy({ id });
+
+  if (post) {
+    post.phone = post?.user?.phone;
+    delete post?.user?.password;
+  }
+
+  return post;
+};
+
+const findDeletedPostById = async (id: number) => {
+  const post: any = await DeletedPost.findOneBy({ id });
 
   if (post) {
     post.phone = post?.user?.phone;
@@ -494,6 +512,7 @@ const filterPostsForAdmin = async (
 ) => {
   let posts;
   let totalPosts;
+  let postType: string | undefined;
   const where: any = {};
   const order: any = {};
 
@@ -549,6 +568,7 @@ const filterPostsForAdmin = async (
         skip: offset,
         take: 10,
       });
+      postType = 'active';
       posts = postList;
       totalPosts = count;
     } else if (postStatusToFilter === 'Archived') {
@@ -558,6 +578,7 @@ const filterPostsForAdmin = async (
         skip: offset,
         take: 10,
       });
+      postType = 'archived';
       posts = postList;
       totalPosts = count;
     } else if (postStatusToFilter === 'Deleted') {
@@ -567,6 +588,7 @@ const filterPostsForAdmin = async (
         skip: offset,
         take: 10,
       });
+      postType = 'deleted';
       posts = postList;
       totalPosts = count;
     } else if (postStatusToFilter === 'Reposted') {
@@ -577,6 +599,7 @@ const filterPostsForAdmin = async (
         skip: offset,
         take: 10,
       });
+      postType = 'active';
       posts = postList;
       totalPosts = count;
     }
@@ -593,6 +616,7 @@ const filterPostsForAdmin = async (
       post.reposted_date = post.repost_date ? post.repost_date.toISOString().slice(0, 10) : null;
       post.sticky_date = post.sticked_date ? post.sticked_date.toISOString().slice(0, 10) : null;
       post.user_phone = post.user?.phone;
+      post.post_type = postType || 'active';
       delete post.user;
     });
   } catch (error) {
@@ -653,4 +677,5 @@ export {
   searchPosts,
   filterPostsForAdmin,
   removeAllPostsOfUser,
+  findDeletedPostById,
 };

@@ -30,6 +30,7 @@ import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
 import { saveUserLog } from '../user_logs/service';
 import { checkAuthorization } from '../../../utils/checkAuthorization';
+import { updateLocationCountValue } from '../locations/service';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   const user = res.locals?.user?.payload;
@@ -293,6 +294,8 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
       media: post.media,
       sticked_date: post.sticked_date,
       repost_date: post.repost_date,
+      repost_count: post.repost_count,
+      views: post.views,
     };
 
     const newPost = await savePost(postInfo, user as IUser, typeOfCredit);
@@ -300,6 +303,7 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     await updateCredit(user.id, typeOfCredit, 1, 'SUB', credit);
     const repostCount = post.repost_count + 1;
     await updatePostRepostVals(newPost, true, repostCount);
+    await updateLocationCountValue(post.city_id, 'increment');
     logger.info(`Post ${post.id} reposted by user ${user?.phone}`);
     await saveUserLog([
       {
@@ -338,6 +342,8 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
 
     if (isArchive) await removeArchivedPost(post.id, post);
     else await removePost(post.id, post);
+
+    await updateLocationCountValue(post.city_id, 'decrement');
 
     post.media = [];
 

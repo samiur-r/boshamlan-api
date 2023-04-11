@@ -13,6 +13,8 @@ router.post('/filter-users', AdminController.filterUsers);
 router.post('/filter-user', isAdminAuth, AdminController.fetchUser);
 router.post('/stick-post', isAdminAuth, AdminController.stickPost);
 router.delete('/delete-post', isAdminAuth, AdminController.deletePost);
+router.delete('/delete-post-permanent', isAdminAuth, AdminController.deletePostPermanently);
+router.post('/repost', isAdminAuth, AdminController.rePost);
 router.post('/get-logs', isAdminAuth, AdminController.fetchLogs);
 router.post('/update-credit', isAdminAuth, AdminController.updateCredit);
 router.post('/get-user-info', isAdminAuth, AdminController.fetchUserWithAgentInfo);

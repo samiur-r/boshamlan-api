@@ -22,17 +22,18 @@ import config from '../../../config';
 import {
   filterPostsForAdmin,
   findArchivedPostById,
+  findDeletedPostById,
   findPostById,
   removeAllPostsOfUser,
   removeArchivedPost,
   removePost,
   saveDeletedPost,
+  savePost,
   updatePostStickyVal,
 } from '../posts/service';
 import {
   filterUsersForAdmin,
   findUserById,
-  findUserByPhone,
   findUserWithAgentInfo,
   updateUser,
   updateUserStatus,
@@ -49,6 +50,8 @@ import { ITransaction } from '../transactions/interfaces';
 import sortFunctions from '../../../utils/sortUsersFunctions';
 import { User } from '../users/model';
 import { getSocketIo } from '../../../utils/socketIO';
+import { DeletedPost } from '../posts/models/DeletedPost';
+import { updateLocationCountValue } from '../locations/service';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -177,6 +180,8 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
     if (isArchive) await removeArchivedPost(post.id, post);
     else await removePost(post.id, post);
 
+    await updateLocationCountValue(post.city_id, 'decrement');
+
     post.media = [];
 
     await saveDeletedPost(post, user);
@@ -185,6 +190,72 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     logger.error(`Post ${postId} delete attempt by user ${userObj.phone} failed`);
+    return next(error);
+  }
+};
+
+const deletePostPermanently = async (req: Request, res: Response, next: NextFunction) => {
+  const { postId } = req.body;
+  const userObj = res.locals.user.payload;
+
+  try {
+    if (!postId) throw new ErrorHandler(404, 'Post not found');
+
+    await removePost(postId);
+    await removeArchivedPost(postId);
+    await DeletedPost.delete({ id: postId });
+    logger.info(`Post ${postId} permanently deleted by user ${userObj.phone}`);
+    return res.status(200).json({ success: 'Post deleted successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    logger.error(`Post ${postId} permanently delete attempt by user ${userObj.phone} failed`);
+    return next(error);
+  }
+};
+
+const rePost = async (req: Request, res: Response, next: NextFunction) => {
+  const user = res.locals.user.payload;
+  const { postId } = req.body;
+
+  try {
+    if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
+    let post;
+
+    post = await findArchivedPostById(postId);
+
+    if (post) await removeArchivedPost(post.id);
+    else post = await findDeletedPostById(postId);
+
+    if (post) await DeletedPost.delete({ id: postId });
+    else throw new ErrorHandler(404, 'Post not found');
+
+    const postInfo = {
+      title: post.title,
+      cityId: post.city_id,
+      cityTitle: post.city_title,
+      stateId: post.state_id,
+      stateTitle: post.state_title,
+      propertyId: post.property_id,
+      propertyTitle: post.property_title,
+      categoryId: post.category_id,
+      categoryTitle: post.category_title,
+      price: post.price,
+      description: post.description,
+      media: post.media,
+      sticked_date: post.sticked_date,
+      repost_date: post.repost_date,
+      repost_count: post.repost_count + 1,
+      views: post.views,
+    };
+
+    await savePost(postInfo, post.user, 'regular');
+    await updateLocationCountValue(post.city_id, 'increment');
+
+    logger.info(`Post ${post.id} reposted by user ${user?.phone}`);
+    return res.status(200).json({ success: 'Post is reposted successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    logger.error(`Post ${postId} repost by user ${user.phone} failed`);
     return next(error);
   }
 };
@@ -496,4 +567,6 @@ export {
   fetchDashboardInfo,
   fetchTestItems,
   updateUserBlockStatus,
+  deletePostPermanently,
+  rePost,
 };
