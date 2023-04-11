@@ -23,6 +23,7 @@ interface PostsWithUser extends IPost {
   expired_date?: string;
   reposted_date?: string | null;
   sticky_date?: string | null;
+  deleted_date?: string | null;
 }
 
 const savePost = async (
@@ -109,6 +110,7 @@ const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
 };
 
 const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
+  const today = new Date();
   const newPost = DeletedPost.create({
     title: postInfo.title,
     city_id: postInfo.city_id,
@@ -128,6 +130,7 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     credit_type: postInfo.credit_type,
     repost_count: postInfo.repost_count,
     views: postInfo.views,
+    deleted_at: today,
     user,
   });
   await updateLocationCountValue(postInfo.city_id, 'decrement');
@@ -617,6 +620,7 @@ const filterPostsForAdmin = async (
       post.sticky_date = post.sticked_date ? post.sticked_date.toISOString().slice(0, 10) : null;
       post.user_phone = post.user?.phone;
       post.post_type = postType || 'active';
+      post.deleted_date = post.deleted_at ? post.deleted_at.toISOString().slice(0, 10) : null;
       delete post.user;
     });
   } catch (error) {

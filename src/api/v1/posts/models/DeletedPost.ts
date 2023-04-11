@@ -82,6 +82,9 @@ export class DeletedPost extends BaseEntity implements IPost {
   expiry_date: Date;
 
   @Column({ nullable: true })
+  deleted_at: Date;
+
+  @Column({ nullable: true })
   sticked_date: Date;
 
   @Column({ nullable: true })

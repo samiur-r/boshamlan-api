@@ -25,5 +25,6 @@ export interface IPost {
   expiry_date: Date;
   created_at: Date;
   updated_at: Date;
+  deleted_at?: Date;
   phone?: string;
 }
