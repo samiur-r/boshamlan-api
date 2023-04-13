@@ -548,6 +548,26 @@ const updateUserBlockStatus = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+const updateUserComment = async (req: Request, res: Response, next: NextFunction) => {
+  const { userId, adminComment } = req.body;
+
+  try {
+    if (!userId) throw new ErrorHandler(404, 'Invalid user id');
+    const user = await findUserById(userId);
+    if (!user) throw new ErrorHandler(401, 'User not found');
+
+    await User.save({
+      ...user,
+      admin_comment: adminComment && adminComment !== '' ? adminComment : null,
+    });
+
+    return res.status(200).json({ success: `User comment updated successfully` });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
 export {
   register,
   login,
@@ -569,4 +589,5 @@ export {
   updateUserBlockStatus,
   deletePostPermanently,
   rePost,
+  updateUserComment,
 };

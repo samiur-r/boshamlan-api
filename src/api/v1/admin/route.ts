@@ -25,5 +25,6 @@ router.post('/get-transactions', isAdminAuth, AdminController.fetchTransactions)
 router.get('/dashboard', isAdminAuth, AdminController.fetchDashboardInfo);
 router.post('/get-test', isAdminAuth, AdminController.fetchTestItems);
 router.put('/block-status', isAdminAuth, AdminController.updateUserBlockStatus);
+router.put('/admin-comment', isAdminAuth, AdminController.updateUserComment);
 
 export default router;
