@@ -43,7 +43,10 @@ export class Agent extends BaseEntity implements IAgent {
   logo_url: string;
 
   @Column()
-  expiry_date: Date;
+  subscription_start_date: Date;
+
+  @Column()
+  subscription_ends_date: Date;
 
   @OneToOne(() => User, { nullable: false, eager: true })
   @JoinColumn({ name: 'user_id' })

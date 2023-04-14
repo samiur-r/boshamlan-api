@@ -114,7 +114,7 @@ const filterUsersForAdmin = async (
     where,
     take: 10,
     skip: offset,
-    relations: ['posts', 'archive_posts', 'deleted_posts', 'credits', 'transactions'],
+    relations: ['posts', 'archive_posts', 'deleted_posts', 'credits', 'transactions', 'agent'],
   });
 
   return { users, count };

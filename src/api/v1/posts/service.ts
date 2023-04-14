@@ -6,6 +6,7 @@ import cloudinary from '../../../config/cloudinary';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
+import { parseTimestamp } from '../../../utils/timestampUtls';
 import { updateLocationCountValue } from '../locations/service';
 import { IUser } from '../users/interfaces';
 import { findUserById } from '../users/service';
@@ -18,12 +19,20 @@ import { TempPost } from './models/TempPost';
 interface PostsWithUser extends IPost {
   post_type?: string;
   user_phone?: string;
-  posted_date?: string;
-  public_date?: string;
-  expired_date?: string;
-  reposted_date?: string | null;
-  sticky_date?: string | null;
-  deleted_date?: string | null;
+  postedDate?: string;
+  postedTime?: string;
+  expiredDate?: string;
+  expiredTime?: string;
+  repostedDate?: string | null;
+  repostedTime?: string | null;
+  stickyDate?: string | null;
+  stickyTime?: string | null;
+  unStickDate?: string | null;
+  unStickTime?: string | null;
+  deletedDate?: string | null;
+  deletedTime?: string | null;
+  publicDate?: string;
+  publicTime?: string;
 }
 
 const savePost = async (
@@ -45,6 +54,7 @@ const savePost = async (
   },
   user: IUser,
   typeOfCredit: string,
+  publicDate?: Date,
 ) => {
   const today = new Date();
   const oneMonthFromToday = new Date(
@@ -69,6 +79,7 @@ const savePost = async (
     price: postInfo.price,
     description: postInfo.description,
     expiry_date: oneMonthFromToday,
+    public_date: publicDate,
     sticked_date: typeOfCredit === 'sticky' ? today : undefined,
     media: postInfo.media,
     is_sticky: typeOfCredit === 'sticky',
@@ -97,12 +108,14 @@ const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
     price: postInfo.price,
     description: postInfo.description,
     expiry_date: postInfo.expiry_date,
+    public_date: postInfo.public_date,
     sticked_date: postInfo.sticked_date,
     repost_date: postInfo.repost_date,
     repost_count: postInfo.repost_count,
     media: postInfo.media,
     credit_type: postInfo.credit_type,
     views: postInfo.views,
+    updated_at: postInfo.updated_at,
     user,
   });
 
@@ -124,6 +137,7 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     price: postInfo.price,
     description: postInfo.description,
     expiry_date: postInfo.expiry_date,
+    public_date: postInfo.public_date,
     sticked_date: postInfo.sticked_date,
     repost_date: postInfo.repost_date,
     media: postInfo.media,
@@ -131,6 +145,7 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     repost_count: postInfo.repost_count,
     views: postInfo.views,
     deleted_at: today,
+    updated_at: postInfo.updated_at,
     user,
   });
   await updateLocationCountValue(postInfo.city_id, 'decrement');
@@ -215,6 +230,10 @@ const removeArchivedPost = async (id: number, post?: IPost) => {
   await removePostMedia(id, post);
 };
 
+const unstickPost = async () => {
+  Post.update({ is_sticky: true, sticky_expires: LessThan(new Date()) }, { is_sticky: false });
+};
+
 const moveExpiredPosts = async () => {
   const expiredPosts = await Post.find({ where: { expiry_date: LessThan(new Date()) } });
 
@@ -270,7 +289,9 @@ const moveTempPost = async (track_id: string) => {
     media: post.media,
   };
 
-  await savePost(postInfo, user as IUser, 'sticky');
+  const publicDate = new Date();
+
+  await savePost(postInfo, user as IUser, 'sticky', publicDate);
   await removeTempPost(post.id);
 };
 
@@ -382,9 +403,18 @@ const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {
     today.getMinutes(),
     today.getSeconds(),
   );
+  const oneWeekFromToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate() + 7,
+    today.getHours(),
+    today.getMinutes(),
+    today.getSeconds(),
+  );
   const newPost = Post.create({
     ...post,
     sticked_date: isSticky ? today : undefined,
+    sticky_expires: isSticky ? oneWeekFromToday : undefined,
     expiry_date: oneMonthFromToday,
     is_sticky: isSticky,
   });
@@ -613,14 +643,22 @@ const filterPostsForAdmin = async (
       posts = posts?.filter((post) => post.user?.is_agent === true);
 
     posts?.forEach((post) => {
-      post.posted_date = post.updated_at.toISOString().slice(0, 10);
-      post.public_date = post.created_at.toISOString().slice(0, 10);
-      post.expired_date = post.expiry_date.toISOString().slice(0, 10);
-      post.reposted_date = post.repost_date ? post.repost_date.toISOString().slice(0, 10) : null;
-      post.sticky_date = post.sticked_date ? post.sticked_date.toISOString().slice(0, 10) : null;
+      post.postedDate = parseTimestamp(post.updated_at).parsedDate;
+      post.postedTime = parseTimestamp(post.updated_at).parsedTime;
+      post.publicDate = parseTimestamp(post.public_date).parsedDate;
+      post.publicTime = parseTimestamp(post.public_date).parsedTime;
+      post.expiredDate = parseTimestamp(post.expiry_date).parsedDate;
+      post.expiredTime = parseTimestamp(post.expiry_date).parsedTime;
+      post.repostedDate = post.repost_date ? parseTimestamp(post.repost_date).parsedDate : null;
+      post.repostedTime = post.repost_date ? parseTimestamp(post.repost_date).parsedTime : null;
+      post.stickyDate = post.sticked_date ? parseTimestamp(post.sticked_date).parsedDate : null;
+      post.stickyTime = post.sticked_date ? parseTimestamp(post.sticked_date).parsedTime : null;
+      post.unStickDate = post.sticky_expires ? parseTimestamp(post.sticky_expires).parsedDate : null;
+      post.unStickTime = post.sticky_expires ? parseTimestamp(post.sticky_expires).parsedTime : null;
       post.user_phone = post.user?.phone;
       post.post_type = postType || 'active';
-      post.deleted_date = post.deleted_at ? post.deleted_at.toISOString().slice(0, 10) : null;
+      post.deletedDate = post.deleted_at ? parseTimestamp(post.deleted_at).parsedDate : null;
+      post.deletedTime = post.deleted_at ? parseTimestamp(post.deleted_at).parsedTime : null;
       delete post.user;
     });
   } catch (error) {
@@ -682,4 +720,5 @@ export {
   filterPostsForAdmin,
   removeAllPostsOfUser,
   findDeletedPostById,
+  unstickPost,
 };

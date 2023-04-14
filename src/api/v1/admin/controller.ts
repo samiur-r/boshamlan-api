@@ -29,6 +29,7 @@ import {
   removePost,
   saveDeletedPost,
   savePost,
+  updatePostRepostVals,
   updatePostStickyVal,
 } from '../posts/service';
 import {
@@ -52,6 +53,7 @@ import { User } from '../users/model';
 import { getSocketIo } from '../../../utils/socketIO';
 import { DeletedPost } from '../posts/models/DeletedPost';
 import { updateLocationCountValue } from '../locations/service';
+import { parseTimestamp } from '../../../utils/timestampUtls';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -229,6 +231,8 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     if (post) await DeletedPost.delete({ id: postId });
     else throw new ErrorHandler(404, 'Post not found');
 
+    const publicDate = post.public_date;
+
     const postInfo = {
       title: post.title,
       cityId: post.city_id,
@@ -243,12 +247,13 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
       description: post.description,
       media: post.media,
       sticked_date: post.sticked_date,
-      repost_date: post.repost_date,
       repost_count: post.repost_count + 1,
       views: post.views,
     };
 
-    await savePost(postInfo, post.user, 'regular');
+    const newPost = await savePost(postInfo, post.user, 'regular', publicDate);
+    const repostCount = post.repost_count + 1;
+    await updatePostRepostVals(newPost, true, repostCount);
     await updateLocationCountValue(post.city_id, 'increment');
 
     logger.info(`Post ${post.id} reposted by user ${user?.phone}`);
@@ -305,7 +310,24 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       is_agent: user.is_agent,
       adminComment: user.admin_comment,
       is_blocked: user.is_blocked,
-      registered: user.created_at.toISOString().slice(0, 10),
+      registeredDate: parseTimestamp(user.created_at).parsedDate,
+      registeredTime: parseTimestamp(user.created_at).parsedTime,
+      subscriptionStartDate:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
+          ? parseTimestamp(user.agent[0].subscription_start_date).parsedDate
+          : null,
+      subscriptionStartTime:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
+          ? parseTimestamp(user.agent[0].subscription_start_date).parsedTime
+          : null,
+      subscriptionEndsDate:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
+          ? parseTimestamp(user.agent[0].subscription_ends_date).parsedDate
+          : null,
+      subscriptionEndsTime:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
+          ? parseTimestamp(user.agent[0].subscription_ends_date).parsedTime
+          : null,
       post: {
         active: user.posts?.length,
         repost: user.posts.filter((post: IPost) => post.is_reposted).length,
@@ -346,30 +368,63 @@ const fetchUser = async (req: Request, res: Response, next: NextFunction) => {
   const { userId } = req.body;
 
   try {
-    const user: any = await findUserById(userId);
+    const user: any = await User.findOne({
+      where: { id: userId },
+      relations: ['posts', 'archive_posts', 'deleted_posts', 'credits', 'transactions', 'agent'],
+    });
     delete user?.password;
 
-    const credits = await findCreditByUserId(user.id);
-    const transactions = await findTransactionsByUserId(user.id);
-    const payment = getPaymentHistory(transactions);
-    const postHistory = await getPostHistory(user.id);
+    const parsedUser = {
+      id: user.id,
+      phone: user.phone,
+      status: user.status,
+      is_agent: user.is_agent,
+      adminComment: user.admin_comment,
+      is_blocked: user.is_blocked,
+      registeredDate: parseTimestamp(user.created_at).parsedDate,
+      registeredTime: parseTimestamp(user.created_at).parsedTime,
+      subscriptionStartDate:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
+          ? parseTimestamp(user.agent[0].subscription_start_date).parsedDate
+          : null,
+      subscriptionStartTime:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
+          ? parseTimestamp(user.agent[0].subscription_start_date).parsedTime
+          : null,
+      subscriptionEndsDate:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
+          ? parseTimestamp(user.agent[0].subscription_ends_date).parsedDate
+          : null,
+      subscriptionEndsTime:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
+          ? parseTimestamp(user.agent[0].subscription_ends_date).parsedTime
+          : null,
+      post: {
+        active: user.posts?.length,
+        repost: user.posts?.filter((post: IPost) => post.is_reposted).length,
+        archived: user.archive_posts?.length,
+        deleted: user.deleted_posts?.length,
+      },
+      credits: {
+        free: user?.credits[0]?.free ?? 0,
+        regular: user?.credits[0]?.regular ?? 0,
+        sticky: user?.credits[0]?.sticky ?? 0,
+        agent: user?.credits[0]?.agent ?? 0,
+      },
+      payment: {
+        regular: user?.transactions
+          .filter((transaction: ITransaction) => ['regular1', 'regular2'].includes(transaction.package_title))
+          .reduce((total: number, transaction: ITransaction) => total + transaction.amount, 0),
+        sticky: user?.transactions
+          .filter((transaction: ITransaction) => ['sticky1', 'sticky2'].includes(transaction.package_title))
+          .reduce((total: number, transaction: ITransaction) => total + transaction.amount, 0),
+        agent: user?.transactions
+          .filter((transaction: ITransaction) => ['agent1', 'agent2'].includes(transaction.package_title))
+          .reduce((total: number, transaction: ITransaction) => total + transaction.amount, 0),
+      },
+    };
 
-    if (credits) user.credits = credits;
-    else user.credits = { free: 0, regular: 0, sticky: 0, agent: 0 };
-
-    if (user.is_agent) {
-      const agent = await findAgentByUserId(user.id);
-      const subscription = agent
-        ? `${agent.created_at.toISOString().slice(0, 10)} - ${agent.expiry_date.toISOString().slice(0, 10)}`
-        : '-';
-      user.subscription = subscription;
-    } else user.subscription = '-';
-
-    user.payment = payment;
-    user.post = postHistory;
-    user.registered = user.created_at.toISOString().slice(0, 10);
-
-    return res.status(200).json({ user });
+    return res.status(200).json({ user: parsedUser });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

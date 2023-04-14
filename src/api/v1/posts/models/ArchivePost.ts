@@ -85,7 +85,13 @@ export class ArchivePost extends BaseEntity implements IPost {
   sticked_date: Date;
 
   @Column({ nullable: true })
+  sticky_expires: Date;
+
+  @Column({ nullable: true })
   repost_date: Date;
+
+  @Column()
+  public_date: Date;
 
   @Column('text', { array: true, nullable: true })
   media: string[];

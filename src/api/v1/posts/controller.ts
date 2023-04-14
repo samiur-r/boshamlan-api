@@ -39,7 +39,7 @@ const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
     const post = await findPostById(parseInt(req.params.id, 10));
     if (!post) throw new ErrorHandler(404, 'Post not found');
 
-    checkAuthorization(user, post.id);
+    checkAuthorization(user, post.user.id);
 
     return res.status(200).json({ success: post });
   } catch (error) {
@@ -127,7 +127,9 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
 
       postInfo.media = media;
 
-      const newPost = await savePost(postInfo, user, typeOfCredit);
+      const publicDate = new Date();
+
+      const newPost = await savePost(postInfo, user, typeOfCredit, publicDate);
       await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
       logger.info(`User: ${user.phone} created new post: ${newPost.id}`);
       logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
@@ -173,7 +175,7 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
     const post = await findPostById(postId);
     if (!post) throw new ErrorHandler(404, 'Post not found');
 
-    checkAuthorization(user, post.id);
+    checkAuthorization(user, post.user.id);
 
     await postSchema.validate(postInfo);
     await removePostMedia(postId);
@@ -293,12 +295,13 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
       description: post.description,
       media: post.media,
       sticked_date: post.sticked_date,
-      repost_date: post.repost_date,
       repost_count: post.repost_count,
       views: post.views,
     };
 
-    const newPost = await savePost(postInfo, user as IUser, typeOfCredit);
+    const publicDate = post.public_date;
+
+    const newPost = await savePost(postInfo, user as IUser, typeOfCredit, publicDate);
     await removeArchivedPost(post.id);
     await updateCredit(user.id, typeOfCredit, 1, 'SUB', credit);
     const repostCount = post.repost_count + 1;

@@ -15,7 +15,7 @@ const findManyAgents = async (limit: number, offset: number | undefined) => {
   let totalRows;
   const currentDate = new Date();
   const agents: IAgent[] | null = await Agent.find({
-    where: { expiry_date: MoreThanOrEqual(currentDate) },
+    where: { subscription_ends_date: MoreThanOrEqual(currentDate) },
     take: limit,
     skip: offset,
   });
@@ -103,12 +103,14 @@ const initOrUpdateAgent = async (user: IUser) => {
   if (agent) {
     agentData = Agent.create({
       ...agent,
-      expiry_date: twoMonthsFromToday,
+      subscription_start_date: today,
+      subscription_ends_date: twoMonthsFromToday,
     });
   } else {
     agentData = Agent.create({
       name: 'agent',
-      expiry_date: twoMonthsFromToday,
+      subscription_start_date: today,
+      subscription_ends_date: twoMonthsFromToday,
       user,
     });
   }
@@ -118,7 +120,7 @@ const initOrUpdateAgent = async (user: IUser) => {
 
 const getExpiredAgentUserIds = async () => {
   const agents = await Agent.find({
-    where: { expiry_date: LessThan(new Date()) },
+    where: { subscription_ends_date: LessThan(new Date()) },
   });
 
   const userIds = agents.filter((agent) => agent.user.is_agent === true).map((agent) => agent.user.id);

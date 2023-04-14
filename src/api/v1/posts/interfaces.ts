@@ -21,8 +21,10 @@ export interface IPost {
   is_reposted?: boolean;
   repost_count: number;
   sticked_date?: any;
+  sticky_expires?: Date;
   repost_date?: any;
   expiry_date: Date;
+  public_date: Date;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date;

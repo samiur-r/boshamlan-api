@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { fireAgentExpirationAlert, getExpiredAgentUserIds } from '../api/v1/agents/service';
 import { updateAgentCredit } from '../api/v1/credits/service';
-import { moveExpiredPosts } from '../api/v1/posts/service';
+import { moveExpiredPosts, unstickPost } from '../api/v1/posts/service';
 import { findUnVerifiedUsers, updateBulkIsUserAnAgent } from '../api/v1/users/service';
 import logger from './logger';
 import { alertOnSlack } from './slackUtils';
@@ -14,6 +14,7 @@ async function scheduledTaskPerHour() {
     await updateAgentCredit(ids, 0);
     await fireAgentExpirationAlert(ids);
     await moveExpiredPosts();
+    await unstickPost();
   } catch (error) {
     logger.error(error.message);
   }
@@ -35,7 +36,7 @@ async function scheduledTaskPerFiveMins() {
   }
 }
 
-const cronJobPerHour = cron.schedule('0 * * * *', scheduledTaskPerHour);
+const cronJobPerHour = cron.schedule('*/1 * * * *', scheduledTaskPerHour);
 const cronJobPerFiveMins = cron.schedule('*/5 * * * *', scheduledTaskPerFiveMins);
 
 cronJobPerHour.on('error', (err) => {
