@@ -59,6 +59,9 @@ export class DeletedPost extends BaseEntity implements IPost {
   @Column({ nullable: true })
   credit_type: string;
 
+  @Column()
+  post_type: string;
+
   @Column({
     default: 0,
     type: 'float',
@@ -85,9 +88,6 @@ export class DeletedPost extends BaseEntity implements IPost {
   public_date: Date;
 
   @Column({ nullable: true })
-  deleted_at: Date;
-
-  @Column({ nullable: true })
   sticked_date: Date;
 
   @Column({ nullable: true })
@@ -98,6 +98,9 @@ export class DeletedPost extends BaseEntity implements IPost {
 
   @Column('text', { array: true, nullable: true })
   media: string[];
+
+  @Column({ nullable: true })
+  deleted_at: Date;
 
   @CreateDateColumn()
   created_at: Date;

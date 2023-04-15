@@ -4,13 +4,12 @@
 import { NextFunction, Request, Response } from 'express';
 
 import axios from 'axios';
+import { getConnection, getRepository, QueryBuilder } from 'typeorm';
 import { hashPassword, verifyToken } from '../../../utils/passwordUtils';
 import logger from '../../../utils/logger';
 import {
   findAdminByPhone,
   geCreditsSummary,
-  getPaymentHistory,
-  getPostHistory,
   getPostSummary,
   getTransactionSummary,
   getUserSummary,
@@ -36,13 +35,14 @@ import {
   filterUsersForAdmin,
   findUserById,
   findUserWithAgentInfo,
+  getLastActivity,
   updateUser,
   updateUserStatus,
 } from '../users/service';
 import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
 import { findCreditByUserId, initCredits, setCreditsToZeroByUserId } from '../credits/service';
-import { filterTransactionsForAdmin, findTransactionsByUserId } from '../transactions/service';
-import { findAgentById, findAgentByUserId } from '../agents/service';
+import { filterTransactionsForAdmin } from '../transactions/service';
+import { findAgentById } from '../agents/service';
 import { Credit } from '../credits/model';
 import { Agent } from '../agents/model';
 import { sendSms } from '../../../utils/smsUtils';
@@ -52,8 +52,11 @@ import sortFunctions from '../../../utils/sortUsersFunctions';
 import { User } from '../users/model';
 import { getSocketIo } from '../../../utils/socketIO';
 import { DeletedPost } from '../posts/models/DeletedPost';
+import { Post } from '../posts/models/Post';
+import { ArchivePost } from '../posts/models/ArchivePost';
 import { updateLocationCountValue } from '../locations/service';
 import { parseTimestamp } from '../../../utils/timestampUtls';
+import AppDataSource from '../../../db';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -310,6 +313,8 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       is_agent: user.is_agent,
       adminComment: user.admin_comment,
       is_blocked: user.is_blocked,
+      lastPostDate: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedDate : null,
+      lastPostTime: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedTime : null,
       registeredDate: parseTimestamp(user.created_at).parsedDate,
       registeredTime: parseTimestamp(user.created_at).parsedTime,
       subscriptionStartDate:
@@ -399,6 +404,8 @@ const fetchUser = async (req: Request, res: Response, next: NextFunction) => {
         user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
           ? parseTimestamp(user.agent[0].subscription_ends_date).parsedTime
           : null,
+      lastPostDate: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedDate : null,
+      lastPostTime: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedTime : null,
       post: {
         active: user.posts?.length,
         repost: user.posts?.filter((post: IPost) => post.is_reposted).length,

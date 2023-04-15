@@ -56,6 +56,15 @@ const updateBulkIsUserAnAgent = async (ids: number[], status: boolean) => {
   await User.update({ id: In(ids) }, { is_agent: status });
 };
 
+const getLastActivity = (user: any) => {
+  user.posts.sort(
+    (a: { created_at: { getTime: () => number } }, b: { created_at: { getTime: () => number } }) =>
+      a.created_at.getTime() - b.created_at.getTime(),
+  );
+
+  return user.posts[0].created_at;
+};
+
 const findUnVerifiedUsers = async () => {
   const lessThanFiveMins = new Date(Date.now() - 1 * 60 * 1000); // 5 minutes ago
   const users = await User.find({ where: { status: 'not_verified', created_at: MoreThan(lessThanFiveMins) } });
@@ -155,4 +164,5 @@ export {
   filterUsersForAdmin,
   findUserWithAgentInfo,
   updateUser,
+  getLastActivity,
 };

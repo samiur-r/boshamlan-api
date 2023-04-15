@@ -3,6 +3,7 @@
 /* eslint-disable no-restricted-syntax */
 import { Between, In, IsNull, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual } from 'typeorm';
 import cloudinary from '../../../config/cloudinary';
+import AppDataSource from '../../../db';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
@@ -86,6 +87,7 @@ const savePost = async (
     credit_type: typeOfCredit,
     views: postInfo.views ?? 0,
     repost_count: postInfo.repost_count ?? 0,
+    post_type: 'active',
     user,
   });
 
@@ -116,6 +118,7 @@ const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
     credit_type: postInfo.credit_type,
     views: postInfo.views,
     updated_at: postInfo.updated_at,
+    post_type: 'archived',
     user,
   });
 
@@ -146,6 +149,7 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     views: postInfo.views,
     deleted_at: today,
     updated_at: postInfo.updated_at,
+    post_type: 'deleted',
     user,
   });
   await updateLocationCountValue(postInfo.city_id, 'decrement');
@@ -545,7 +549,6 @@ const filterPostsForAdmin = async (
 ) => {
   let posts;
   let totalPosts;
-  let postType: string | undefined;
   const where: any = {};
   const order: any = {};
 
@@ -569,6 +572,28 @@ const filterPostsForAdmin = async (
   if (stickyStatusToFilter === -1) where.is_sticky = false;
   else if (stickyStatusToFilter === 1) where.is_sticky = true;
 
+  if (userTypeToFilter && userTypeToFilter === 'regular') where.is_agent = false;
+  else if (userTypeToFilter && userTypeToFilter === 'agent') where.is_agent = true;
+
+  if (postStatusToFilter) {
+    switch (postStatusToFilter) {
+      case 'Active':
+        where.post_type = 'active';
+        break;
+      case 'Archived':
+        where.post_type = 'archived';
+        break;
+      case 'Deleted':
+        where.post_type = 'deleted';
+        break;
+      case 'Reposted':
+        where.is_reposted = true;
+        break;
+      default:
+        break;
+    }
+  }
+
   switch (orderByToFilter) {
     case 'Created':
       order.created_at = 'DESC';
@@ -577,7 +602,7 @@ const filterPostsForAdmin = async (
       order.is_sticky = 'DESC';
       break;
     case 'Repost Date':
-      order.updated_at = 'DESC';
+      order.repost_date = 'DESC';
       break;
     case 'City':
       order.city_id = 'DESC';
@@ -589,60 +614,148 @@ const filterPostsForAdmin = async (
       order.category_id = 'DESC';
       break;
     default:
-      order.updated_at = 'DESC';
+      order.created_at = 'DESC';
       break;
   }
 
   try {
-    if (postStatusToFilter === 'Active') {
-      const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
-        where,
-        order,
-        skip: offset,
-        take: 10,
-      });
-      postType = 'active';
-      posts = postList;
-      totalPosts = count;
-    } else if (postStatusToFilter === 'Archived') {
-      const [postList, count]: [PostsWithUser[] | null, number] = await ArchivePost.findAndCount({
-        where,
-        order,
-        skip: offset,
-        take: 10,
-      });
-      postType = 'archived';
-      posts = postList;
-      totalPosts = count;
-    } else if (postStatusToFilter === 'Deleted') {
-      const [postList, count]: [PostsWithUser[] | null, number] = await DeletedPost.findAndCount({
-        where,
-        order,
-        skip: offset,
-        take: 10,
-      });
-      postType = 'deleted';
-      posts = postList;
-      totalPosts = count;
-    } else if (postStatusToFilter === 'Reposted') {
-      where.repost_count = MoreThan(0);
-      const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
-        where,
-        order,
-        skip: offset,
-        take: 10,
-      });
-      postType = 'active';
-      posts = postList;
-      totalPosts = count;
-    }
+    const whereClause = Object.entries(where)
+      .map(([key, value]) => {
+        if (key === 'is_agent') {
+          return `users.${key} = ${value}`;
+        }
+        return `${key} = '${value}'`;
+      })
+      .join(' AND ');
 
-    if (userTypeToFilter && userTypeToFilter === 'regular')
-      posts = posts?.filter((post) => post.user?.is_agent === false);
-    else if (userTypeToFilter && userTypeToFilter === 'agent')
-      posts = posts?.filter((post) => post.user?.is_agent === true);
+    const query = `SELECT latest_posts.*, (SELECT COUNT(*) FROM (
+        SELECT id, title, user_id, post_type, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
+        FROM posts
+        UNION ALL
+        SELECT id, title, user_id, post_type, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
+        FROM archive_posts
+        UNION ALL
+        SELECT id, title, user_id, post_type, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
+        FROM deleted_posts
+      ) AS latest_posts_count
+      ${whereClause ? `WHERE ${whereClause}` : ''}
+      ) AS total_count,
+        users.phone as user_phone,
+        users.is_agent as user_is_agent
+      FROM (
+        SELECT posts.id, posts.user_id, posts.post_type, posts.title, posts.city_id, posts.city_title, posts.category_id, posts.category_title, posts.property_id, posts.property_title, posts.price, posts.description, posts.is_sticky, posts.is_reposted, posts.repost_count, posts.sticked_date, posts.sticky_expires, posts.repost_date, posts.public_date, posts.expiry_date, posts.created_at, posts.updated_at, posts.deleted_at
+        FROM posts
+        UNION ALL
+        SELECT archive_posts.id, archive_posts.user_id, archive_posts.post_type, archive_posts.title, archive_posts.city_id, archive_posts.city_title, archive_posts.category_id, archive_posts.category_title, archive_posts.property_id, archive_posts.property_title, archive_posts.price, archive_posts.description, archive_posts.is_sticky, archive_posts.is_reposted, archive_posts.repost_count, archive_posts.sticked_date, archive_posts.sticky_expires, archive_posts.repost_date, archive_posts.public_date, archive_posts.expiry_date, archive_posts.created_at, archive_posts.updated_at, archive_posts.deleted_at
+        FROM archive_posts
+        UNION ALL
+        SELECT deleted_posts.id,  deleted_posts.user_id, deleted_posts.post_type, deleted_posts.title, deleted_posts.city_id, deleted_posts.city_title, deleted_posts.category_id, deleted_posts.category_title, deleted_posts.property_id, deleted_posts.property_title, deleted_posts.price, deleted_posts.description, deleted_posts.is_sticky, deleted_posts.is_reposted, deleted_posts.repost_count, deleted_posts.sticked_date, deleted_posts.sticky_expires, deleted_posts.repost_date, deleted_posts.public_date, deleted_posts.expiry_date, deleted_posts.created_at, deleted_posts.updated_at, deleted_posts.deleted_at
+        FROM deleted_posts
+      ) AS latest_posts
+        LEFT JOIN users ON latest_posts.user_id = users.id
+        ${whereClause ? `WHERE ${whereClause}` : ''}
+        ORDER BY latest_posts.${Object.keys(order)[0]} DESC
+        LIMIT 10
+        OFFSET ${offset}
+      `;
+    const result = await AppDataSource.query(query);
+    posts = result;
+    totalPosts = result.length > 0 ? result[0].total_count : 0;
 
-    posts?.forEach((post) => {
+    // if (postStatusToFilter === 'Active') {
+    //   const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
+    //     where,
+    //     order,
+    //     skip: offset,
+    //     take: 10,
+    //   });
+    //   posts = postList;
+    //   totalPosts = count;
+    // } else if (postStatusToFilter === 'Archived') {
+    //   const [postList, count]: [PostsWithUser[] | null, number] = await ArchivePost.findAndCount({
+    //     where,
+    //     order,
+    //     skip: offset,
+    //     take: 10,
+    //   });
+    //   posts = postList;
+    //   totalPosts = count;
+    // } else if (postStatusToFilter === 'Deleted') {
+    //   const [postList, count]: [PostsWithUser[] | null, number] = await DeletedPost.findAndCount({
+    //     where,
+    //     order,
+    //     skip: offset,
+    //     take: 10,
+    //   });
+    //   posts = postList;
+    //   totalPosts = count;
+    // } else if (postStatusToFilter === 'Reposted') {
+    //   where.repost_count = MoreThan(0);
+    //   const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
+    //     where,
+    //     order,
+    //     skip: offset,
+    //     take: 10,
+    //   });
+    //   posts = postList;
+    //   totalPosts = count;
+    // } else {
+    //   const whereClause = Object.entries(where)
+    //     .map(([key, value]) => {
+    //       if (key === 'is_agent') {
+    //         return `users.${key} = ${value}`;
+    //       }
+    //       return `${key} = ${value}`;
+    //     })
+    //     .join(' AND ');
+
+    //   const query = `SELECT latest_posts.*, (SELECT COUNT(*) FROM (
+    //     SELECT id, title, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
+    //     FROM posts
+    //     UNION ALL
+    //     SELECT id, title, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
+    //     FROM archive_posts
+    //     UNION ALL
+    //     SELECT id, title, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
+    //     FROM deleted_posts
+    //   ) AS latest_posts_count
+    //   ${whereClause ? `WHERE ${whereClause}` : ''}
+    //   ) AS total_count,
+    //     users.phone as user_phone,
+    //     users.is_agent as user_is_agent
+    //   FROM (
+    //     SELECT posts.id, posts.user_id, posts.title, posts.city_id, posts.city_title, posts.category_id, posts.category_title, posts.property_id, posts.property_title, posts.price, posts.description, posts.is_sticky, posts.is_reposted, posts.repost_count, posts.sticked_date, posts.sticky_expires, posts.repost_date, posts.public_date, posts.expiry_date, posts.created_at, posts.updated_at, posts.deleted_at
+    //     FROM posts
+    //     UNION ALL
+    //     SELECT archive_posts.id, archive_posts.user_id, archive_posts.title, archive_posts.city_id, archive_posts.city_title, archive_posts.category_id, archive_posts.category_title, archive_posts.property_id, archive_posts.property_title, archive_posts.price, archive_posts.description, archive_posts.is_sticky, archive_posts.is_reposted, archive_posts.repost_count, archive_posts.sticked_date, archive_posts.sticky_expires, archive_posts.repost_date, archive_posts.public_date, archive_posts.expiry_date, archive_posts.created_at, archive_posts.updated_at, archive_posts.deleted_at
+    //     FROM archive_posts
+    //     UNION ALL
+    //     SELECT deleted_posts.id,  deleted_posts.user_id, deleted_posts.title, deleted_posts.city_id, deleted_posts.city_title, deleted_posts.category_id, deleted_posts.category_title, deleted_posts.property_id, deleted_posts.property_title, deleted_posts.price, deleted_posts.description, deleted_posts.is_sticky, deleted_posts.is_reposted, deleted_posts.repost_count, deleted_posts.sticked_date, deleted_posts.sticky_expires, deleted_posts.repost_date, deleted_posts.public_date, deleted_posts.expiry_date, deleted_posts.created_at, deleted_posts.updated_at, deleted_posts.deleted_at
+    //     FROM deleted_posts
+    //   ) AS latest_posts
+    //     LEFT JOIN users ON latest_posts.user_id = users.id
+    //     ${whereClause ? `WHERE ${whereClause}` : ''}
+    //     ORDER BY latest_posts.${Object.keys(order)[0]} DESC
+    //     LIMIT 10
+    //     OFFSET ${offset}
+    //   `;
+    //   const result = await AppDataSource.query(query);
+    //   posts = result;
+    //   totalPosts = result.length > 0 ? result[0].total_count : 0;
+    // }
+
+    // if (userTypeToFilter && userTypeToFilter === 'regular')
+    //   posts = posts?.filter(
+    //     (post: { user: { is_agent: boolean }; user_is_agent: boolean }) =>
+    //       post.user?.is_agent === false || post?.user_is_agent === false,
+    //   );
+    // else if (userTypeToFilter && userTypeToFilter === 'agent')
+    //   posts = posts?.filter(
+    //     (post: { user: { is_agent: boolean }; user_is_agent: boolean }) =>
+    //       post.user?.is_agent === true || post?.user_is_agent === true,
+    //   );
+
+    posts?.forEach((post: any) => {
       post.postedDate = parseTimestamp(post.updated_at).parsedDate;
       post.postedTime = parseTimestamp(post.updated_at).parsedTime;
       post.publicDate = parseTimestamp(post.public_date).parsedDate;
@@ -655,8 +768,7 @@ const filterPostsForAdmin = async (
       post.stickyTime = post.sticked_date ? parseTimestamp(post.sticked_date).parsedTime : null;
       post.unStickDate = post.sticky_expires ? parseTimestamp(post.sticky_expires).parsedDate : null;
       post.unStickTime = post.sticky_expires ? parseTimestamp(post.sticky_expires).parsedTime : null;
-      post.user_phone = post.user?.phone;
-      post.post_type = postType || 'active';
+      post.user_phone = post.user?.phone ?? post.user_phone;
       post.deletedDate = post.deleted_at ? parseTimestamp(post.deleted_at).parsedDate : null;
       post.deletedTime = post.deleted_at ? parseTimestamp(post.deleted_at).parsedTime : null;
       delete post.user;
