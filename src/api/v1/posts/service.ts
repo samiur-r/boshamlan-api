@@ -553,21 +553,42 @@ const filterPostsForAdmin = async (
   const order: any = {};
 
   if (userId) {
-    where.user = { id: parseInt(userId, 10) };
+    where.user_id = parseInt(userId, 10);
   }
 
   if (locationToFilter) where.city_id = locationToFilter;
   if (categoryToFilter) where.category_id = categoryToFilter;
   if (propertyTypeToFilter) where.property_id = propertyTypeToFilter;
 
-  if (fromPriceToFilter && toPriceToFilter) where.price = Between(fromPriceToFilter, toPriceToFilter);
-  else if (fromPriceToFilter) where.price = MoreThanOrEqual(fromPriceToFilter);
-  else if (toPriceToFilter) where.price = LessThanOrEqual(toPriceToFilter);
+  if (fromPriceToFilter && toPriceToFilter) {
+    where.price = {
+      '>=': fromPriceToFilter,
+      '<=': toPriceToFilter,
+    };
+  } else if (fromPriceToFilter) {
+    where.price = {
+      '>=': fromPriceToFilter,
+    };
+  } else if (toPriceToFilter) {
+    where.price = {
+      '<=': toPriceToFilter,
+    };
+  }
 
-  if (fromCreationDateToFilter && toCreationDateToFilter)
-    where.created_at = Between(fromCreationDateToFilter, toCreationDateToFilter);
-  else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(fromCreationDateToFilter);
-  else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(toCreationDateToFilter);
+  if (fromCreationDateToFilter && toCreationDateToFilter) {
+    where.created_at = {
+      '>=': fromCreationDateToFilter,
+      '<=': toCreationDateToFilter,
+    };
+  } else if (fromCreationDateToFilter) {
+    where.created_at = {
+      '>=': fromCreationDateToFilter,
+    };
+  } else if (toCreationDateToFilter) {
+    where.created_at = {
+      '<=': toCreationDateToFilter,
+    };
+  }
 
   if (stickyStatusToFilter === -1) where.is_sticky = false;
   else if (stickyStatusToFilter === 1) where.is_sticky = true;
@@ -620,9 +641,35 @@ const filterPostsForAdmin = async (
 
   try {
     const whereClause = Object.entries(where)
-      .map(([key, value]) => {
+      .map(([key, value]: [string, any]) => {
         if (key === 'is_agent') {
           return `users.${key} = ${value}`;
+        }
+        if (key === 'created_at') {
+          const from = value['>='] && new Date(value['>=']).toISOString();
+          const to = value['<='] && new Date(value['<=']).toISOString();
+          if (from && to) {
+            return `created_at BETWEEN '${from}' AND '${to}'`;
+          }
+          if (from) {
+            return `created_at >= '${from}'`;
+          }
+          if (to) {
+            return `created_at <= '${to}'`;
+          }
+        }
+        if (key === 'price') {
+          const from = value['>='] && value['>='];
+          const to = value['<='] && value['<='];
+          if (from && to) {
+            return `price BETWEEN '${from}' AND '${to}'`;
+          }
+          if (from) {
+            return `price >= '${from}'`;
+          }
+          if (to) {
+            return `price <= '${to}'`;
+          }
         }
         return `${key} = '${value}'`;
       })
@@ -661,99 +708,6 @@ const filterPostsForAdmin = async (
     const result = await AppDataSource.query(query);
     posts = result;
     totalPosts = result.length > 0 ? result[0].total_count : 0;
-
-    // if (postStatusToFilter === 'Active') {
-    //   const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
-    //     where,
-    //     order,
-    //     skip: offset,
-    //     take: 10,
-    //   });
-    //   posts = postList;
-    //   totalPosts = count;
-    // } else if (postStatusToFilter === 'Archived') {
-    //   const [postList, count]: [PostsWithUser[] | null, number] = await ArchivePost.findAndCount({
-    //     where,
-    //     order,
-    //     skip: offset,
-    //     take: 10,
-    //   });
-    //   posts = postList;
-    //   totalPosts = count;
-    // } else if (postStatusToFilter === 'Deleted') {
-    //   const [postList, count]: [PostsWithUser[] | null, number] = await DeletedPost.findAndCount({
-    //     where,
-    //     order,
-    //     skip: offset,
-    //     take: 10,
-    //   });
-    //   posts = postList;
-    //   totalPosts = count;
-    // } else if (postStatusToFilter === 'Reposted') {
-    //   where.repost_count = MoreThan(0);
-    //   const [postList, count]: [PostsWithUser[] | null, number] = await Post.findAndCount({
-    //     where,
-    //     order,
-    //     skip: offset,
-    //     take: 10,
-    //   });
-    //   posts = postList;
-    //   totalPosts = count;
-    // } else {
-    //   const whereClause = Object.entries(where)
-    //     .map(([key, value]) => {
-    //       if (key === 'is_agent') {
-    //         return `users.${key} = ${value}`;
-    //       }
-    //       return `${key} = ${value}`;
-    //     })
-    //     .join(' AND ');
-
-    //   const query = `SELECT latest_posts.*, (SELECT COUNT(*) FROM (
-    //     SELECT id, title, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
-    //     FROM posts
-    //     UNION ALL
-    //     SELECT id, title, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
-    //     FROM archive_posts
-    //     UNION ALL
-    //     SELECT id, title, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
-    //     FROM deleted_posts
-    //   ) AS latest_posts_count
-    //   ${whereClause ? `WHERE ${whereClause}` : ''}
-    //   ) AS total_count,
-    //     users.phone as user_phone,
-    //     users.is_agent as user_is_agent
-    //   FROM (
-    //     SELECT posts.id, posts.user_id, posts.title, posts.city_id, posts.city_title, posts.category_id, posts.category_title, posts.property_id, posts.property_title, posts.price, posts.description, posts.is_sticky, posts.is_reposted, posts.repost_count, posts.sticked_date, posts.sticky_expires, posts.repost_date, posts.public_date, posts.expiry_date, posts.created_at, posts.updated_at, posts.deleted_at
-    //     FROM posts
-    //     UNION ALL
-    //     SELECT archive_posts.id, archive_posts.user_id, archive_posts.title, archive_posts.city_id, archive_posts.city_title, archive_posts.category_id, archive_posts.category_title, archive_posts.property_id, archive_posts.property_title, archive_posts.price, archive_posts.description, archive_posts.is_sticky, archive_posts.is_reposted, archive_posts.repost_count, archive_posts.sticked_date, archive_posts.sticky_expires, archive_posts.repost_date, archive_posts.public_date, archive_posts.expiry_date, archive_posts.created_at, archive_posts.updated_at, archive_posts.deleted_at
-    //     FROM archive_posts
-    //     UNION ALL
-    //     SELECT deleted_posts.id,  deleted_posts.user_id, deleted_posts.title, deleted_posts.city_id, deleted_posts.city_title, deleted_posts.category_id, deleted_posts.category_title, deleted_posts.property_id, deleted_posts.property_title, deleted_posts.price, deleted_posts.description, deleted_posts.is_sticky, deleted_posts.is_reposted, deleted_posts.repost_count, deleted_posts.sticked_date, deleted_posts.sticky_expires, deleted_posts.repost_date, deleted_posts.public_date, deleted_posts.expiry_date, deleted_posts.created_at, deleted_posts.updated_at, deleted_posts.deleted_at
-    //     FROM deleted_posts
-    //   ) AS latest_posts
-    //     LEFT JOIN users ON latest_posts.user_id = users.id
-    //     ${whereClause ? `WHERE ${whereClause}` : ''}
-    //     ORDER BY latest_posts.${Object.keys(order)[0]} DESC
-    //     LIMIT 10
-    //     OFFSET ${offset}
-    //   `;
-    //   const result = await AppDataSource.query(query);
-    //   posts = result;
-    //   totalPosts = result.length > 0 ? result[0].total_count : 0;
-    // }
-
-    // if (userTypeToFilter && userTypeToFilter === 'regular')
-    //   posts = posts?.filter(
-    //     (post: { user: { is_agent: boolean }; user_is_agent: boolean }) =>
-    //       post.user?.is_agent === false || post?.user_is_agent === false,
-    //   );
-    // else if (userTypeToFilter && userTypeToFilter === 'agent')
-    //   posts = posts?.filter(
-    //     (post: { user: { is_agent: boolean }; user_is_agent: boolean }) =>
-    //       post.user?.is_agent === true || post?.user_is_agent === true,
-    //   );
 
     posts?.forEach((post: any) => {
       post.postedDate = parseTimestamp(post.updated_at).parsedDate;
