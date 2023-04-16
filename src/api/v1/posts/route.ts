@@ -6,7 +6,7 @@ import * as PostController from './controller';
 const router = express.Router();
 
 router.get('/get-many', PostController.fetchMany);
-router.get('/edit/:id', isUserAuth, PostController.fetchOne);
+router.get('/edit/:id', isUserAuth, PostController.fetchOneForEdit);
 router.get('/:id', PostController.fetchOne);
 router.post('/', isUserAuth, PostController.insert);
 router.post('/get-many', isUserAuth, PostController.fetchMany);

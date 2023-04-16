@@ -371,12 +371,8 @@ const updatePost = async (
     description: string;
     media: string[];
   },
-  postId: number,
+  post: IPost,
 ) => {
-  const post = await findPostById(postId);
-
-  if (!post) throw new ErrorHandler(401, 'Post not found');
-
   await Post.save({
     ...post,
     city_id: postInfo.cityId,
@@ -393,6 +389,74 @@ const updatePost = async (
   });
 
   await updateLocationCountValue(postInfo.cityId, 'increment');
+
+  return post;
+};
+
+const updateArchivePost = async (
+  postInfo: {
+    cityId: number;
+    cityTitle: string;
+    stateId: number;
+    stateTitle: string;
+    propertyId: number;
+    propertyTitle: string;
+    categoryId: number;
+    categoryTitle: string;
+    price: number;
+    description: string;
+    media: string[];
+  },
+  post: IPost,
+) => {
+  await ArchivePost.save({
+    ...post,
+    city_id: postInfo.cityId,
+    city_title: postInfo.cityTitle,
+    state_id: postInfo.stateId,
+    state_title: postInfo.stateTitle,
+    property_id: postInfo.propertyId,
+    property_title: postInfo.propertyTitle,
+    category_id: postInfo.categoryId,
+    category_title: postInfo.categoryTitle,
+    price: postInfo.price,
+    description: postInfo.description,
+    media: postInfo.media,
+  });
+
+  return post;
+};
+
+const updateDeletedPost = async (
+  postInfo: {
+    cityId: number;
+    cityTitle: string;
+    stateId: number;
+    stateTitle: string;
+    propertyId: number;
+    propertyTitle: string;
+    categoryId: number;
+    categoryTitle: string;
+    price: number;
+    description: string;
+    media: string[];
+  },
+  post: IPost,
+) => {
+  await DeletedPost.save({
+    ...post,
+    city_id: postInfo.cityId,
+    city_title: postInfo.cityTitle,
+    state_id: postInfo.stateId,
+    state_title: postInfo.stateTitle,
+    property_id: postInfo.propertyId,
+    property_title: postInfo.propertyTitle,
+    category_id: postInfo.categoryId,
+    category_title: postInfo.categoryTitle,
+    price: postInfo.price,
+    description: postInfo.description,
+    media: postInfo.media,
+  });
 
   return post;
 };
@@ -779,6 +843,8 @@ export {
   removeArchivedPost,
   removePost,
   updatePost,
+  updateArchivePost,
+  updateDeletedPost,
   updatePostStickyVal,
   updatePostRepostVals,
   updatePostViewCount,

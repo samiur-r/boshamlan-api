@@ -11,6 +11,7 @@ import { IPost } from './interfaces';
 import {
   findArchivedPostById,
   findArchivedPostByUserId,
+  findDeletedPostById,
   findPostById,
   findPosts,
   removeArchivedPost,
@@ -19,6 +20,8 @@ import {
   saveDeletedPost,
   savePost,
   saveTempPost,
+  updateArchivePost,
+  updateDeletedPost,
   updatePost,
   updatePostRepostVals,
   updatePostStickyVal,
@@ -33,10 +36,37 @@ import { checkAuthorization } from '../../../utils/checkAuthorization';
 import { updateLocationCountValue } from '../locations/service';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
-  const user = res.locals?.user?.payload;
+  let post;
 
   try {
-    const post = await findPostById(parseInt(req.params.id, 10));
+    post = await findPostById(parseInt(req.params.id, 10));
+    if (!post) {
+      post = await findArchivedPostById(parseInt(req.params.id, 10));
+    }
+    if (!post) {
+      post = await findDeletedPostById(parseInt(req.params.id, 10));
+    }
+    if (!post) throw new ErrorHandler(404, 'Post not found');
+
+    return res.status(200).json({ success: post });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+const fetchOneForEdit = async (req: Request, res: Response, next: NextFunction) => {
+  const user = res.locals?.user?.payload;
+  let post;
+
+  try {
+    post = await findPostById(parseInt(req.params.id, 10));
+    if (!post) {
+      post = await findArchivedPostById(parseInt(req.params.id, 10));
+    }
+    if (!post) {
+      post = await findDeletedPostById(parseInt(req.params.id, 10));
+    }
     if (!post) throw new ErrorHandler(404, 'Post not found');
 
     checkAuthorization(user, post.user.id);
@@ -170,10 +200,19 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
   const { postInfo, postId } = req.body;
   const user = res.locals?.user?.payload;
   const media: string[] = [];
+  let post;
 
   try {
-    const post = await findPostById(postId);
+    post = await findPostById(postId);
+    if (!post) {
+      post = await findArchivedPostById(postId);
+    }
+    if (!post) {
+      post = await findDeletedPostById(postId);
+    }
     if (!post) throw new ErrorHandler(404, 'Post not found');
+
+    console.log(req.params.id);
 
     checkAuthorization(user, post.user.id);
 
@@ -187,12 +226,25 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
       }
     }
     postInfo.media = media;
+    let updatedPost;
 
-    const updatedPost = await updatePost(postInfo, postId);
-    logger.info(`User: ${updatedPost.phone} updated post: ${updatedPost.id}`);
+    switch (post.post_type) {
+      case 'active':
+        updatedPost = await updatePost(postInfo, post);
+        break;
+      case 'archived':
+        updatedPost = await updateArchivePost(postInfo, post);
+        break;
+      case 'deleted':
+        updatedPost = await updateDeletedPost(postInfo, post);
+        break;
+      default:
+        break;
+    }
+    logger.info(`User: ${updatedPost?.phone} updated post: ${updatedPost?.id}`);
     await saveUserLog([
       {
-        post_id: updatedPost.id,
+        post_id: updatedPost?.id,
         transaction: undefined,
         user: updatedPost?.phone,
         activity: 'Post updated successfully',
@@ -386,6 +438,7 @@ export {
   insert,
   update,
   fetchOne,
+  fetchOneForEdit,
   fetchMany,
   updatePostToStick,
   rePost,

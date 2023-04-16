@@ -345,6 +345,11 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
         sticky: user?.credits[0]?.sticky ?? 0,
         agent: user?.credits[0]?.agent ?? 0,
       },
+      has_zero_credits:
+        user?.credits[0]?.free <= 0 &&
+        user?.credits[0]?.regular <= 0 &&
+        user?.credits[0]?.sticky <= 0 &&
+        user?.credits[0]?.agent <= 0,
       payment: {
         regular: user?.transactions
           .filter((transaction: ITransaction) => ['regular1', 'regular2'].includes(transaction.package_title))
