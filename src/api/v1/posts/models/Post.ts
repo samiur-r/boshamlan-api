@@ -84,7 +84,7 @@ export class Post extends BaseEntity implements IPost {
   @Column({ nullable: true })
   sticked_date: Date;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, default: null })
   sticky_expires: Date;
 
   @Column({ nullable: true })

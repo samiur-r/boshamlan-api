@@ -11,6 +11,7 @@ import { parseTimestamp } from '../../../utils/timestampUtls';
 import { updateLocationCountValue } from '../locations/service';
 import { IUser } from '../users/interfaces';
 import { findUserById } from '../users/service';
+import { saveUserLog } from '../user_logs/service';
 import { IPost } from './interfaces';
 import { ArchivePost } from './models/ArchivePost';
 import { DeletedPost } from './models/DeletedPost';
@@ -235,7 +236,33 @@ const removeArchivedPost = async (id: number, post?: IPost) => {
 };
 
 const unstickPost = async () => {
-  Post.update({ is_sticky: true, sticky_expires: LessThan(new Date()) }, { is_sticky: false });
+  const affectedPosts = await Post.find({
+    where: { is_sticky: true, sticky_expires: LessThan(new Date()) },
+  });
+
+  const updatedPosts = affectedPosts.map((post) => {
+    post.is_sticky = false;
+    // @ts-ignore
+    post.sticky_expires = null;
+    return post;
+  });
+
+  await Post.save(updatedPosts);
+
+  const affectedPostIds = affectedPosts.map((post) => post.id);
+
+  if (affectedPostIds && affectedPostIds.length) {
+    for (const id of affectedPostIds) {
+      await saveUserLog([
+        {
+          post_id: id,
+          transaction: undefined,
+          user: undefined,
+          activity: 'Post un sticked',
+        },
+      ]);
+    }
+  }
 };
 
 const moveExpiredPosts = async () => {

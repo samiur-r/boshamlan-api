@@ -212,8 +212,6 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
     }
     if (!post) throw new ErrorHandler(404, 'Post not found');
 
-    console.log(req.params.id);
-
     checkAuthorization(user, post.user.id);
 
     await postSchema.validate(postInfo);
