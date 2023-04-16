@@ -778,6 +778,7 @@ const filterPostsForAdmin = async (
       ) AS latest_posts_count
       ${whereClause ? `WHERE ${whereClause}` : ''}
       ) AS total_count,
+        users.id as user_id,
         users.phone as user_phone,
         users.is_agent as user_is_agent
       FROM (
