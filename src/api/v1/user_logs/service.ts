@@ -1,4 +1,8 @@
 /* eslint-disable no-param-reassign */
+import e from 'express';
+import ErrorHandler from '../../../utils/ErrorHandler';
+import { IUser } from '../users/interfaces';
+import { findUserById, findUserByPhone } from '../users/service';
 import { UserLog } from './model';
 
 const saveUserLog = async (
@@ -35,8 +39,16 @@ const fetchLogsByPostId = async (postId: number, offset: number) => {
 };
 
 const fetchLogsByUser = async (user: string, offset: number) => {
+  let userObj: IUser | null;
+  if (user.length < 8) {
+    userObj = await findUserById(parseInt(user, 10));
+  } else {
+    userObj = await findUserByPhone(user);
+  }
+
+  if (!userObj) throw new ErrorHandler(401, 'User not found for the log');
   const [logs, count]: any = await UserLog.findAndCount({
-    where: { user },
+    where: [{ user: userObj.phone }, { user: userObj.id.toString() }],
     order: { created_at: 'DESC' },
     skip: offset,
     take: 10,

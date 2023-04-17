@@ -301,6 +301,7 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       adminCommentToFilter,
       fromCreationDateToFilter,
       toCreationDateToFilter,
+      orderByToFilter,
       offset,
     );
 
@@ -317,6 +318,7 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       lastPostTime: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedTime : null,
       registeredDate: parseTimestamp(user.created_at).parsedDate,
       registeredTime: parseTimestamp(user.created_at).parsedTime,
+      created_at: user.created_at,
       subscriptionStartDate:
         user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
           ? parseTimestamp(user.agent[0].subscription_start_date).parsedDate
@@ -352,14 +354,23 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
         user?.credits[0]?.agent <= 0,
       payment: {
         regular: user?.transactions
-          .filter((transaction: ITransaction) => ['regular1', 'regular2'].includes(transaction.package_title))
-          .reduce((total: number, transaction: ITransaction) => total + transaction.amount, 0),
+          .filter(
+            (transaction: ITransaction) =>
+              transaction.status === 'completed' && ['regular1', 'regular2'].includes(transaction.package_title),
+          )
+          .reduce((total: number, transaction: any) => total + transaction.package.numberOfCredits, 0),
         sticky: user.transactions
-          .filter((transaction: ITransaction) => ['sticky1', 'sticky2'].includes(transaction.package_title))
-          .reduce((total: number, transaction: ITransaction) => total + transaction.amount, 0),
+          .filter(
+            (transaction: ITransaction) =>
+              transaction.status === 'completed' && ['sticky1', 'sticky2'].includes(transaction.package_title),
+          )
+          .reduce((total: number, transaction: any) => total + transaction.package.numberOfCredits, 0),
         agent: user.transactions
-          .filter((transaction: ITransaction) => ['agent1', 'agent2'].includes(transaction.package_title))
-          .reduce((total: number, transaction: ITransaction) => total + transaction.amount, 0),
+          .filter(
+            (transaction: ITransaction) =>
+              transaction.status === 'completed' && ['agent1', 'agent2'].includes(transaction.package_title),
+          )
+          .reduce((total: number, transaction: any) => total + transaction.package.numberOfCredits, 0),
       },
     }));
 
@@ -491,25 +502,44 @@ const editUser = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const editAgent = async (req: Request, res: Response, next: NextFunction) => {
-  const { agentId, name, email, instagram, facebook, twitter, website, description } = req.body;
+  const { userId, agentId, name, email, instagram, facebook, twitter, website, description } = req.body;
 
   try {
-    if (!agentId || !name) throw new ErrorHandler(404, 'Invalid agent id or name');
-    const agent = await findAgentById(agentId);
-    if (!agent) throw new ErrorHandler(401, 'Agent not found');
+    if (!name) throw new ErrorHandler(404, 'Invalid agent id or name');
 
-    const agentData = Agent.create({
-      ...agent,
-      name,
-      email,
-      instagram,
-      facebook,
-      twitter,
-      website,
-      description,
-    });
+    if (agentId) {
+      const agent = await findAgentById(agentId);
+      if (!agent) throw new ErrorHandler(401, 'Agent not found');
 
-    await Agent.save(agentData);
+      const agentData = Agent.create({
+        ...agent,
+        name,
+        email,
+        instagram,
+        facebook,
+        twitter,
+        website,
+        description,
+      });
+
+      await Agent.save(agentData);
+    } else {
+      const user = await findUserById(userId);
+      if (!user) throw new ErrorHandler(401, 'user not found');
+
+      const agentData = Agent.create({
+        name,
+        email,
+        instagram,
+        facebook,
+        twitter,
+        website,
+        description,
+        user,
+      });
+
+      await Agent.save(agentData);
+    }
 
     return res.status(200).json({ success: 'Agent updated successfully' });
   } catch (error) {
@@ -635,7 +665,28 @@ const updateUserComment = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+const test = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users = await User.createQueryBuilder('user')
+      .leftJoinAndSelect('user.posts', 'post')
+      .leftJoinAndSelect('user.archive_posts', 'archive_post')
+      .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
+      .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
+      .addSelect('COUNT(post.id)', 'total_active_posts')
+      .addSelect('COUNT(archive_post.id)', 'total_archive_post')
+      .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
+      .groupBy('user.id, post.id, archive_post.id, deleted_post.id')
+      .orderBy('user.phone', 'ASC')
+      .getMany();
+    return res.status(200).json({ users });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
 export {
+  test,
   register,
   login,
   logout,

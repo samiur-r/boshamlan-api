@@ -42,10 +42,10 @@ export class Agent extends BaseEntity implements IAgent {
   @Column({ nullable: true })
   logo_url: string;
 
-  @Column()
+  @Column({ nullable: true })
   subscription_start_date: Date;
 
-  @Column()
+  @Column({ nullable: true })
   subscription_ends_date: Date;
 
   @OneToOne(() => User, { nullable: false, eager: true })

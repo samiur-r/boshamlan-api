@@ -1,4 +1,5 @@
 import { Between, Equal, In, LessThanOrEqual, MoreThan, MoreThanOrEqual } from 'typeorm';
+import AppDataSource from '../../../db';
 import { hashPassword } from '../../../utils/passwordUtils';
 import { IUser } from './interfaces';
 import { User } from './model';
@@ -77,9 +78,11 @@ const filterUsersForAdmin = async (
   adminCommentToFilter: string,
   fromCreationDateToFilter: Date | null,
   toCreationDateToFilter: Date | null,
+  orderByToFilter: string | undefined,
   offset: number,
 ) => {
-  const where: any = {};
+  let where: any = {};
+  let order = 'user.created_at';
 
   if (statusToFilter) {
     switch (statusToFilter) {
@@ -96,16 +99,16 @@ const filterUsersForAdmin = async (
         where.status = 'not_verified';
         break;
       case 'Has Regular Credits':
-        where.credits = { regular: MoreThan(0) };
+        where = 'credits.regular > 0';
         break;
       case 'Has Sticky Credits':
-        where.credits = { sticky: MoreThan(0) };
+        where = 'credits.sticky > 0';
         break;
       case 'Has Agent Credits':
-        where.credits = { agent: MoreThan(0) };
+        where = 'credits.agent > 0';
         break;
       case 'Zero Free':
-        where.credits = { free: Equal(0) };
+        where = 'credits.free = 0';
         break;
       default:
         break;
@@ -119,12 +122,59 @@ const filterUsersForAdmin = async (
   else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(fromCreationDateToFilter);
   else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(toCreationDateToFilter);
 
-  const [users, count] = await User.findAndCount({
-    where,
-    take: 10,
-    skip: offset,
-    relations: ['posts', 'archive_posts', 'deleted_posts', 'credits', 'transactions', 'agent'],
-  });
+  if (orderByToFilter) {
+    switch (orderByToFilter) {
+      case 'Registered':
+        order = 'user.created_at';
+        break;
+      case 'Total Posts':
+        order = 'total_posts';
+        break;
+      case 'Active Posts':
+        order = 'total_active_posts';
+        break;
+      case 'Archived Posts':
+        order = 'total_archive_post';
+        break;
+      case 'Trashed Posts':
+        order = 'total_deleted_post';
+        break;
+      case 'Mobile':
+        order = 'user.phone';
+        break;
+      default:
+        break;
+    }
+  }
+
+  const count = await User.createQueryBuilder('user')
+    .leftJoinAndSelect('user.posts', 'post')
+    .leftJoinAndSelect('user.archive_posts', 'archive_post')
+    .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
+    .leftJoinAndSelect('user.credits', 'credits')
+    .leftJoinAndSelect('user.transactions', 'transactions')
+    .leftJoinAndSelect('user.agent', 'agent')
+    .where(where)
+    .getCount();
+
+  const users = await User.createQueryBuilder('user')
+    .leftJoinAndSelect('user.posts', 'post')
+    .leftJoinAndSelect('user.archive_posts', 'archive_post')
+    .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
+    .leftJoinAndSelect('user.credits', 'credits')
+    .leftJoinAndSelect('user.transactions', 'transactions')
+    .leftJoinAndSelect('transactions.package', 'package')
+    .leftJoinAndSelect('user.agent', 'agent')
+    .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
+    .addSelect('COUNT(post.id)', 'total_active_posts')
+    .addSelect('COUNT(archive_post.id)', 'total_archive_post')
+    .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
+    .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
+    .orderBy(order, 'DESC')
+    .where(where)
+    .skip(offset)
+    .take(10)
+    .getMany();
 
   return { users, count };
 };
