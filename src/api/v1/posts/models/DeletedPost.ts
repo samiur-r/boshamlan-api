@@ -1,12 +1,12 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
   BaseEntity,
   ManyToOne,
+  PrimaryColumn,
 } from 'typeorm';
 
 import { IPost } from '../interfaces';
@@ -16,7 +16,7 @@ import { User } from '../../users/model';
 
 @Entity('deleted_posts')
 export class DeletedPost extends BaseEntity implements IPost {
-  @PrimaryGeneratedColumn()
+  @PrimaryColumn()
   id: number;
 
   @Column()

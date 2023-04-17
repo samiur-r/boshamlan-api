@@ -23,6 +23,7 @@ import {
   findArchivedPostById,
   findDeletedPostById,
   findPostById,
+  generatePostId,
   removeAllPostsOfUser,
   removeArchivedPost,
   removePost,
@@ -237,6 +238,7 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     const publicDate = post.public_date;
 
     const postInfo = {
+      id: post.id,
       title: post.title,
       cityId: post.city_id,
       cityTitle: post.city_title,
@@ -667,18 +669,8 @@ const updateUserComment = async (req: Request, res: Response, next: NextFunction
 
 const test = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const users = await User.createQueryBuilder('user')
-      .leftJoinAndSelect('user.posts', 'post')
-      .leftJoinAndSelect('user.archive_posts', 'archive_post')
-      .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-      .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
-      .addSelect('COUNT(post.id)', 'total_active_posts')
-      .addSelect('COUNT(archive_post.id)', 'total_archive_post')
-      .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
-      .groupBy('user.id, post.id, archive_post.id, deleted_post.id')
-      .orderBy('user.phone', 'ASC')
-      .getMany();
-    return res.status(200).json({ users });
+    const maxId = await generatePostId();
+    return res.status(200).json({ maxId });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

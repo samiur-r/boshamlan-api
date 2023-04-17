@@ -1,6 +1,6 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   JoinColumn,
   CreateDateColumn,
@@ -16,7 +16,7 @@ import { User } from '../../users/model';
 
 @Entity('posts')
 export class Post extends BaseEntity implements IPost {
-  @PrimaryGeneratedColumn()
+  @PrimaryColumn()
   id: number;
 
   @Column()

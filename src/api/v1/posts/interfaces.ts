@@ -21,7 +21,7 @@ export interface IPost {
   is_reposted?: boolean;
   repost_count: number;
   sticked_date?: any;
-  sticky_expires?: Date | null;
+  sticky_expires?: Date | undefined;
   repost_date?: any;
   expiry_date: Date;
   public_date: Date;

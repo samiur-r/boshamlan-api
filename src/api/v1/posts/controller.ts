@@ -332,6 +332,7 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
 
     const postInfo = {
+      id: post.id,
       title: post.title,
       cityId: post.city_id,
       cityTitle: post.city_title,

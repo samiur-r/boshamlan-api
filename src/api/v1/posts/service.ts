@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
-import { Between, In, IsNull, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual } from 'typeorm';
+import { Between, In, IsNull, LessThan, Like } from 'typeorm';
 import cloudinary from '../../../config/cloudinary';
 import AppDataSource from '../../../db';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
@@ -37,8 +37,20 @@ interface PostsWithUser extends IPost {
   publicTime?: string;
 }
 
+const generatePostId = async () => {
+  const [maxPostId, maxArchivePostId, maxDeletedPostId] = await Promise.all([
+    Post.createQueryBuilder('post').select('MAX(post.id)', 'maxId').getRawOne(),
+    ArchivePost.createQueryBuilder('archive_post').select('MAX(archive_post.id)', 'maxId').getRawOne(),
+    DeletedPost.createQueryBuilder('deleted_post').select('MAX(deleted_post.id)', 'maxId').getRawOne(),
+  ]);
+
+  const maxId = Math.max(maxPostId.maxId, maxArchivePostId.maxId, maxDeletedPostId.maxId) + 1;
+  return maxId;
+};
+
 const savePost = async (
   postInfo: {
+    id?: number;
     title: string;
     cityId: number;
     cityTitle: string;
@@ -92,13 +104,21 @@ const savePost = async (
     user,
   });
 
+  if (postInfo.id !== undefined) {
+    newPost.id = postInfo.id;
+  } else {
+    newPost.id = await generatePostId();
+  }
+
   const post = await Post.save(newPost);
   await updateLocationCountValue(postInfo.cityId, 'increment');
   return post;
 };
 
 const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
+  if (!postInfo.id) throw new ErrorHandler(401, 'Post id is required');
   const newPost = ArchivePost.create({
+    id: postInfo.id,
     title: postInfo.title,
     city_id: postInfo.city_id,
     city_title: postInfo.city_title,
@@ -127,8 +147,10 @@ const saveArchivedPost = async (postInfo: IPost, user: IUser) => {
 };
 
 const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
+  if (!postInfo.id) throw new ErrorHandler(401, 'Post id is required');
   const today = new Date();
   const newPost = DeletedPost.create({
+    id: postInfo.id,
     title: postInfo.title,
     city_id: postInfo.city_id,
     city_title: postInfo.city_title,
@@ -153,8 +175,9 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     post_type: 'deleted',
     user,
   });
-  await updateLocationCountValue(postInfo.city_id, 'decrement');
+
   await DeletedPost.save(newPost);
+  await updateLocationCountValue(postInfo.city_id, 'decrement');
 };
 
 const saveTempPost = async (
@@ -855,6 +878,7 @@ const removeAllPostsOfUser = async (userId: number) => {
 };
 
 export {
+  generatePostId,
   savePost,
   moveExpiredPosts,
   saveArchivedPost,
