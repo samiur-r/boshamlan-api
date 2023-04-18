@@ -635,8 +635,8 @@ const updateUserBlockStatus = async (req: Request, res: Response, next: NextFunc
     });
 
     if (status) {
-      const socketIo: any = await getSocketIo();
-      socketIo.emit('userBlocked', { user: user.phone });
+      // const socketIo: any = await getSocketIo();
+      // socketIo.emit('userBlocked', { user: user.phone });
 
       await removeAllPostsOfUser(userId);
       await setCreditsToZeroByUserId(userId);

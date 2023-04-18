@@ -13,6 +13,6 @@ AppDataSource.initialize()
     const server = app.listen(config.port, () => {
       logger.info(`🚀 Listening on ${config.port} with NODE_ENV=${config.nodeEnv} 🚀`);
     });
-    initializeSocketIO(server);
+    // initializeSocketIO(server);
   })
   .catch((error) => logger.error(`Failed to connect to database ${error}`));
