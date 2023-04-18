@@ -1,5 +1,6 @@
-import { Between, MoreThan } from 'typeorm';
+import { Between, In, MoreThan } from 'typeorm';
 import { Credit } from '../credits/model';
+import { Package } from '../packages/model';
 import { ArchivePost } from '../posts/models/ArchivePost';
 import { DeletedPost } from '../posts/models/DeletedPost';
 import { Post } from '../posts/models/Post';
@@ -313,12 +314,89 @@ const getTransactionSummary = async () => {
 };
 
 const geCreditsSummary = async () => {
-  const totalZeroFreeCredits = await Credit.count({ where: { free: 0 } });
-  const totalRegularCredits = await Credit.count({ where: { regular: MoreThan(0) } });
-  const totalStickyCredits = await Credit.count({ where: { sticky: MoreThan(0) } });
-  const totalAgentCredits = await Credit.count({ where: { agent: MoreThan(0) } });
+  const usersWithHistoryRegular = await Transaction.createQueryBuilder('transaction')
+    .select('COUNT(DISTINCT transaction.user_id)', 'count')
+    .leftJoin(User, 'user', 'transaction.user_id = user.id')
+    .where('transaction.status = :status', { status: 'completed' })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['regular1', 'regular2'] })
+    .getRawOne();
 
-  return { totalZeroFreeCredits, totalRegularCredits, totalStickyCredits, totalAgentCredits };
+  const usersWithHistorySticky = await Transaction.createQueryBuilder('transaction')
+    .select('COUNT(DISTINCT transaction.user_id)', 'count')
+    .leftJoin(User, 'user', 'transaction.user_id = user.id')
+    .where('transaction.status = :status', { status: 'completed' })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect', 'sticky1', 'sticky2'] })
+    .getRawOne();
+
+  const usersWithHistoryAgent = await Transaction.createQueryBuilder('transaction')
+    .select('COUNT(DISTINCT transaction.user_id)', 'count')
+    .leftJoin(User, 'user', 'transaction.user_id = user.id')
+    .where('transaction.status = :status', { status: 'completed' })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['agent1', 'agent2'] })
+    .getRawOne();
+
+  const totalHistoryRegular = await Transaction.createQueryBuilder('transaction')
+    .select('SUM(package.numberOfCredits)', 'count')
+    .leftJoin(Package, 'package', 'transaction.package_id = package.id')
+    .where('transaction.status = :status', { status: 'completed' })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['regular1', 'regular2'] })
+    .getRawOne();
+
+  const totalHistorySticky = await Transaction.createQueryBuilder('transaction')
+    .select('SUM(package.numberOfCredits)', 'count')
+    .leftJoin(Package, 'package', 'transaction.package_id = package.id')
+    .where('transaction.status = :status', { status: 'completed' })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect', 'sticky1', 'sticky2'] })
+    .getRawOne();
+
+  const totalHistoryAgent = await Transaction.createQueryBuilder('transaction')
+    .select('SUM(package.numberOfCredits)', 'count')
+    .leftJoin(Package, 'package', 'transaction.package_id = package.id')
+    .where('transaction.status = :status', { status: 'completed' })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['agent1', 'agent2'] })
+    .getRawOne();
+
+  const userWithActiveRegular = await Credit.count({ where: { regular: MoreThan(0) } });
+  const userWithActiveSticky = await Credit.count({ where: { sticky: MoreThan(0) } });
+  const userWithActiveAgent = await Credit.count({ where: { agent: MoreThan(0) } });
+
+  const { totalActiveRegular } = await Credit.createQueryBuilder('credit')
+    .select('SUM(credit.regular)', 'totalActiveRegular')
+    .getRawOne();
+  const { totalActiveSticky } = await Credit.createQueryBuilder('credit')
+    .select('SUM(credit.sticky)', 'totalActiveSticky')
+    .getRawOne();
+  const { totalActiveAgent } = await Credit.createQueryBuilder('credit')
+    .select('SUM(credit.agent)', 'totalActiveAgent')
+    .getRawOne();
+
+  const usersWithHistory = {
+    regular: usersWithHistoryRegular.count,
+    sticky: usersWithHistorySticky.count,
+    agent: usersWithHistoryAgent.count,
+  };
+
+  const totalHistory = {
+    regular: totalHistoryRegular.count,
+    sticky: totalHistorySticky.count,
+    agent: totalHistoryAgent.count,
+  };
+
+  const userWithActive = {
+    regular: userWithActiveRegular,
+    sticky: userWithActiveSticky,
+    agent: userWithActiveAgent,
+  };
+
+  const totalActive = {
+    regular: totalActiveRegular,
+    sticky: totalActiveSticky,
+    agent: totalActiveAgent,
+  };
+
+  const totalZeroFreeCredits = await Credit.count({ where: { free: 0 } });
+
+  return { totalZeroFreeCredits, usersWithHistory, totalHistory, userWithActive, totalActive };
 };
 
 export {

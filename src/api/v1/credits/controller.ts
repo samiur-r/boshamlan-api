@@ -7,7 +7,7 @@ const fetchStickyCredits = async (req: Request, res: Response, next: NextFunctio
 
   try {
     const stickyCredits = await findStickyCredits(user.id);
-    return res.status(200).json({ success: stickyCredits?.sticky });
+    return res.status(200).json({ success: stickyCredits });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

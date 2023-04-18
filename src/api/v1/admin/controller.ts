@@ -58,6 +58,8 @@ import { ArchivePost } from '../posts/models/ArchivePost';
 import { updateLocationCountValue } from '../locations/service';
 import { parseTimestamp } from '../../../utils/timestampUtls';
 import AppDataSource from '../../../db';
+import { Transaction } from '../transactions/model';
+import { Package } from '../packages/model';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -669,8 +671,11 @@ const updateUserComment = async (req: Request, res: Response, next: NextFunction
 
 const test = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const maxId = await generatePostId();
-    return res.status(200).json({ maxId });
+    const { totalActiveRegular } = await Credit.createQueryBuilder()
+      .select('SUM(credit.regular)', 'totalActiveRegular')
+      .getRawOne();
+
+    return res.status(200).json({ totalActiveRegular });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

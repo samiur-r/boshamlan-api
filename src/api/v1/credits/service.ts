@@ -68,8 +68,10 @@ const updateAgentCredit = async (ids: number[], value: number) => {
 };
 
 const findStickyCredits = async (userId: number) => {
-  const credits = await Credit.findOne({ where: { user: { id: userId }, sticky: MoreThan(0) } });
-  return credits;
+  const credits = await Credit.findOne({ where: { user: { id: userId } } });
+
+  if (!credits) return 0;
+  return credits.sticky;
 };
 
 const setCreditsToZeroByUserId = async (userId: number) => {
