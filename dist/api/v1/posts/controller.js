@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.increasePostCount = exports.fetchManyArchive = exports.deletePost = exports.rePost = exports.updatePostToStick = exports.fetchMany = exports.fetchOne = exports.update = exports.insert = void 0;
+exports.increasePostCount = exports.fetchManyArchive = exports.deletePost = exports.rePost = exports.updatePostToStick = exports.fetchMany = exports.fetchOneForEdit = exports.fetchOne = exports.update = exports.insert = void 0;
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const service_1 = require("../users/service");
@@ -24,14 +24,19 @@ const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
 const service_4 = require("../user_logs/service");
 const checkAuthorization_1 = require("../../../utils/checkAuthorization");
+const service_5 = require("../locations/service");
 const fetchOne = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
-    const user = (_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.user) === null || _b === void 0 ? void 0 : _b.payload;
+    let post;
     try {
-        const post = yield (0, service_3.findPostById)(parseInt(req.params.id, 10));
+        post = yield (0, service_3.findPostById)(parseInt(req.params.id, 10));
+        if (!post) {
+            post = yield (0, service_3.findArchivedPostById)(parseInt(req.params.id, 10));
+        }
+        if (!post) {
+            post = yield (0, service_3.findDeletedPostById)(parseInt(req.params.id, 10));
+        }
         if (!post)
             throw new ErrorHandler_1.default(404, 'Post not found');
-        (0, checkAuthorization_1.checkAuthorization)(user, post.id);
         return res.status(200).json({ success: post });
     }
     catch (error) {
@@ -40,6 +45,29 @@ const fetchOne = (req, res, next) => __awaiter(void 0, void 0, void 0, function*
     }
 });
 exports.fetchOne = fetchOne;
+const fetchOneForEdit = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const user = (_b = (_a = res.locals) === null || _a === void 0 ? void 0 : _a.user) === null || _b === void 0 ? void 0 : _b.payload;
+    let post;
+    try {
+        post = yield (0, service_3.findPostById)(parseInt(req.params.id, 10));
+        if (!post) {
+            post = yield (0, service_3.findArchivedPostById)(parseInt(req.params.id, 10));
+        }
+        if (!post) {
+            post = yield (0, service_3.findDeletedPostById)(parseInt(req.params.id, 10));
+        }
+        if (!post)
+            throw new ErrorHandler_1.default(404, 'Post not found');
+        (0, checkAuthorization_1.checkAuthorization)(user, post.user.id);
+        return res.status(200).json({ success: post });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        return next(error);
+    }
+});
+exports.fetchOneForEdit = fetchOneForEdit;
 const fetchMany = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _c, _d, _e, _f, _g, _h, _j;
     const limit = ((_c = req.query) === null || _c === void 0 ? void 0 : _c.limit) ? parseInt(req.query.limit, 10) : 10;
@@ -115,7 +143,8 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
                 }
             }
             postInfo.media = media;
-            const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit);
+            const publicDate = new Date();
+            const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit, publicDate);
             yield (0, service_2.updateCredit)(userId, typeOfCredit, 1, 'SUB', credit);
             logger_1.default.info(`User: ${user.phone} created new post: ${newPost.id}`);
             logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
@@ -153,11 +182,18 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
     const { postInfo, postId } = req.body;
     const user = (_o = (_m = res.locals) === null || _m === void 0 ? void 0 : _m.user) === null || _o === void 0 ? void 0 : _o.payload;
     const media = [];
+    let post;
     try {
-        const post = yield (0, service_3.findPostById)(postId);
+        post = yield (0, service_3.findPostById)(postId);
+        if (!post) {
+            post = yield (0, service_3.findArchivedPostById)(postId);
+        }
+        if (!post) {
+            post = yield (0, service_3.findDeletedPostById)(postId);
+        }
         if (!post)
             throw new ErrorHandler_1.default(404, 'Post not found');
-        (0, checkAuthorization_1.checkAuthorization)(user, post.id);
+        (0, checkAuthorization_1.checkAuthorization)(user, post.user.id);
         yield validation_1.postSchema.validate(postInfo);
         yield (0, service_3.removePostMedia)(postId);
         if ((postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia) && (postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia.length)) {
@@ -168,11 +204,24 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             }
         }
         postInfo.media = media;
-        const updatedPost = yield (0, service_3.updatePost)(postInfo, postId);
-        logger_1.default.info(`User: ${updatedPost.phone} updated post: ${updatedPost.id}`);
+        let updatedPost;
+        switch (post.post_type) {
+            case 'active':
+                updatedPost = yield (0, service_3.updatePost)(postInfo, post);
+                break;
+            case 'archived':
+                updatedPost = yield (0, service_3.updateArchivePost)(postInfo, post);
+                break;
+            case 'deleted':
+                updatedPost = yield (0, service_3.updateDeletedPost)(postInfo, post);
+                break;
+            default:
+                break;
+        }
+        logger_1.default.info(`User: ${updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.phone} updated post: ${updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.id}`);
         yield (0, service_4.saveUserLog)([
             {
-                post_id: updatedPost.id,
+                post_id: updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.id,
                 transaction: undefined,
                 user: updatedPost === null || updatedPost === void 0 ? void 0 : updatedPost.phone,
                 activity: 'Post updated successfully',
@@ -194,12 +243,14 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
 exports.update = update;
 const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _p;
-    const userId = res.locals.user.payload.id;
+    const user = res.locals.user.payload;
     const { postId } = req.body;
     try {
+        if (!user)
+            throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (!postId)
             throw new ErrorHandler_1.default(404, 'Invalid payload passed');
-        const credit = yield (0, service_2.findCreditByUserId)(userId);
+        const credit = yield (0, service_2.findCreditByUserId)(user.id);
         if (!credit)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (credit.sticky < 1)
@@ -209,7 +260,6 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (post.is_sticky)
             throw new ErrorHandler_1.default(304, 'Post is already sticky');
-        const user = yield (0, service_1.findUserById)(userId);
         yield (0, service_3.updatePostStickyVal)(post, true);
         logger_1.default.info(`Post ${post.id} sticked by user ${user === null || user === void 0 ? void 0 : user.phone}`);
         yield (0, service_4.saveUserLog)([
@@ -223,15 +273,20 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         let creditType = post.credit_type;
         if (creditType === 'agent' && !(user === null || user === void 0 ? void 0 : user.is_agent))
             creditType = 'regular';
-        const updatedCredit = yield (0, service_2.updateCredit)(userId, post.credit_type, 1, 'ADD', credit);
-        yield (0, service_2.updateCredit)(userId, 'sticky', 1, 'SUB', updatedCredit);
+        const updatedCredit = yield (0, service_2.updateCredit)(user.id, post.credit_type, 1, 'ADD', credit);
+        yield (0, service_2.updateCredit)(user.id, 'sticky', 1, 'SUB', updatedCredit);
         return res.status(200).json({ success: 'Post is sticked successfully' });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
-        logger_1.default.error(`Post ${postId} stick attempt by user ${userId} failed`);
+        logger_1.default.error(`Post ${postId} stick attempt by user ${user.phone} failed`);
         yield (0, service_4.saveUserLog)([
-            { post_id: parseInt(postId, 10), transaction: undefined, user: userId, activity: 'Post stick attempt failed' },
+            {
+                post_id: parseInt(postId, 10),
+                transaction: undefined,
+                user: user.phone,
+                activity: 'Post stick attempt failed',
+            },
         ]);
         return next(error);
     }
@@ -239,18 +294,17 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
 exports.updatePostToStick = updatePostToStick;
 const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _q;
-    const userId = res.locals.user.payload.id;
+    const user = res.locals.user.payload;
     const { postId } = req.body;
     try {
+        if (!user)
+            throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (!postId)
             throw new ErrorHandler_1.default(404, 'Invalid payload passed');
         const post = yield (0, service_3.findArchivedPostById)(postId);
         if (!post)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
-        const user = yield (0, service_1.findUserById)(userId);
-        if (!user)
-            throw new ErrorHandler_1.default(500, 'Something went wrong');
-        const credit = yield (0, service_2.findCreditByUserId)(userId);
+        const credit = yield (0, service_2.findCreditByUserId)(user.id);
         if (!credit)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         let typeOfCredit;
@@ -263,6 +317,7 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         if (!typeOfCredit)
             throw new ErrorHandler_1.default(402, 'You do not have enough credit');
         const postInfo = {
+            id: post.id,
             title: post.title,
             cityId: post.city_id,
             cityTitle: post.city_title,
@@ -275,12 +330,17 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             price: post.price,
             description: post.description,
             media: post.media,
+            sticked_date: post.sticked_date,
+            repost_count: post.repost_count,
+            views: post.views,
         };
-        const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit);
+        const publicDate = post.public_date;
+        const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit, publicDate);
         yield (0, service_3.removeArchivedPost)(post.id);
-        yield (0, service_2.updateCredit)(userId, typeOfCredit, 1, 'SUB', credit);
+        yield (0, service_2.updateCredit)(user.id, typeOfCredit, 1, 'SUB', credit);
         const repostCount = post.repost_count + 1;
         yield (0, service_3.updatePostRepostVals)(newPost, true, repostCount);
+        yield (0, service_5.updateLocationCountValue)(post.city_id, 'increment');
         logger_1.default.info(`Post ${post.id} reposted by user ${user === null || user === void 0 ? void 0 : user.phone}`);
         yield (0, service_4.saveUserLog)([
             {
@@ -294,9 +354,9 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
-        logger_1.default.error(`Post ${postId} repost by user ${userId} failed`);
+        logger_1.default.error(`Post ${postId} repost by user ${user.phone} failed`);
         yield (0, service_4.saveUserLog)([
-            { post_id: parseInt(postId, 10), transaction: undefined, user: userId, activity: 'Post repost failed' },
+            { post_id: parseInt(postId, 10), transaction: undefined, user: user.phone, activity: 'Post repost failed' },
         ]);
         return next(error);
     }
@@ -322,6 +382,7 @@ const deletePost = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
             yield (0, service_3.removeArchivedPost)(post.id, post);
         else
             yield (0, service_3.removePost)(post.id, post);
+        yield (0, service_5.updateLocationCountValue)(post.city_id, 'decrement');
         post.media = [];
         yield (0, service_3.saveDeletedPost)(post, user);
         logger_1.default.info(`Post ${postId} deleted by user ${user.phone}`);

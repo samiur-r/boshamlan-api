@@ -11,7 +11,7 @@ const sortFunctions: SortFunctionMap = {
   'Active Posts': (a, b) => a.post.active > b.post.active,
   'Archived Posts': (a, b) => a.post.archived > b.post.archived,
   'Trashed Posts': (a, b) => a.post.deleted > b.post.deleted,
-  Registered: (a, b) => new Date(b.created_at) - new Date(a.created_at),
+  Registered: (a, b) => b.created_at - a.created_at,
   Mobile: (a, b) => b.phone.localeCompare(a.phone),
 };
 

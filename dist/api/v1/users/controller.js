@@ -34,13 +34,14 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
             throw new ErrorHandler_1.default(403, 'Incorrect phone or password');
         if (user && user.status === 'not_verified')
             return res.status(200).json({ nextOperation: 'verify phone', userId: user.id });
+        if (user && user.is_blocked)
+            throw new ErrorHandler_1.default(403, 'You are blocked');
         const isValidPassword = yield (0, passwordUtils_1.verifyToken)(password, user.password);
         if (!isValidPassword)
             throw new ErrorHandler_1.default(403, 'Incorrect phone or password');
         const userPayload = {
             id: user.id,
             phone: user.phone,
-            is_admin: user.is_admin,
             is_agent: user.is_agent,
             status: user.status,
         };

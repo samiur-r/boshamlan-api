@@ -51,9 +51,13 @@ __decorate([
     __metadata("design:type", String)
 ], Agent.prototype, "logo_url", void 0);
 __decorate([
-    (0, typeorm_1.Column)(),
+    (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Date)
-], Agent.prototype, "expiry_date", void 0);
+], Agent.prototype, "subscription_start_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], Agent.prototype, "subscription_ends_date", void 0);
 __decorate([
     (0, typeorm_1.OneToOne)(() => model_1.User, { nullable: false, eager: true }),
     (0, typeorm_1.JoinColumn)({ name: 'user_id' }),

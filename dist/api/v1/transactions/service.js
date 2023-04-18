@@ -95,7 +95,7 @@ const editTransactionStatus = (trackId, status) => __awaiter(void 0, void 0, voi
     return { status: 200 };
 });
 exports.editTransactionStatus = editTransactionStatus;
-const filterTransactionsForAdmin = (statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId) => __awaiter(void 0, void 0, void 0, function* () {
+const filterTransactionsForAdmin = (statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId, offset) => __awaiter(void 0, void 0, void 0, function* () {
     const where = {};
     if (userId) {
         where.user = { id: parseInt(userId, 10) };
@@ -126,8 +126,14 @@ const filterTransactionsForAdmin = (statusToFilter, typeToFilter, fromCreationDa
         where.created_at = (0, typeorm_1.MoreThanOrEqual)(fromCreationDateToFilter);
     else if (toCreationDateToFilter)
         where.created_at = (0, typeorm_1.LessThanOrEqual)(toCreationDateToFilter);
-    const transactions = yield model_1.Transaction.find({ where, order: { created_at: 'desc' } });
-    return transactions;
+    const [transactions, count] = yield model_1.Transaction.findAndCount({
+        where,
+        order: { created_at: 'desc' },
+        skip: offset,
+        take: 10,
+    });
+    const totalPages = Math.ceil(count / 10);
+    return { transactions, totalPages };
 });
 exports.filterTransactionsForAdmin = filterTransactionsForAdmin;
 //# sourceMappingURL=service.js.map

@@ -8,9 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.fetchLogsByUser = exports.fetchLogsByPostId = exports.saveUserLog = void 0;
-/* eslint-disable no-param-reassign */
+const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
+const service_1 = require("../users/service");
 const model_1 = require("./model");
 const saveUserLog = (logs) => __awaiter(void 0, void 0, void 0, function* () {
     const newPostLogs = logs.map((log) => {
@@ -21,20 +25,43 @@ const saveUserLog = (logs) => __awaiter(void 0, void 0, void 0, function* () {
     yield model_1.UserLog.save(newPostLogs);
 });
 exports.saveUserLog = saveUserLog;
-const fetchLogsByPostId = (postId) => __awaiter(void 0, void 0, void 0, function* () {
-    const logs = yield model_1.UserLog.find({ where: { post_id: postId }, order: { created_at: 'DESC' } });
+const fetchLogsByPostId = (postId, offset) => __awaiter(void 0, void 0, void 0, function* () {
+    const [logs, count] = yield model_1.UserLog.findAndCount({
+        where: { post_id: postId },
+        order: { created_at: 'DESC' },
+        skip: offset,
+        take: 10,
+    });
     logs === null || logs === void 0 ? void 0 : logs.forEach((log) => {
         log.publish_date = log.created_at.toISOString().slice(0, 10);
     });
-    return logs;
+    const totalPages = Math.ceil(count / 10);
+    const response = { logs, totalPages };
+    return response;
 });
 exports.fetchLogsByPostId = fetchLogsByPostId;
-const fetchLogsByUser = (user) => __awaiter(void 0, void 0, void 0, function* () {
-    const logs = yield model_1.UserLog.find({ where: { user }, order: { created_at: 'DESC' } });
+const fetchLogsByUser = (user, offset) => __awaiter(void 0, void 0, void 0, function* () {
+    let userObj;
+    if (user.length < 8) {
+        userObj = yield (0, service_1.findUserById)(parseInt(user, 10));
+    }
+    else {
+        userObj = yield (0, service_1.findUserByPhone)(user);
+    }
+    if (!userObj)
+        throw new ErrorHandler_1.default(401, 'User not found for the log');
+    const [logs, count] = yield model_1.UserLog.findAndCount({
+        where: [{ user: userObj.phone }, { user: userObj.id.toString() }],
+        order: { created_at: 'DESC' },
+        skip: offset,
+        take: 10,
+    });
     logs === null || logs === void 0 ? void 0 : logs.forEach((log) => {
         log.publish_date = log.created_at.toISOString().slice(0, 10);
     });
-    return logs;
+    const totalPages = Math.ceil(count / 10);
+    const response = { logs, totalPages };
+    return response;
 });
 exports.fetchLogsByUser = fetchLogsByUser;
 //# sourceMappingURL=service.js.map

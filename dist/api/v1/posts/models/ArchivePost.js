@@ -15,7 +15,7 @@ const model_1 = require("../../users/model");
 let ArchivePost = class ArchivePost extends typeorm_1.BaseEntity {
 };
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)(),
+    (0, typeorm_1.PrimaryColumn)(),
     __metadata("design:type", Number)
 ], ArchivePost.prototype, "id", void 0);
 __decorate([
@@ -68,13 +68,13 @@ __decorate([
     __metadata("design:type", String)
 ], ArchivePost.prototype, "description", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: false }),
-    __metadata("design:type", Boolean)
-], ArchivePost.prototype, "is_sticky", void 0);
-__decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], ArchivePost.prototype, "credit_type", void 0);
+__decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", String)
+], ArchivePost.prototype, "post_type", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         default: 0,
@@ -82,6 +82,10 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], ArchivePost.prototype, "views", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], ArchivePost.prototype, "is_sticky", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         default: false,
@@ -99,9 +103,29 @@ __decorate([
     __metadata("design:type", Date)
 ], ArchivePost.prototype, "expiry_date", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], ArchivePost.prototype, "sticked_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], ArchivePost.prototype, "sticky_expires", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], ArchivePost.prototype, "repost_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", Date)
+], ArchivePost.prototype, "public_date", void 0);
+__decorate([
     (0, typeorm_1.Column)('text', { array: true, nullable: true }),
     __metadata("design:type", Array)
 ], ArchivePost.prototype, "media", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], ArchivePost.prototype, "deleted_at", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

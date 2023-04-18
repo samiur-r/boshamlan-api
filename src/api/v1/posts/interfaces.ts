@@ -24,7 +24,7 @@ export interface IPost {
   sticky_expires?: Date | undefined;
   repost_date?: any;
   expiry_date: Date;
-  public_date: Date;
+  public_date?: Date;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date;

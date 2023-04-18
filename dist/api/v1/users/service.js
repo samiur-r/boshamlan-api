@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUser = exports.findUserWithAgentInfo = exports.filterUsersForAdmin = exports.findUnVerifiedUsers = exports.updateBulkIsUserAnAgent = exports.updateIsUserAnAgent = exports.updateUserPassword = exports.updateUserStatus = exports.saveUser = exports.findUserByPhone = exports.findUserById = void 0;
+exports.getLastActivity = exports.updateUser = exports.findUserWithAgentInfo = exports.filterUsersForAdmin = exports.findUnVerifiedUsers = exports.updateBulkIsUserAnAgent = exports.updateIsUserAnAgent = exports.updateUserPassword = exports.updateUserStatus = exports.saveUser = exports.findUserByPhone = exports.findUserById = void 0;
 const typeorm_1 = require("typeorm");
 const passwordUtils_1 = require("../../../utils/passwordUtils");
 const model_1 = require("./model");
@@ -54,14 +54,20 @@ const updateBulkIsUserAnAgent = (ids, status) => __awaiter(void 0, void 0, void 
     yield model_1.User.update({ id: (0, typeorm_1.In)(ids) }, { is_agent: status });
 });
 exports.updateBulkIsUserAnAgent = updateBulkIsUserAnAgent;
+const getLastActivity = (user) => {
+    user.posts.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
+    return user.posts[0].created_at;
+};
+exports.getLastActivity = getLastActivity;
 const findUnVerifiedUsers = () => __awaiter(void 0, void 0, void 0, function* () {
     const lessThanFiveMins = new Date(Date.now() - 1 * 60 * 1000); // 5 minutes ago
     const users = yield model_1.User.find({ where: { status: 'not_verified', created_at: (0, typeorm_1.MoreThan)(lessThanFiveMins) } });
     return users;
 });
 exports.findUnVerifiedUsers = findUnVerifiedUsers;
-const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter, fromCreationDateToFilter, toCreationDateToFilter) => __awaiter(void 0, void 0, void 0, function* () {
-    const where = {};
+const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter, fromCreationDateToFilter, toCreationDateToFilter, orderByToFilter, offset) => __awaiter(void 0, void 0, void 0, function* () {
+    let where = {};
+    let order = 'user.created_at';
     if (statusToFilter) {
         switch (statusToFilter) {
             case 'User':
@@ -75,6 +81,18 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
                 break;
             case 'Not Verified':
                 where.status = 'not_verified';
+                break;
+            case 'Has Regular Credits':
+                where = 'credits.regular > 0';
+                break;
+            case 'Has Sticky Credits':
+                where = 'credits.sticky > 0';
+                break;
+            case 'Has Agent Credits':
+                where = 'credits.agent > 0';
+                break;
+            case 'Zero Free':
+                where = 'credits.free = 0';
                 break;
             default:
                 break;
@@ -90,8 +108,58 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
         where.created_at = (0, typeorm_1.MoreThanOrEqual)(fromCreationDateToFilter);
     else if (toCreationDateToFilter)
         where.created_at = (0, typeorm_1.LessThanOrEqual)(toCreationDateToFilter);
-    const users = yield model_1.User.find({ where });
-    return users;
+    if (orderByToFilter) {
+        switch (orderByToFilter) {
+            case 'Registered':
+                order = 'user.created_at';
+                break;
+            case 'Total Posts':
+                order = 'total_posts';
+                break;
+            case 'Active Posts':
+                order = 'total_active_posts';
+                break;
+            case 'Archived Posts':
+                order = 'total_archive_post';
+                break;
+            case 'Trashed Posts':
+                order = 'total_deleted_post';
+                break;
+            case 'Mobile':
+                order = 'user.phone';
+                break;
+            default:
+                break;
+        }
+    }
+    const count = yield model_1.User.createQueryBuilder('user')
+        .leftJoinAndSelect('user.posts', 'post')
+        .leftJoinAndSelect('user.archive_posts', 'archive_post')
+        .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
+        .leftJoinAndSelect('user.credits', 'credits')
+        .leftJoinAndSelect('user.transactions', 'transactions')
+        .leftJoinAndSelect('user.agent', 'agent')
+        .where(where)
+        .getCount();
+    const users = yield model_1.User.createQueryBuilder('user')
+        .leftJoinAndSelect('user.posts', 'post')
+        .leftJoinAndSelect('user.archive_posts', 'archive_post')
+        .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
+        .leftJoinAndSelect('user.credits', 'credits')
+        .leftJoinAndSelect('user.transactions', 'transactions')
+        .leftJoinAndSelect('transactions.package', 'package')
+        .leftJoinAndSelect('user.agent', 'agent')
+        .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
+        .addSelect('COUNT(post.id)', 'total_active_posts')
+        .addSelect('COUNT(archive_post.id)', 'total_archive_post')
+        .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
+        .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
+        .orderBy(order, 'DESC')
+        .where(where)
+        .skip(offset)
+        .take(10)
+        .getMany();
+    return { users, count };
 });
 exports.filterUsersForAdmin = filterUsersForAdmin;
 const findUserWithAgentInfo = (userId) => __awaiter(void 0, void 0, void 0, function* () {

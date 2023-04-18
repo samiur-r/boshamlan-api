@@ -31,7 +31,7 @@ const AuthMiddleware_1 = require("../../../middlewares/AuthMiddleware");
 const PostController = __importStar(require("./controller"));
 const router = express_1.default.Router();
 router.get('/get-many', PostController.fetchMany);
-router.get('/edit/:id', AuthMiddleware_1.isUserAuth, PostController.fetchOne);
+router.get('/edit/:id', AuthMiddleware_1.isUserAuth, PostController.fetchOneForEdit);
 router.get('/:id', PostController.fetchOne);
 router.post('/', AuthMiddleware_1.isUserAuth, PostController.insert);
 router.post('/get-many', AuthMiddleware_1.isUserAuth, PostController.fetchMany);

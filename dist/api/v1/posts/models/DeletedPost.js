@@ -15,7 +15,7 @@ const model_1 = require("../../users/model");
 let DeletedPost = class DeletedPost extends typeorm_1.BaseEntity {
 };
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)(),
+    (0, typeorm_1.PrimaryColumn)(),
     __metadata("design:type", Number)
 ], DeletedPost.prototype, "id", void 0);
 __decorate([
@@ -68,13 +68,13 @@ __decorate([
     __metadata("design:type", String)
 ], DeletedPost.prototype, "description", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ default: false }),
-    __metadata("design:type", Boolean)
-], DeletedPost.prototype, "is_sticky", void 0);
-__decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
 ], DeletedPost.prototype, "credit_type", void 0);
+__decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", String)
+], DeletedPost.prototype, "post_type", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         default: 0,
@@ -82,6 +82,10 @@ __decorate([
     }),
     __metadata("design:type", Number)
 ], DeletedPost.prototype, "views", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ default: false }),
+    __metadata("design:type", Boolean)
+], DeletedPost.prototype, "is_sticky", void 0);
 __decorate([
     (0, typeorm_1.Column)({
         default: false,
@@ -99,9 +103,29 @@ __decorate([
     __metadata("design:type", Date)
 ], DeletedPost.prototype, "expiry_date", void 0);
 __decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", Date)
+], DeletedPost.prototype, "public_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], DeletedPost.prototype, "sticked_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], DeletedPost.prototype, "sticky_expires", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], DeletedPost.prototype, "repost_date", void 0);
+__decorate([
     (0, typeorm_1.Column)('text', { array: true, nullable: true }),
     __metadata("design:type", Array)
 ], DeletedPost.prototype, "media", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], DeletedPost.prototype, "deleted_at", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

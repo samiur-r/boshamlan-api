@@ -26,7 +26,7 @@ const findManyAgents = (limit, offset) => __awaiter(void 0, void 0, void 0, func
     let totalRows;
     const currentDate = new Date();
     const agents = yield model_2.Agent.find({
-        where: { expiry_date: (0, typeorm_1.MoreThanOrEqual)(currentDate) },
+        where: { subscription_ends_date: (0, typeorm_1.MoreThanOrEqual)(currentDate) },
         take: limit,
         skip: offset,
     });
@@ -92,12 +92,13 @@ const initOrUpdateAgent = (user) => __awaiter(void 0, void 0, void 0, function* 
     const twoMonthsFromToday = new Date(today.getFullYear(), today.getMonth() + 2, today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
     let agentData;
     if (agent) {
-        agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { expiry_date: twoMonthsFromToday }));
+        agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { subscription_start_date: today, subscription_ends_date: twoMonthsFromToday }));
     }
     else {
         agentData = model_2.Agent.create({
             name: 'agent',
-            expiry_date: twoMonthsFromToday,
+            subscription_start_date: today,
+            subscription_ends_date: twoMonthsFromToday,
             user,
         });
     }
@@ -106,7 +107,7 @@ const initOrUpdateAgent = (user) => __awaiter(void 0, void 0, void 0, function* 
 exports.initOrUpdateAgent = initOrUpdateAgent;
 const getExpiredAgentUserIds = () => __awaiter(void 0, void 0, void 0, function* () {
     const agents = yield model_2.Agent.find({
-        where: { expiry_date: (0, typeorm_1.LessThan)(new Date()) },
+        where: { subscription_ends_date: (0, typeorm_1.LessThan)(new Date()) },
     });
     const userIds = agents.filter((agent) => agent.user.is_agent === true).map((agent) => agent.user.id);
     return userIds;

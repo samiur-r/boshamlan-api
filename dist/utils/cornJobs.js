@@ -29,6 +29,7 @@ function scheduledTaskPerHour() {
             yield (0, service_2.updateAgentCredit)(ids, 0);
             yield (0, service_1.fireAgentExpirationAlert)(ids);
             yield (0, service_3.moveExpiredPosts)();
+            yield (0, service_3.unstickPost)();
         }
         catch (error) {
             logger_1.default.error(error.message);
@@ -52,7 +53,7 @@ function scheduledTaskPerFiveMins() {
         }
     });
 }
-const cronJobPerHour = node_cron_1.default.schedule('0 * * * *', scheduledTaskPerHour);
+const cronJobPerHour = node_cron_1.default.schedule('*/1 * * * *', scheduledTaskPerHour);
 exports.cronJobPerHour = cronJobPerHour;
 const cronJobPerFiveMins = node_cron_1.default.schedule('*/5 * * * *', scheduledTaskPerFiveMins);
 exports.cronJobPerFiveMins = cronJobPerFiveMins;

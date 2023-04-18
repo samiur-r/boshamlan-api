@@ -34,10 +34,12 @@ router.post('/login', AdminController.login);
 router.get('/logout', AdminController.logout);
 router.post('/register', AuthMiddleware_1.isSuperAdminAuth, AdminController.register);
 router.post('/filter-posts', AuthMiddleware_1.isAdminAuth, AdminController.filterPosts);
-router.post('/filter-users', AuthMiddleware_1.isAdminAuth, AdminController.filterUsers);
+router.post('/filter-users', AdminController.filterUsers);
 router.post('/filter-user', AuthMiddleware_1.isAdminAuth, AdminController.fetchUser);
 router.post('/stick-post', AuthMiddleware_1.isAdminAuth, AdminController.stickPost);
 router.delete('/delete-post', AuthMiddleware_1.isAdminAuth, AdminController.deletePost);
+router.delete('/delete-post-permanent', AuthMiddleware_1.isAdminAuth, AdminController.deletePostPermanently);
+router.post('/repost', AuthMiddleware_1.isAdminAuth, AdminController.rePost);
 router.post('/get-logs', AuthMiddleware_1.isAdminAuth, AdminController.fetchLogs);
 router.post('/update-credit', AuthMiddleware_1.isAdminAuth, AdminController.updateCredit);
 router.post('/get-user-info', AuthMiddleware_1.isAdminAuth, AdminController.fetchUserWithAgentInfo);
@@ -46,5 +48,9 @@ router.put('/edit-agent', AuthMiddleware_1.isAdminAuth, AdminController.editAgen
 router.post('/verify-user', AuthMiddleware_1.isAdminAuth, AdminController.verifyUser);
 router.post('/get-transactions', AuthMiddleware_1.isAdminAuth, AdminController.fetchTransactions);
 router.get('/dashboard', AuthMiddleware_1.isAdminAuth, AdminController.fetchDashboardInfo);
+router.post('/get-test', AuthMiddleware_1.isAdminAuth, AdminController.fetchTestItems);
+router.put('/block-status', AuthMiddleware_1.isAdminAuth, AdminController.updateUserBlockStatus);
+router.put('/admin-comment', AuthMiddleware_1.isAdminAuth, AdminController.updateUserComment);
+router.get('/test', AdminController.test);
 exports.default = router;
 //# sourceMappingURL=route.js.map

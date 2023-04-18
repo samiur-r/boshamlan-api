@@ -15,7 +15,7 @@ const model_1 = require("../../users/model");
 let Post = class Post extends typeorm_1.BaseEntity {
 };
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)(),
+    (0, typeorm_1.PrimaryColumn)(),
     __metadata("design:type", Number)
 ], Post.prototype, "id", void 0);
 __decorate([
@@ -76,6 +76,10 @@ __decorate([
     __metadata("design:type", String)
 ], Post.prototype, "credit_type", void 0);
 __decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", String)
+], Post.prototype, "post_type", void 0);
+__decorate([
     (0, typeorm_1.Column)({
         default: 0,
         type: 'float',
@@ -95,6 +99,22 @@ __decorate([
     __metadata("design:type", Number)
 ], Post.prototype, "repost_count", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], Post.prototype, "sticked_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true, default: null }),
+    __metadata("design:type", Date)
+], Post.prototype, "sticky_expires", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], Post.prototype, "repost_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)(),
+    __metadata("design:type", Date)
+], Post.prototype, "public_date", void 0);
+__decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", Date)
 ], Post.prototype, "expiry_date", void 0);
@@ -102,6 +122,10 @@ __decorate([
     (0, typeorm_1.Column)('text', { array: true, nullable: true }),
     __metadata("design:type", Array)
 ], Post.prototype, "media", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], Post.prototype, "deleted_at", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

@@ -142,7 +142,6 @@ const handleKpayResponse = (req, res) => __awaiter(void 0, void 0, void 0, funct
                             const userPayload = {
                                 id: user.id,
                                 phone: user.phone,
-                                is_admin: user.is_admin,
                                 is_agent: user.is_agent,
                                 status: user.status,
                             };

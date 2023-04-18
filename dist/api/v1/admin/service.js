@@ -12,23 +12,24 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.geCreditsSummary = exports.getTransactionSummary = exports.getPostSummary = exports.getUserSummary = exports.getPostHistory = exports.getPaymentHistory = exports.findAdminByPhone = exports.saveAdmin = void 0;
 const typeorm_1 = require("typeorm");
 const model_1 = require("../credits/model");
+const model_2 = require("../packages/model");
 const ArchivePost_1 = require("../posts/models/ArchivePost");
 const DeletedPost_1 = require("../posts/models/DeletedPost");
 const Post_1 = require("../posts/models/Post");
-const model_2 = require("../transactions/model");
-const model_3 = require("../users/model");
-const model_4 = require("./model");
+const model_3 = require("../transactions/model");
+const model_4 = require("../users/model");
+const model_5 = require("./model");
 const saveAdmin = (phone, password, name) => __awaiter(void 0, void 0, void 0, function* () {
-    const newAdmin = model_4.Admin.create({
+    const newAdmin = model_5.Admin.create({
         phone,
         password,
         name,
     });
-    yield model_4.Admin.save(newAdmin);
+    yield model_5.Admin.save(newAdmin);
 });
 exports.saveAdmin = saveAdmin;
 const findAdminByPhone = (phone) => __awaiter(void 0, void 0, void 0, function* () {
-    const admin = yield model_4.Admin.findOneBy({ phone });
+    const admin = yield model_5.Admin.findOneBy({ phone });
     return admin;
 });
 exports.findAdminByPhone = findAdminByPhone;
@@ -80,7 +81,7 @@ const getPostHistory = (userId) => __awaiter(void 0, void 0, void 0, function* (
 });
 exports.getPostHistory = getPostHistory;
 const getUserSummary = () => __awaiter(void 0, void 0, void 0, function* () {
-    const [users, totalUsers] = yield model_3.User.findAndCount();
+    const [users, totalUsers] = yield model_4.User.findAndCount();
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
     const verifiedToday = users.filter((user) => user.status === 'verified' && user.created_at.toISOString().slice(0, 10) === today).length;
@@ -130,7 +131,7 @@ const getPostSummary = () => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.getPostSummary = getPostSummary;
 const getTransactionSummary = () => __awaiter(void 0, void 0, void 0, function* () {
-    const transactions = yield model_2.Transaction.find();
+    const transactions = yield model_3.Transaction.find();
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
     // Get the current month's and previous month's start and end dates
@@ -147,7 +148,7 @@ const getTransactionSummary = () => __awaiter(void 0, void 0, void 0, function* 
     const totalTransactionsYesterday = transactions.filter((transaction) => transaction.created_at.toISOString().slice(0, 10) === yesterday).length;
     const incomeToday = transactionsToday.reduce((sum, transaction) => sum + transaction.amount, 0);
     const incomeYesterday = transactionsYesterday.reduce((sum, transaction) => sum + transaction.amount, 0);
-    const transactionsLastTwoMonths = yield model_2.Transaction.find({
+    const transactionsLastTwoMonths = yield model_3.Transaction.find({
         where: [
             { created_at: (0, typeorm_1.Between)(prevMonthStartDate, prevMonthEndDate) },
             { created_at: (0, typeorm_1.Between)(currentMonthStartDate, currentMonthEndDate) },
@@ -256,11 +257,76 @@ const getTransactionSummary = () => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.getTransactionSummary = getTransactionSummary;
 const geCreditsSummary = () => __awaiter(void 0, void 0, void 0, function* () {
+    const usersWithHistoryRegular = yield model_3.Transaction.createQueryBuilder('transaction')
+        .select('COUNT(DISTINCT transaction.user_id)', 'count')
+        .leftJoin(model_4.User, 'user', 'transaction.user_id = user.id')
+        .where('transaction.status = :status', { status: 'completed' })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['regular1', 'regular2'] })
+        .getRawOne();
+    const usersWithHistorySticky = yield model_3.Transaction.createQueryBuilder('transaction')
+        .select('COUNT(DISTINCT transaction.user_id)', 'count')
+        .leftJoin(model_4.User, 'user', 'transaction.user_id = user.id')
+        .where('transaction.status = :status', { status: 'completed' })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect', 'sticky1', 'sticky2'] })
+        .getRawOne();
+    const usersWithHistoryAgent = yield model_3.Transaction.createQueryBuilder('transaction')
+        .select('COUNT(DISTINCT transaction.user_id)', 'count')
+        .leftJoin(model_4.User, 'user', 'transaction.user_id = user.id')
+        .where('transaction.status = :status', { status: 'completed' })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['agent1', 'agent2'] })
+        .getRawOne();
+    const totalHistoryRegular = yield model_3.Transaction.createQueryBuilder('transaction')
+        .select('SUM(package.numberOfCredits)', 'count')
+        .leftJoin(model_2.Package, 'package', 'transaction.package_id = package.id')
+        .where('transaction.status = :status', { status: 'completed' })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['regular1', 'regular2'] })
+        .getRawOne();
+    const totalHistorySticky = yield model_3.Transaction.createQueryBuilder('transaction')
+        .select('SUM(package.numberOfCredits)', 'count')
+        .leftJoin(model_2.Package, 'package', 'transaction.package_id = package.id')
+        .where('transaction.status = :status', { status: 'completed' })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect', 'sticky1', 'sticky2'] })
+        .getRawOne();
+    const totalHistoryAgent = yield model_3.Transaction.createQueryBuilder('transaction')
+        .select('SUM(package.numberOfCredits)', 'count')
+        .leftJoin(model_2.Package, 'package', 'transaction.package_id = package.id')
+        .where('transaction.status = :status', { status: 'completed' })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['agent1', 'agent2'] })
+        .getRawOne();
+    const userWithActiveRegular = yield model_1.Credit.count({ where: { regular: (0, typeorm_1.MoreThan)(0) } });
+    const userWithActiveSticky = yield model_1.Credit.count({ where: { sticky: (0, typeorm_1.MoreThan)(0) } });
+    const userWithActiveAgent = yield model_1.Credit.count({ where: { agent: (0, typeorm_1.MoreThan)(0) } });
+    const { totalActiveRegular } = yield model_1.Credit.createQueryBuilder('credit')
+        .select('SUM(credit.regular)', 'totalActiveRegular')
+        .getRawOne();
+    const { totalActiveSticky } = yield model_1.Credit.createQueryBuilder('credit')
+        .select('SUM(credit.sticky)', 'totalActiveSticky')
+        .getRawOne();
+    const { totalActiveAgent } = yield model_1.Credit.createQueryBuilder('credit')
+        .select('SUM(credit.agent)', 'totalActiveAgent')
+        .getRawOne();
+    const usersWithHistory = {
+        regular: usersWithHistoryRegular.count,
+        sticky: usersWithHistorySticky.count,
+        agent: usersWithHistoryAgent.count,
+    };
+    const totalHistory = {
+        regular: totalHistoryRegular.count,
+        sticky: totalHistorySticky.count,
+        agent: totalHistoryAgent.count,
+    };
+    const userWithActive = {
+        regular: userWithActiveRegular,
+        sticky: userWithActiveSticky,
+        agent: userWithActiveAgent,
+    };
+    const totalActive = {
+        regular: totalActiveRegular,
+        sticky: totalActiveSticky,
+        agent: totalActiveAgent,
+    };
     const totalZeroFreeCredits = yield model_1.Credit.count({ where: { free: 0 } });
-    const totalRegularCredits = yield model_1.Credit.count({ where: { regular: (0, typeorm_1.MoreThan)(0) } });
-    const totalStickyCredits = yield model_1.Credit.count({ where: { sticky: (0, typeorm_1.MoreThan)(0) } });
-    const totalAgentCredits = yield model_1.Credit.count({ where: { agent: (0, typeorm_1.MoreThan)(0) } });
-    return { totalZeroFreeCredits, totalRegularCredits, totalStickyCredits, totalAgentCredits };
+    return { totalZeroFreeCredits, usersWithHistory, totalHistory, userWithActive, totalActive };
 });
 exports.geCreditsSummary = geCreditsSummary;
 //# sourceMappingURL=service.js.map

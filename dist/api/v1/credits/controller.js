@@ -19,7 +19,7 @@ const fetchStickyCredits = (req, res, next) => __awaiter(void 0, void 0, void 0,
     const user = res.locals.user.payload;
     try {
         const stickyCredits = yield (0, service_1.findStickyCredits)(user.id);
-        return res.status(200).json({ success: stickyCredits === null || stickyCredits === void 0 ? void 0 : stickyCredits.sticky });
+        return res.status(200).json({ success: stickyCredits });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
