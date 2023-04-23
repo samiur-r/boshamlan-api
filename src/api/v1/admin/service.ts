@@ -185,10 +185,10 @@ const getTransactionSummary = async () => {
   const incomeYesterday = transactionsYesterday.reduce((sum, transaction) => sum + transaction.amount, 0);
 
   const transactionsLastTwoMonths = await Transaction.find({
-    where: [
-      { created_at: Between(prevMonthStartDate, prevMonthEndDate) },
-      { created_at: Between(currentMonthStartDate, currentMonthEndDate) },
-    ],
+    where: {
+      status: 'completed',
+      created_at: Between(prevMonthStartDate, currentMonthEndDate),
+    },
   });
 
   const totalIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
@@ -231,7 +231,7 @@ const getTransactionSummary = async () => {
     if (
       curr.created_at >= currentMonthStartDate &&
       curr.created_at <= currentMonthEndDate &&
-      (curr.package.id === 5 || curr.package.id === 5)
+      (curr.package.id === 5 || curr.package.id === 6)
     ) {
       return acc + curr.amount;
     }
@@ -242,7 +242,7 @@ const getTransactionSummary = async () => {
     if (
       curr.created_at >= prevMonthStartDate &&
       curr.created_at <= prevMonthEndDate &&
-      (curr.package.id === 5 || curr.package.id === 5)
+      (curr.package.id === 5 || curr.package.id === 6)
     ) {
       return acc + curr.amount;
     }
@@ -394,7 +394,9 @@ const geCreditsSummary = async () => {
     agent: totalActiveAgent,
   };
 
-  const totalZeroFreeCredits = await Credit.count({ where: { free: 0 } });
+  const unVerifiedUsersCount = await User.count({ where: { status: 'not_verified' } });
+  let totalZeroFreeCredits = await Credit.count({ where: { free: 0 } });
+  totalZeroFreeCredits += unVerifiedUsersCount ?? 0;
 
   return { totalZeroFreeCredits, usersWithHistory, totalHistory, userWithActive, totalActive };
 };

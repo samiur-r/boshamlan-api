@@ -33,7 +33,7 @@ const fetchLogsByPostId = async (postId: number, offset: number) => {
     log.publish_date = log.created_at.toISOString().slice(0, 10);
   });
   const totalPages = Math.ceil(count / 10);
-  const response = { logs, totalPages };
+  const response = { logs, totalPages, totalResults: count };
 
   return response;
 };
@@ -59,7 +59,7 @@ const fetchLogsByUser = async (user: string, offset: number) => {
   });
 
   const totalPages = Math.ceil(count / 10);
-  const response = { logs, totalPages };
+  const response = { logs, totalPages, totalResults: count };
 
   return response;
 };

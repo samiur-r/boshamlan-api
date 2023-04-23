@@ -691,16 +691,16 @@ const filterPostsForAdmin = async (
 
   if (fromCreationDateToFilter && toCreationDateToFilter) {
     where.created_at = {
-      '>=': fromCreationDateToFilter,
-      '<=': toCreationDateToFilter,
+      '>=': `${fromCreationDateToFilter} 00:00:00`,
+      '<=': `${toCreationDateToFilter} 23:59:59`,
     };
   } else if (fromCreationDateToFilter) {
     where.created_at = {
-      '>=': fromCreationDateToFilter,
+      '>=': `${fromCreationDateToFilter} 00:00:00`,
     };
   } else if (toCreationDateToFilter) {
     where.created_at = {
-      '<=': toCreationDateToFilter,
+      '<=': `${toCreationDateToFilter} 23:59:59`,
     };
   }
 
@@ -760,16 +760,16 @@ const filterPostsForAdmin = async (
           return `users.${key} = ${value}`;
         }
         if (key === 'created_at') {
-          const from = value['>='] && new Date(value['>=']).toISOString();
-          const to = value['<='] && new Date(value['<=']).toISOString();
+          const from = value['>='];
+          const to = value['<='];
           if (from && to) {
-            return `created_at BETWEEN '${from}' AND '${to}'`;
+            return `latest_posts.public_date >= '${from}' AND latest_posts.public_date <= '${to}'`;
           }
           if (from) {
-            return `created_at >= '${from}'`;
+            return `latest_posts.public_date >= '${from}'`;
           }
           if (to) {
-            return `created_at <= '${to}'`;
+            return `latest_posts.public_date <= '${to}'`;
           }
         }
         if (key === 'price') {
@@ -788,6 +788,8 @@ const filterPostsForAdmin = async (
         return `${key} = '${value}'`;
       })
       .join(' AND ');
+
+    console.log(whereClause);
 
     const query = `SELECT latest_posts.*, (SELECT COUNT(*) FROM (
         SELECT id, title, user_id, post_type, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
@@ -846,7 +848,7 @@ const filterPostsForAdmin = async (
     logger.error(`${error.name}: ${error.message}`);
   }
   const totalPages = totalPosts ? Math.ceil(totalPosts / 10) : null;
-  return { posts, totalPages };
+  return { posts, totalPages, totalResults: totalPosts };
 };
 
 const removeAllPostsOfUser = async (userId: number) => {

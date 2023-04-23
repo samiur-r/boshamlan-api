@@ -119,8 +119,9 @@ const initOrUpdateAgent = async (user: IUser) => {
 };
 
 const getExpiredAgentUserIds = async () => {
+  const currentDate = new Date();
   const agents = await Agent.find({
-    where: { subscription_ends_date: LessThan(new Date()) },
+    where: { subscription_ends_date: LessThan(currentDate) },
   });
 
   const userIds = agents.filter((agent) => agent.user.is_agent === true).map((agent) => agent.user.id);

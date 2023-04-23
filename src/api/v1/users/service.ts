@@ -1,4 +1,4 @@
-import { Between, Equal, In, LessThanOrEqual, MoreThan, MoreThanOrEqual } from 'typeorm';
+import { Between, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual } from 'typeorm';
 import AppDataSource from '../../../db';
 import { hashPassword } from '../../../utils/passwordUtils';
 import { IUser } from './interfaces';
@@ -76,8 +76,8 @@ const filterUsersForAdmin = async (
   statusToFilter: string | number,
   phoneToFilter: string,
   adminCommentToFilter: string,
-  fromCreationDateToFilter: Date | null,
-  toCreationDateToFilter: Date | null,
+  fromCreationDateToFilter: string | null,
+  toCreationDateToFilter: string | null,
   orderByToFilter: string | undefined,
   offset: number,
 ) => {
@@ -108,7 +108,7 @@ const filterUsersForAdmin = async (
         where = 'credits.agent > 0';
         break;
       case 'Zero Free':
-        where = 'credits.free = 0';
+        where = `credits.free < 1 OR user.status = 'not_verified'`;
         break;
       default:
         break;
@@ -116,11 +116,12 @@ const filterUsersForAdmin = async (
   }
 
   if (phoneToFilter) where.phone = phoneToFilter;
-  if (adminCommentToFilter) where.admin_comment = adminCommentToFilter;
+  if (adminCommentToFilter) where.admin_comment = Like(`%${adminCommentToFilter}%`);
+
   if (fromCreationDateToFilter && toCreationDateToFilter)
-    where.created_at = Between(fromCreationDateToFilter, toCreationDateToFilter);
-  else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(fromCreationDateToFilter);
-  else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(toCreationDateToFilter);
+    where.created_at = Between(`${fromCreationDateToFilter} 00:00:00`, `${toCreationDateToFilter} 23:59:59`);
+  else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(`${fromCreationDateToFilter} 00:00:00`);
+  else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(`${toCreationDateToFilter} 23:59:59`);
 
   if (orderByToFilter) {
     switch (orderByToFilter) {

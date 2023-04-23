@@ -1,6 +1,8 @@
+/* eslint-disable no-param-reassign */
 import { Between, MoreThanOrEqual, LessThanOrEqual, Like } from 'typeorm';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
+import { parseTimestamp } from '../../../utils/timestampUtls';
 import { IPackage } from '../packages/interfaces';
 import { IUser } from '../users/interfaces';
 import { Transaction } from './model';
@@ -165,9 +167,9 @@ const filterTransactionsForAdmin = async (
   }
 
   if (fromCreationDateToFilter && toCreationDateToFilter)
-    where.created_at = Between(fromCreationDateToFilter, toCreationDateToFilter);
-  else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(fromCreationDateToFilter);
-  else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(toCreationDateToFilter);
+    where.created_at = Between(`${fromCreationDateToFilter} 00:00:00`, `${toCreationDateToFilter} 23:59:59`);
+  else if (fromCreationDateToFilter) where.created_at = MoreThanOrEqual(`${fromCreationDateToFilter} 00:00:00`);
+  else if (toCreationDateToFilter) where.created_at = LessThanOrEqual(`${toCreationDateToFilter} 23:59:59`);
 
   const [transactions, count] = await Transaction.findAndCount({
     where,
@@ -176,8 +178,15 @@ const filterTransactionsForAdmin = async (
     take: 10,
   });
 
+  transactions.forEach((transactionItem: any) => {
+    transactionItem.createdDate = parseTimestamp(transactionItem.created_at).parsedDate;
+    transactionItem.createdTime = parseTimestamp(transactionItem.created_at).parsedTime;
+    transactionItem.updatedDate = parseTimestamp(transactionItem.updated_at).parsedDate;
+    transactionItem.updatedTime = parseTimestamp(transactionItem.updated_at).parsedTime;
+  });
+
   const totalPages = Math.ceil(count / 10);
-  return { transactions, totalPages };
+  return { transactions, totalPages, totalResults: count };
 };
 
 export {

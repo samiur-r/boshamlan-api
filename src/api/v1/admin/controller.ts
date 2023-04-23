@@ -128,7 +128,7 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
     offset,
   } = req.body;
   try {
-    const { posts, totalPages } = await filterPostsForAdmin(
+    const { posts, totalPages, totalResults } = await filterPostsForAdmin(
       locationToFilter,
       categoryToFilter,
       propertyTypeToFilter,
@@ -143,7 +143,7 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
       userId,
       offset,
     );
-    return res.status(200).json({ posts, totalPages });
+    return res.status(200).json({ posts, totalPages, totalResults });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
@@ -170,15 +170,20 @@ const stickPost = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const deletePost = async (req: Request, res: Response, next: NextFunction) => {
-  const { postId, isArchive } = req.body;
+  const { postId } = req.body;
   const userObj = res.locals.user.payload;
+  let isArchive = false;
 
   try {
     if (!postId) throw new ErrorHandler(404, 'Post not found');
     let post: any;
 
-    if (isArchive) post = await findArchivedPostById(parseInt(postId, 10));
-    else post = await findPostById(parseInt(postId, 10));
+    post = await findPostById(parseInt(postId, 10));
+
+    if (!post) {
+      post = await findArchivedPostById(parseInt(postId, 10));
+      isArchive = true;
+    }
 
     if (!post) throw new ErrorHandler(401, 'Post not found');
 
@@ -279,7 +284,13 @@ const fetchLogs = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (postId) response = await fetchLogsByPostId(postId, offset);
     else if (user) response = await fetchLogsByUser(user, offset);
-    return res.status(200).json({ logs: response.logs, totalPages: response.totalPages });
+    response?.logs.forEach((log: any) => {
+      log.date = parseTimestamp(log.publish_date).parsedDate;
+      log.time = parseTimestamp(log.publish_date).parsedTime;
+    });
+    return res
+      .status(200)
+      .json({ logs: response.logs, totalPages: response.totalPages, totalResults: response.totalResults });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
@@ -351,11 +362,7 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
         sticky: user?.credits[0]?.sticky ?? 0,
         agent: user?.credits[0]?.agent ?? 0,
       },
-      has_zero_credits:
-        user?.credits[0]?.free <= 0 &&
-        user?.credits[0]?.regular <= 0 &&
-        user?.credits[0]?.sticky <= 0 &&
-        user?.credits[0]?.agent <= 0,
+      has_zero_credits: user?.credits[0]?.free === 0 || user.status === 'not_verified',
       payment: {
         regular: user?.transactions
           .filter(
@@ -382,7 +389,7 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       parsedUsers.sort(sortFunctions[orderByToFilter as keyof typeof sortFunctions]);
     }
 
-    return res.status(200).json({ users: parsedUsers, totalPages });
+    return res.status(200).json({ users: parsedUsers, totalPages, totalResults: count });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
@@ -440,14 +447,23 @@ const fetchUser = async (req: Request, res: Response, next: NextFunction) => {
       },
       payment: {
         regular: user?.transactions
-          .filter((transaction: ITransaction) => ['regular1', 'regular2'].includes(transaction.package_title))
-          .reduce((total: number, transaction: ITransaction) => total + transaction.amount, 0),
-        sticky: user?.transactions
-          .filter((transaction: ITransaction) => ['sticky1', 'sticky2'].includes(transaction.package_title))
-          .reduce((total: number, transaction: ITransaction) => total + transaction.amount, 0),
-        agent: user?.transactions
-          .filter((transaction: ITransaction) => ['agent1', 'agent2'].includes(transaction.package_title))
-          .reduce((total: number, transaction: ITransaction) => total + transaction.amount, 0),
+          .filter(
+            (transaction: ITransaction) =>
+              transaction.status === 'completed' && ['regular1', 'regular2'].includes(transaction.package_title),
+          )
+          .reduce((total: number, transaction: any) => total + transaction.package.numberOfCredits, 0),
+        sticky: user.transactions
+          .filter(
+            (transaction: ITransaction) =>
+              transaction.status === 'completed' && ['sticky1', 'sticky2'].includes(transaction.package_title),
+          )
+          .reduce((total: number, transaction: any) => total + transaction.package.numberOfCredits, 0),
+        agent: user.transactions
+          .filter(
+            (transaction: ITransaction) =>
+              transaction.status === 'completed' && ['agent1', 'agent2'].includes(transaction.package_title),
+          )
+          .reduce((total: number, transaction: any) => total + transaction.package.numberOfCredits, 0),
       },
     };
 
@@ -575,7 +591,7 @@ const fetchTransactions = async (req: Request, res: Response, next: NextFunction
   const { statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId, offset } = req.body;
 
   try {
-    const { transactions, totalPages } = await filterTransactionsForAdmin(
+    const { transactions, totalPages, totalResults } = await filterTransactionsForAdmin(
       statusToFilter,
       typeToFilter,
       fromCreationDateToFilter,
@@ -583,7 +599,7 @@ const fetchTransactions = async (req: Request, res: Response, next: NextFunction
       userId,
       offset,
     );
-    return res.status(200).json({ transactions, totalPages });
+    return res.status(200).json({ transactions, totalPages, totalResults });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
@@ -671,11 +687,9 @@ const updateUserComment = async (req: Request, res: Response, next: NextFunction
 
 const test = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { totalActiveRegular } = await Credit.createQueryBuilder()
-      .select('SUM(credit.regular)', 'totalActiveRegular')
-      .getRawOne();
+    const unVerifiedUsersCount = await User.count({ where: { status: 'not_verified' } });
 
-    return res.status(200).json({ totalActiveRegular });
+    return res.status(200).json({ unVerifiedUsersCount });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

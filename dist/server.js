@@ -8,7 +8,6 @@ const config_1 = __importDefault(require("./config"));
 const logger_1 = __importDefault(require("./utils/logger"));
 const db_1 = __importDefault(require("./db"));
 const cornJobs_1 = require("./utils/cornJobs");
-const socketIO_1 = require("./utils/socketIO");
 db_1.default.initialize()
     .then(() => {
     logger_1.default.info('Connected to database');
@@ -17,7 +16,7 @@ db_1.default.initialize()
     const server = app_1.default.listen(config_1.default.port, () => {
         logger_1.default.info(`🚀 Listening on ${config_1.default.port} with NODE_ENV=${config_1.default.nodeEnv} 🚀`);
     });
-    (0, socketIO_1.initializeSocketIO)(server);
+    // initializeSocketIO(server);
 })
     .catch((error) => logger_1.default.error(`Failed to connect to database ${error}`));
 //# sourceMappingURL=server.js.map

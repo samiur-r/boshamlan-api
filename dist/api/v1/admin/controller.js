@@ -31,7 +31,6 @@ const model_2 = require("../agents/model");
 const smsUtils_1 = require("../../../utils/smsUtils");
 const sortUsersFunctions_1 = __importDefault(require("../../../utils/sortUsersFunctions"));
 const model_3 = require("../users/model");
-const socketIO_1 = require("../../../utils/socketIO");
 const DeletedPost_1 = require("../posts/models/DeletedPost");
 const service_8 = require("../locations/service");
 const timestampUtls_1 = require("../../../utils/timestampUtls");
@@ -519,8 +518,8 @@ const updateUserBlockStatus = (req, res, next) => __awaiter(void 0, void 0, void
             throw new ErrorHandler_1.default(403, 'You can not unblock a non blocked user');
         yield model_3.User.save(Object.assign(Object.assign({}, user), { is_agent: status ? false : user.is_agent, is_blocked: status }));
         if (status) {
-            const socketIo = yield (0, socketIO_1.getSocketIo)();
-            socketIo.emit('userBlocked', { user: user.phone });
+            // const socketIo: any = await getSocketIo();
+            // socketIo.emit('userBlocked', { user: user.phone });
             yield (0, service_2.removeAllPostsOfUser)(userId);
             yield (0, service_5.setCreditsToZeroByUserId)(userId);
         }
