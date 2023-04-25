@@ -26,6 +26,8 @@ router.get('/dashboard', isAdminAuth, AdminController.fetchDashboardInfo);
 router.post('/get-test', isAdminAuth, AdminController.fetchTestItems);
 router.put('/block-status', isAdminAuth, AdminController.updateUserBlockStatus);
 router.put('/admin-comment', isAdminAuth, AdminController.updateUserComment);
-router.get('/test', AdminController.test);
+router.delete('/user-permanent', isAdminAuth, AdminController.removeUserPermanently);
+router.post('/restore', isAdminAuth, AdminController.restore);
+router.post('/test', AdminController.test);
 
 export default router;

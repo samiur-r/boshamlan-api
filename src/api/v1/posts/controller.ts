@@ -15,6 +15,7 @@ import {
   findPostById,
   findPosts,
   removeArchivedPost,
+  removeDeletedPost,
   removePost,
   removePostMedia,
   saveDeletedPost,
@@ -34,6 +35,7 @@ import { sendSms } from '../../../utils/smsUtils';
 import { saveUserLog } from '../user_logs/service';
 import { checkAuthorization } from '../../../utils/checkAuthorization';
 import { updateLocationCountValue } from '../locations/service';
+import { Post } from './models/Post';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   let post;
@@ -378,6 +380,68 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+const restore = async (req: Request, res: Response, next: NextFunction) => {
+  const user = res.locals.user.payload;
+  const { postId } = req.body;
+
+  try {
+    if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
+    const post = await findDeletedPostById(postId);
+    if (!post) throw new ErrorHandler(500, 'Something went wrong');
+
+    const userObj = await findUserById(post.user.id);
+
+    if (!userObj) throw new ErrorHandler(500, 'Something went wrong');
+
+    const postInfo = Post.create({
+      id: post.id,
+      title: post.title,
+      city_id: post.city_id,
+      city_title: post.city_title,
+      state_id: post.state_id,
+      state_title: post.state_title,
+      property_id: post.property_id,
+      property_title: post.property_title,
+      category_id: post.category_id,
+      category_title: post.category_title,
+      price: post.price,
+      description: post.description,
+      media: post.media,
+      sticked_date: post.sticked_date,
+      repost_count: post.repost_count,
+      views: post.views,
+      expiry_date: post.expiry_date,
+      public_date: post.public_date,
+      is_sticky: post.is_sticky,
+      post_type: 'active',
+      credit_type: post.credit_type,
+      user: userObj,
+    });
+
+    await Post.save(postInfo);
+    await removeDeletedPost(post.id);
+
+    await updateLocationCountValue(post.city_id, 'increment');
+    logger.info(`Post ${post.id} restored by user ${user?.phone}`);
+    await saveUserLog([
+      {
+        post_id: post.id,
+        transaction: undefined,
+        user: user?.phone ?? undefined,
+        activity: 'Post restored successfully',
+      },
+    ]);
+    return res.status(200).json({ success: 'Post is restored successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    logger.error(`Post ${postId} restore attempt by user ${user.phone} failed`);
+    await saveUserLog([
+      { post_id: parseInt(postId, 10), transaction: undefined, user: user.phone, activity: 'Post restore failed' },
+    ]);
+    return next(error);
+  }
+};
+
 const deletePost = async (req: Request, res: Response, next: NextFunction) => {
   const { postId, isArchive } = req.body;
   const userId = res.locals.user.payload.id;
@@ -441,6 +505,7 @@ export {
   fetchMany,
   updatePostToStick,
   rePost,
+  restore,
   deletePost,
   fetchManyArchive,
   increasePostCount,

@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { isUserAuth } from '../../../middlewares/AuthMiddleware';
+import { isAdminAuth, isUserAuth } from '../../../middlewares/AuthMiddleware';
 import * as PostController from './controller';
 
 const router = express.Router();
@@ -17,5 +17,6 @@ router.delete('/', isUserAuth, PostController.deletePost);
 router.post('/temp', isUserAuth, PostController.insert);
 router.post('/stick', isUserAuth, PostController.updatePostToStick);
 router.post('/repost', isUserAuth, PostController.rePost);
+router.post('/restore', isAdminAuth, PostController.restore);
 
 export default router;

@@ -40,6 +40,11 @@ export class User extends BaseEntity implements IUser {
   is_blocked: boolean;
 
   @Column({
+    default: false,
+  })
+  is_deleted: boolean;
+
+  @Column({
     nullable: true,
   })
   admin_comment: string;

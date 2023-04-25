@@ -71,10 +71,19 @@ const savePost = async (
   publicDate?: Date,
 ) => {
   const today = new Date();
-  const oneMonthFromToday = new Date(
+  // const oneMonthFromToday = new Date(
+  //   today.getFullYear(),
+  //   today.getMonth() + 1,
+  //   today.getDate(),
+  //   today.getHours(),
+  //   today.getMinutes(),
+  //   today.getSeconds(),
+  // );
+
+  const twoDaysFromToday = new Date(
     today.getFullYear(),
-    today.getMonth() + 1,
-    today.getDate(),
+    today.getMonth(),
+    today.getDate() + 2,
     today.getHours(),
     today.getMinutes(),
     today.getSeconds(),
@@ -92,7 +101,7 @@ const savePost = async (
     category_title: postInfo.categoryTitle,
     price: postInfo.price,
     description: postInfo.description,
-    expiry_date: oneMonthFromToday,
+    expiry_date: twoDaysFromToday,
     public_date: publicDate,
     sticked_date: typeOfCredit === 'sticky' ? today : undefined,
     media: postInfo.media,
@@ -200,10 +209,19 @@ const saveTempPost = async (
   typeOfCredit: string,
 ) => {
   const today = new Date();
-  const oneMonthFromToday = new Date(
+  // const oneMonthFromToday = new Date(
+  //   today.getFullYear(),
+  //   today.getMonth() + 1,
+  //   today.getDate(),
+  //   today.getHours(),
+  //   today.getMinutes(),
+  //   today.getSeconds(),
+  // );
+
+  const twoDaysFromToday = new Date(
     today.getFullYear(),
-    today.getMonth() + 1,
-    today.getDate(),
+    today.getMonth(),
+    today.getDate() + 2,
     today.getHours(),
     today.getMinutes(),
     today.getSeconds(),
@@ -222,7 +240,7 @@ const saveTempPost = async (
     category_title: postInfo.categoryTitle,
     price: postInfo.price,
     description: postInfo.description,
-    expiry_date: oneMonthFromToday,
+    expiry_date: twoDaysFromToday,
     media: postInfo.media,
     is_sticky: typeOfCredit === 'sticky',
     credit_type: typeOfCredit,
@@ -246,6 +264,10 @@ const removePostMedia = async (id?: number, post?: IPost) => {
       await deleteMediaFromCloudinary(multimedia, 'posts');
     }
   }
+};
+
+const removeDeletedPost = async (id: number) => {
+  await DeletedPost.delete(id);
 };
 
 const removePost = async (id: number, post?: IPost) => {
@@ -513,27 +535,56 @@ const updateDeletedPost = async (
 
 const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {
   const today = new Date();
-  const oneMonthFromToday = new Date(
-    today.getFullYear(),
-    today.getMonth() + 1,
-    today.getDate(),
-    today.getHours(),
-    today.getMinutes(),
-    today.getSeconds(),
-  );
-  const oneWeekFromToday = new Date(
+  // const oneMonthFromToday = new Date(
+  //   today.getFullYear(),
+  //   today.getMonth() + 1,
+  //   today.getDate(),
+  //   today.getHours(),
+  //   today.getMinutes(),
+  //   today.getSeconds(),
+  // );
+
+  // const oneWeekFromToday = new Date(
+  //   today.getFullYear(),
+  //   today.getMonth(),
+  //   today.getDate() + 7,
+  //   today.getHours(),
+  //   today.getMinutes(),
+  //   today.getSeconds(),
+  // );
+
+  // const twentyThreeDaysFromToday = new Date(
+  //   today.getFullYear(),
+  //   today.getMonth(),
+  //   today.getDate() + 23,
+  //   today.getHours(),
+  //   today.getMinutes(),
+  //   today.getSeconds(),
+  // );
+
+  const twoDaysFromToday = new Date(
     today.getFullYear(),
     today.getMonth(),
-    today.getDate() + 7,
+    today.getDate() + 2,
     today.getHours(),
     today.getMinutes(),
     today.getSeconds(),
   );
+
+  const oneDayFromToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate() + 1,
+    today.getHours(),
+    today.getMinutes(),
+    today.getSeconds(),
+  );
+
   const newPost = Post.create({
     ...post,
     sticked_date: isSticky ? today : undefined,
-    sticky_expires: isSticky ? oneWeekFromToday : undefined,
-    expiry_date: oneMonthFromToday,
+    sticky_expires: isSticky ? oneDayFromToday : undefined,
+    expiry_date: isSticky ? twoDaysFromToday : oneDayFromToday,
     is_sticky: isSticky,
   });
   await Post.save(newPost);
@@ -895,6 +946,7 @@ export {
   findPosts,
   removePostMedia,
   removeArchivedPost,
+  removeDeletedPost,
   removePost,
   updatePost,
   updateArchivePost,

@@ -9,5 +9,6 @@ router.get('/logout', UserController.logout);
 router.post('/register', UserController.register);
 router.post('/check-user', UserController.doesUserExists);
 router.post('/password-reset', UserController.resetPassword);
+router.delete('/', UserController.removeUser);
 
 export default router;

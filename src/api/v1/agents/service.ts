@@ -89,10 +89,19 @@ const updateAgent = async (agentInfo: AgentInfoType, userId: number) => {
 const initOrUpdateAgent = async (user: IUser) => {
   const agent = await findAgentByUserId(user.id);
   const today = new Date();
-  const twoMonthsFromToday = new Date(
+  // const twoMonthsFromToday = new Date(
+  //   today.getFullYear(),
+  //   today.getMonth() + 2,
+  //   today.getDate(),
+  //   today.getHours(),
+  //   today.getMinutes(),
+  //   today.getSeconds(),
+  // );
+
+  const twoDaysFromToday = new Date(
     today.getFullYear(),
-    today.getMonth() + 2,
-    today.getDate(),
+    today.getMonth(),
+    today.getDate() + 2,
     today.getHours(),
     today.getMinutes(),
     today.getSeconds(),
@@ -104,13 +113,13 @@ const initOrUpdateAgent = async (user: IUser) => {
     agentData = Agent.create({
       ...agent,
       subscription_start_date: today,
-      subscription_ends_date: twoMonthsFromToday,
+      subscription_ends_date: twoDaysFromToday,
     });
   } else {
     agentData = Agent.create({
       name: 'agent',
       subscription_start_date: today,
-      subscription_ends_date: twoMonthsFromToday,
+      subscription_ends_date: twoDaysFromToday,
       user,
     });
   }
@@ -151,6 +160,19 @@ const fireAgentExpirationAlert = async (userIds: number[]) => {
   }
 };
 
+const setSubscriptionNull = async (userId: number) => {
+  const agent = await findAgentByUserId(userId);
+
+  const agentData = Agent.create({
+    ...agent,
+    // @ts-ignore
+    subscription_start_date: null,
+    subscription_ends_date: null,
+  });
+
+  await Agent.save(agentData);
+};
+
 export {
   initOrUpdateAgent,
   findAgentByUserId,
@@ -159,4 +181,5 @@ export {
   findManyAgents,
   findAgentById,
   fireAgentExpirationAlert,
+  setSubscriptionNull,
 };

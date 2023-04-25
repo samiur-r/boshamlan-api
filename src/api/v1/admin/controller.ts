@@ -26,6 +26,7 @@ import {
   generatePostId,
   removeAllPostsOfUser,
   removeArchivedPost,
+  removeDeletedPost,
   removePost,
   saveDeletedPost,
   savePost,
@@ -40,10 +41,10 @@ import {
   updateUser,
   updateUserStatus,
 } from '../users/service';
-import { fetchLogsByPostId, fetchLogsByUser } from '../user_logs/service';
+import { fetchLogsByPostId, fetchLogsByUser, saveUserLog } from '../user_logs/service';
 import { findCreditByUserId, initCredits, setCreditsToZeroByUserId } from '../credits/service';
 import { filterTransactionsForAdmin } from '../transactions/service';
-import { findAgentById } from '../agents/service';
+import { findAgentById, findAgentByUserId, setSubscriptionNull } from '../agents/service';
 import { Credit } from '../credits/model';
 import { Agent } from '../agents/model';
 import { sendSms } from '../../../utils/smsUtils';
@@ -60,6 +61,7 @@ import { parseTimestamp } from '../../../utils/timestampUtls';
 import AppDataSource from '../../../db';
 import { Transaction } from '../transactions/model';
 import { Package } from '../packages/model';
+import { Otp } from '../otps/model';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -329,6 +331,7 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       is_agent: user.is_agent,
       adminComment: user.admin_comment,
       is_blocked: user.is_blocked,
+      is_deleted: user.is_deleted,
       lastPostDate: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedDate : null,
       lastPostTime: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedTime : null,
       registeredDate: parseTimestamp(user.created_at).parsedDate,
@@ -413,6 +416,7 @@ const fetchUser = async (req: Request, res: Response, next: NextFunction) => {
       is_agent: user.is_agent,
       adminComment: user.admin_comment,
       is_blocked: user.is_blocked,
+      is_deleted: user.is_deleted,
       registeredDate: parseTimestamp(user.created_at).parsedDate,
       registeredTime: parseTimestamp(user.created_at).parsedTime,
       subscriptionStartDate:
@@ -654,6 +658,7 @@ const updateUserBlockStatus = async (req: Request, res: Response, next: NextFunc
       // const socketIo: any = await getSocketIo();
       // socketIo.emit('userBlocked', { user: user.phone });
 
+      await setSubscriptionNull(userId);
       await removeAllPostsOfUser(userId);
       await setCreditsToZeroByUserId(userId);
     }
@@ -685,11 +690,91 @@ const updateUserComment = async (req: Request, res: Response, next: NextFunction
   }
 };
 
-const test = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const unVerifiedUsersCount = await User.count({ where: { status: 'not_verified' } });
+const removeUserPermanently = async (req: Request, res: Response, next: NextFunction) => {
+  const { userId } = req.body;
 
-    return res.status(200).json({ unVerifiedUsersCount });
+  try {
+    if (!userId) throw new ErrorHandler(404, 'Invalid payload passed');
+
+    await Credit.delete({ user: { id: userId } });
+    await Transaction.delete({ user: { id: userId } });
+    await Otp.delete({ user: { id: userId } });
+    await Agent.delete({ user: { id: userId } });
+    await User.delete({ id: userId });
+    await Credit.delete({ user: { id: userId } });
+    await Transaction.delete({ user: { id: userId } });
+    await DeletedPost.delete({ user: { id: userId } });
+
+    const activePosts = await Post.find({ where: { user: { id: userId } } });
+    const archivedPosts = await ArchivePost.find({ where: { user: { id: userId } } });
+
+    activePosts.forEach(async (post) => {
+      await removePost(post.id, post);
+      await updateLocationCountValue(post.city_id, 'decrement');
+    });
+
+    archivedPosts.forEach(async (post) => {
+      await removeArchivedPost(post.id, post);
+      await updateLocationCountValue(post.city_id, 'decrement');
+    });
+
+    return res.status(200).json({ success: 'User deleted permanently' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+const restore = async (req: Request, res: Response, next: NextFunction) => {
+  const user = res.locals.user.payload;
+  const { userId } = req.body;
+
+  try {
+    if (!userId) throw new ErrorHandler(404, 'Invalid payload passed');
+    const userObj = await findUserById(userId);
+    if (!userObj) throw new ErrorHandler(500, 'Something went wrong');
+
+    userObj.is_deleted = false;
+    await User.save(userObj);
+
+    const posts = await DeletedPost.find({ where: { user: { id: userId } } });
+
+    posts.forEach(async (post) => {
+      await removeDeletedPost(post.id);
+
+      const postInfo = Post.create({
+        ...post,
+        post_type: 'active',
+      });
+
+      await Post.save(postInfo);
+      await updateLocationCountValue(post.city_id, 'increment');
+    });
+
+    logger.info(`User ${userObj.phone} restored by admin ${user?.phone}`);
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: undefined,
+        user: userObj?.phone ?? undefined,
+        activity: 'User restored successfully',
+      },
+    ]);
+    return res.status(200).json({ success: 'User is restored successfully' });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    logger.error(`User ${userId} restore attempt by admin ${user.phone} failed`);
+    await saveUserLog([{ post_id: undefined, transaction: undefined, user: userId, activity: 'User restore failed' }]);
+    return next(error);
+  }
+};
+
+const test = async (req: Request, res: Response, next: NextFunction) => {
+  const { userId } = req.body;
+  try {
+    const posts = await DeletedPost.find({ where: { user: { id: userId } } });
+
+    return res.status(200).json({ posts });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
@@ -719,4 +804,6 @@ export {
   deletePostPermanently,
   rePost,
   updateUserComment,
+  removeUserPermanently,
+  restore,
 };
