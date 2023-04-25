@@ -319,7 +319,10 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
     if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
-    const post = await findArchivedPostById(postId);
+
+    let post;
+    post = await findPostById(postId);
+    if (!post) post = await findArchivedPostById(postId);
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
 
     const credit = await findCreditByUserId(user.id);

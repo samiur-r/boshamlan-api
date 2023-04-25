@@ -236,13 +236,9 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
     let post;
 
-    post = await findArchivedPostById(postId);
-
-    if (post) await removeArchivedPost(post.id);
-    else post = await findDeletedPostById(postId);
-
-    if (post) await DeletedPost.delete({ id: postId });
-    else throw new ErrorHandler(404, 'Post not found');
+    post = await findPostById(postId);
+    if (!post) post = await findArchivedPostById(postId);
+    if (!post) throw new ErrorHandler(500, 'Something went wrong');
 
     const publicDate = post.public_date;
 
@@ -266,6 +262,7 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     };
 
     const newPost = await savePost(postInfo, post.user, 'regular', publicDate);
+    await removeArchivedPost(post.id);
     const repostCount = post.repost_count + 1;
     await updatePostRepostVals(newPost, true, repostCount);
     await updateLocationCountValue(post.city_id, 'increment');
