@@ -10,8 +10,8 @@ export interface IAgent {
   twitter: string;
   facebook: string;
   logo_url: string;
-  subscription_start_date: Date | null;
-  subscription_ends_date: Date | null;
+  subscription_start_date: Date | any;
+  subscription_ends_date: Date | any;
   created_at: Date;
   updated_at: Date;
   phone?: string;

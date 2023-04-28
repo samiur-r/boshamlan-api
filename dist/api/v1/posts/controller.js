@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.increasePostCount = exports.fetchManyArchive = exports.deletePost = exports.rePost = exports.updatePostToStick = exports.fetchMany = exports.fetchOneForEdit = exports.fetchOne = exports.update = exports.insert = void 0;
+exports.increasePostCount = exports.fetchManyArchive = exports.deletePost = exports.restore = exports.rePost = exports.updatePostToStick = exports.fetchMany = exports.fetchOneForEdit = exports.fetchOne = exports.update = exports.insert = void 0;
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const service_1 = require("../users/service");
@@ -25,6 +25,7 @@ const smsUtils_1 = require("../../../utils/smsUtils");
 const service_4 = require("../user_logs/service");
 const checkAuthorization_1 = require("../../../utils/checkAuthorization");
 const service_5 = require("../locations/service");
+const Post_1 = require("./models/Post");
 const fetchOne = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     let post;
     try {
@@ -301,7 +302,10 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (!postId)
             throw new ErrorHandler_1.default(404, 'Invalid payload passed');
-        const post = yield (0, service_3.findArchivedPostById)(postId);
+        let post;
+        post = yield (0, service_3.findPostById)(postId);
+        if (!post)
+            post = yield (0, service_3.findArchivedPostById)(postId);
         if (!post)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         const credit = yield (0, service_2.findCreditByUserId)(user.id);
@@ -362,6 +366,67 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
     }
 });
 exports.rePost = rePost;
+const restore = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _r;
+    const user = res.locals.user.payload;
+    const { postId } = req.body;
+    try {
+        if (!postId)
+            throw new ErrorHandler_1.default(404, 'Invalid payload passed');
+        const post = yield (0, service_3.findDeletedPostById)(postId);
+        if (!post)
+            throw new ErrorHandler_1.default(500, 'Something went wrong');
+        const userObj = yield (0, service_1.findUserById)(post.user.id);
+        if (!userObj)
+            throw new ErrorHandler_1.default(500, 'Something went wrong');
+        const postInfo = Post_1.Post.create({
+            id: post.id,
+            title: post.title,
+            city_id: post.city_id,
+            city_title: post.city_title,
+            state_id: post.state_id,
+            state_title: post.state_title,
+            property_id: post.property_id,
+            property_title: post.property_title,
+            category_id: post.category_id,
+            category_title: post.category_title,
+            price: post.price,
+            description: post.description,
+            media: post.media,
+            sticked_date: post.sticked_date,
+            repost_count: post.repost_count,
+            views: post.views,
+            expiry_date: post.expiry_date,
+            public_date: post.public_date,
+            is_sticky: post.is_sticky,
+            post_type: 'active',
+            credit_type: post.credit_type,
+            user: userObj,
+        });
+        yield Post_1.Post.save(postInfo);
+        yield (0, service_3.removeDeletedPost)(post.id);
+        yield (0, service_5.updateLocationCountValue)(post.city_id, 'increment');
+        logger_1.default.info(`Post ${post.id} restored by user ${user === null || user === void 0 ? void 0 : user.phone}`);
+        yield (0, service_4.saveUserLog)([
+            {
+                post_id: post.id,
+                transaction: undefined,
+                user: (_r = user === null || user === void 0 ? void 0 : user.phone) !== null && _r !== void 0 ? _r : undefined,
+                activity: 'Post restored successfully',
+            },
+        ]);
+        return res.status(200).json({ success: 'Post is restored successfully' });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        logger_1.default.error(`Post ${postId} restore attempt by user ${user.phone} failed`);
+        yield (0, service_4.saveUserLog)([
+            { post_id: parseInt(postId, 10), transaction: undefined, user: user.phone, activity: 'Post restore failed' },
+        ]);
+        return next(error);
+    }
+});
+exports.restore = restore;
 const deletePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId, isArchive } = req.body;
     const userId = res.locals.user.payload.id;

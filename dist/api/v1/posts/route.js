@@ -42,5 +42,6 @@ router.delete('/', AuthMiddleware_1.isUserAuth, PostController.deletePost);
 router.post('/temp', AuthMiddleware_1.isUserAuth, PostController.insert);
 router.post('/stick', AuthMiddleware_1.isUserAuth, PostController.updatePostToStick);
 router.post('/repost', AuthMiddleware_1.isUserAuth, PostController.rePost);
+router.post('/restore', AuthMiddleware_1.isAdminAuth, PostController.restore);
 exports.default = router;
 //# sourceMappingURL=route.js.map

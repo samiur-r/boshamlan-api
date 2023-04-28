@@ -10,9 +10,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.filterTransactionsForAdmin = exports.findTransactionsByUserId = exports.editTransactionStatus = exports.editTransaction = exports.saveTransaction = void 0;
+/* eslint-disable no-param-reassign */
 const typeorm_1 = require("typeorm");
 const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
+const timestampUtls_1 = require("../../../utils/timestampUtls");
 const model_1 = require("./model");
 const saveTransaction = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { trackId, amount, packageTitle, status, user, packageObj, } = payload;
@@ -108,7 +110,7 @@ const filterTransactionsForAdmin = (statusToFilter, typeToFilter, fromCreationDa
                 where.package_title = (0, typeorm_1.Like)('regular%');
                 break;
             case 'Sticky':
-                where.package_title = (0, typeorm_1.Like)('sticky%');
+                where.package_title = (0, typeorm_1.In)(['sticky1', 'sticky2']);
                 break;
             case 'Sticky Direct':
                 where.package_title = 'stickyDirect';
@@ -121,19 +123,25 @@ const filterTransactionsForAdmin = (statusToFilter, typeToFilter, fromCreationDa
         }
     }
     if (fromCreationDateToFilter && toCreationDateToFilter)
-        where.created_at = (0, typeorm_1.Between)(fromCreationDateToFilter, toCreationDateToFilter);
+        where.created_at = (0, typeorm_1.Between)(`${fromCreationDateToFilter} 00:00:00`, `${toCreationDateToFilter} 23:59:59`);
     else if (fromCreationDateToFilter)
-        where.created_at = (0, typeorm_1.MoreThanOrEqual)(fromCreationDateToFilter);
+        where.created_at = (0, typeorm_1.MoreThanOrEqual)(`${fromCreationDateToFilter} 00:00:00`);
     else if (toCreationDateToFilter)
-        where.created_at = (0, typeorm_1.LessThanOrEqual)(toCreationDateToFilter);
+        where.created_at = (0, typeorm_1.LessThanOrEqual)(`${toCreationDateToFilter} 23:59:59`);
     const [transactions, count] = yield model_1.Transaction.findAndCount({
         where,
         order: { created_at: 'desc' },
         skip: offset,
         take: 10,
     });
+    transactions.forEach((transactionItem) => {
+        transactionItem.createdDate = (0, timestampUtls_1.parseTimestamp)(transactionItem.created_at).parsedDate;
+        transactionItem.createdTime = (0, timestampUtls_1.parseTimestamp)(transactionItem.created_at).parsedTime;
+        transactionItem.updatedDate = (0, timestampUtls_1.parseTimestamp)(transactionItem.updated_at).parsedDate;
+        transactionItem.updatedTime = (0, timestampUtls_1.parseTimestamp)(transactionItem.updated_at).parsedTime;
+    });
     const totalPages = Math.ceil(count / 10);
-    return { transactions, totalPages };
+    return { transactions, totalPages, totalResults: count };
 });
 exports.filterTransactionsForAdmin = filterTransactionsForAdmin;
 //# sourceMappingURL=service.js.map

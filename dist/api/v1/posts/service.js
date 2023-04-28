@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unstickPost = exports.findDeletedPostById = exports.removeAllPostsOfUser = exports.filterPostsForAdmin = exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updateDeletedPost = exports.updateArchivePost = exports.updatePost = exports.removePost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = exports.generatePostId = void 0;
+exports.unstickPost = exports.findDeletedPostById = exports.removeAllPostsOfUser = exports.filterPostsForAdmin = exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updateDeletedPost = exports.updateArchivePost = exports.updatePost = exports.removePost = exports.removeDeletedPost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = exports.generatePostId = void 0;
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
@@ -43,7 +43,15 @@ exports.generatePostId = generatePostId;
 const savePost = (postInfo, user, typeOfCredit, publicDate) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const today = new Date();
-    const oneMonthFromToday = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
+    // const oneMonthFromToday = new Date(
+    //   today.getFullYear(),
+    //   today.getMonth() + 1,
+    //   today.getDate(),
+    //   today.getHours(),
+    //   today.getMinutes(),
+    //   today.getSeconds(),
+    // );
+    const twoDaysFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, today.getHours(), today.getMinutes(), today.getSeconds());
     const newPost = Post_1.Post.create({
         title: postInfo.title,
         city_id: postInfo.cityId,
@@ -56,7 +64,7 @@ const savePost = (postInfo, user, typeOfCredit, publicDate) => __awaiter(void 0,
         category_title: postInfo.categoryTitle,
         price: postInfo.price,
         description: postInfo.description,
-        expiry_date: oneMonthFromToday,
+        expiry_date: twoDaysFromToday,
         public_date: publicDate,
         sticked_date: typeOfCredit === 'sticky' ? today : undefined,
         media: postInfo.media,
@@ -145,7 +153,15 @@ const saveDeletedPost = (postInfo, user) => __awaiter(void 0, void 0, void 0, fu
 exports.saveDeletedPost = saveDeletedPost;
 const saveTempPost = (postInfo, user, typeOfCredit) => __awaiter(void 0, void 0, void 0, function* () {
     const today = new Date();
-    const oneMonthFromToday = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
+    // const oneMonthFromToday = new Date(
+    //   today.getFullYear(),
+    //   today.getMonth() + 1,
+    //   today.getDate(),
+    //   today.getHours(),
+    //   today.getMinutes(),
+    //   today.getSeconds(),
+    // );
+    const twoDaysFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, today.getHours(), today.getMinutes(), today.getSeconds());
     const newPost = TempPost_1.TempPost.create({
         track_id: postInfo.trackId,
         title: postInfo.title,
@@ -159,7 +175,7 @@ const saveTempPost = (postInfo, user, typeOfCredit) => __awaiter(void 0, void 0,
         category_title: postInfo.categoryTitle,
         price: postInfo.price,
         description: postInfo.description,
-        expiry_date: oneMonthFromToday,
+        expiry_date: twoDaysFromToday,
         media: postInfo.media,
         is_sticky: typeOfCredit === 'sticky',
         credit_type: typeOfCredit,
@@ -185,6 +201,10 @@ const removePostMedia = (id, post) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.removePostMedia = removePostMedia;
+const removeDeletedPost = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    yield DeletedPost_1.DeletedPost.delete(id);
+});
+exports.removeDeletedPost = removeDeletedPost;
 const removePost = (id, post) => __awaiter(void 0, void 0, void 0, function* () {
     yield Post_1.Post.delete(id);
     yield removePostMedia(id, post);
@@ -344,9 +364,33 @@ const updateDeletedPost = (postInfo, post) => __awaiter(void 0, void 0, void 0, 
 exports.updateDeletedPost = updateDeletedPost;
 const updatePostStickyVal = (post, isSticky) => __awaiter(void 0, void 0, void 0, function* () {
     const today = new Date();
-    const oneMonthFromToday = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
-    const oneWeekFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 7, today.getHours(), today.getMinutes(), today.getSeconds());
-    const newPost = Post_1.Post.create(Object.assign(Object.assign({}, post), { sticked_date: isSticky ? today : undefined, sticky_expires: isSticky ? oneWeekFromToday : undefined, expiry_date: oneMonthFromToday, is_sticky: isSticky }));
+    // const oneMonthFromToday = new Date(
+    //   today.getFullYear(),
+    //   today.getMonth() + 1,
+    //   today.getDate(),
+    //   today.getHours(),
+    //   today.getMinutes(),
+    //   today.getSeconds(),
+    // );
+    // const oneWeekFromToday = new Date(
+    //   today.getFullYear(),
+    //   today.getMonth(),
+    //   today.getDate() + 7,
+    //   today.getHours(),
+    //   today.getMinutes(),
+    //   today.getSeconds(),
+    // );
+    // const twentyThreeDaysFromToday = new Date(
+    //   today.getFullYear(),
+    //   today.getMonth(),
+    //   today.getDate() + 23,
+    //   today.getHours(),
+    //   today.getMinutes(),
+    //   today.getSeconds(),
+    // );
+    const twoDaysFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, today.getHours(), today.getMinutes(), today.getSeconds());
+    const oneDayFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, today.getHours(), today.getMinutes(), today.getSeconds());
+    const newPost = Post_1.Post.create(Object.assign(Object.assign({}, post), { sticked_date: isSticky ? today : undefined, sticky_expires: isSticky ? oneDayFromToday : undefined, expiry_date: isSticky ? twoDaysFromToday : oneDayFromToday, is_sticky: isSticky }));
     yield Post_1.Post.save(newPost);
 });
 exports.updatePostStickyVal = updatePostStickyVal;
@@ -460,18 +504,18 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
     }
     if (fromCreationDateToFilter && toCreationDateToFilter) {
         where.created_at = {
-            '>=': fromCreationDateToFilter,
-            '<=': toCreationDateToFilter,
+            '>=': `${fromCreationDateToFilter} 00:00:00`,
+            '<=': `${toCreationDateToFilter} 23:59:59`,
         };
     }
     else if (fromCreationDateToFilter) {
         where.created_at = {
-            '>=': fromCreationDateToFilter,
+            '>=': `${fromCreationDateToFilter} 00:00:00`,
         };
     }
     else if (toCreationDateToFilter) {
         where.created_at = {
-            '<=': toCreationDateToFilter,
+            '<=': `${toCreationDateToFilter} 23:59:59`,
         };
     }
     if (stickyStatusToFilter === -1)
@@ -530,16 +574,16 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
                 return `users.${key} = ${value}`;
             }
             if (key === 'created_at') {
-                const from = value['>='] && new Date(value['>=']).toISOString();
-                const to = value['<='] && new Date(value['<=']).toISOString();
+                const from = value['>='];
+                const to = value['<='];
                 if (from && to) {
-                    return `created_at BETWEEN '${from}' AND '${to}'`;
+                    return `latest_posts.public_date >= '${from}' AND latest_posts.public_date <= '${to}'`;
                 }
                 if (from) {
-                    return `created_at >= '${from}'`;
+                    return `latest_posts.public_date >= '${from}'`;
                 }
                 if (to) {
-                    return `created_at <= '${to}'`;
+                    return `latest_posts.public_date <= '${to}'`;
                 }
             }
             if (key === 'price') {
@@ -616,7 +660,7 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
         logger_1.default.error(`${error.name}: ${error.message}`);
     }
     const totalPages = totalPosts ? Math.ceil(totalPosts / 10) : null;
-    return { posts, totalPages };
+    return { posts, totalPages, totalResults: totalPosts };
 });
 exports.filterPostsForAdmin = filterPostsForAdmin;
 const removeAllPostsOfUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {

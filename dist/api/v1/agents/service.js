@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fireAgentExpirationAlert = exports.findAgentById = exports.findManyAgents = exports.getExpiredAgentUserIds = exports.updateAgent = exports.findAgentByUserId = exports.initOrUpdateAgent = void 0;
+exports.setSubscriptionNull = exports.fireAgentExpirationAlert = exports.findAgentById = exports.findManyAgents = exports.getExpiredAgentUserIds = exports.updateAgent = exports.findAgentByUserId = exports.initOrUpdateAgent = void 0;
 /* eslint-disable no-param-reassign */
 const typeorm_1 = require("typeorm");
 const cloudinaryUtils_1 = require("../../../utils/cloudinaryUtils");
@@ -89,16 +89,24 @@ exports.updateAgent = updateAgent;
 const initOrUpdateAgent = (user) => __awaiter(void 0, void 0, void 0, function* () {
     const agent = yield findAgentByUserId(user.id);
     const today = new Date();
-    const twoMonthsFromToday = new Date(today.getFullYear(), today.getMonth() + 2, today.getDate(), today.getHours(), today.getMinutes(), today.getSeconds());
+    // const twoMonthsFromToday = new Date(
+    //   today.getFullYear(),
+    //   today.getMonth() + 2,
+    //   today.getDate(),
+    //   today.getHours(),
+    //   today.getMinutes(),
+    //   today.getSeconds(),
+    // );
+    const twoDaysFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, today.getHours(), today.getMinutes(), today.getSeconds());
     let agentData;
     if (agent) {
-        agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { subscription_start_date: today, subscription_ends_date: twoMonthsFromToday }));
+        agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { subscription_start_date: today, subscription_ends_date: twoDaysFromToday }));
     }
     else {
         agentData = model_2.Agent.create({
             name: 'agent',
             subscription_start_date: today,
-            subscription_ends_date: twoMonthsFromToday,
+            subscription_ends_date: twoDaysFromToday,
             user,
         });
     }
@@ -106,8 +114,9 @@ const initOrUpdateAgent = (user) => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.initOrUpdateAgent = initOrUpdateAgent;
 const getExpiredAgentUserIds = () => __awaiter(void 0, void 0, void 0, function* () {
+    const currentDate = new Date();
     const agents = yield model_2.Agent.find({
-        where: { subscription_ends_date: (0, typeorm_1.LessThan)(new Date()) },
+        where: { subscription_ends_date: (0, typeorm_1.LessThan)(currentDate) },
     });
     const userIds = agents.filter((agent) => agent.user.is_agent === true).map((agent) => agent.user.id);
     return userIds;
@@ -132,4 +141,12 @@ const fireAgentExpirationAlert = (userIds) => __awaiter(void 0, void 0, void 0, 
     }
 });
 exports.fireAgentExpirationAlert = fireAgentExpirationAlert;
+const setSubscriptionNull = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const agent = yield findAgentByUserId(userId);
+    const agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { 
+        // @ts-ignore
+        subscription_start_date: null, subscription_ends_date: null }));
+    yield model_2.Agent.save(agentData);
+});
+exports.setSubscriptionNull = setSubscriptionNull;
 //# sourceMappingURL=service.js.map

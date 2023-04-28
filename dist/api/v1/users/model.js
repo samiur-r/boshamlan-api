@@ -43,6 +43,12 @@ __decorate([
 ], User.prototype, "is_blocked", void 0);
 __decorate([
     (0, typeorm_1.Column)({
+        default: false,
+    }),
+    __metadata("design:type", Boolean)
+], User.prototype, "is_deleted", void 0);
+__decorate([
+    (0, typeorm_1.Column)({
         nullable: true,
     }),
     __metadata("design:type", String)

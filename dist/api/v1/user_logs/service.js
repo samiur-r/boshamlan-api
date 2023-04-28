@@ -36,7 +36,7 @@ const fetchLogsByPostId = (postId, offset) => __awaiter(void 0, void 0, void 0, 
         log.publish_date = log.created_at.toISOString().slice(0, 10);
     });
     const totalPages = Math.ceil(count / 10);
-    const response = { logs, totalPages };
+    const response = { logs, totalPages, totalResults: count };
     return response;
 });
 exports.fetchLogsByPostId = fetchLogsByPostId;
@@ -60,7 +60,7 @@ const fetchLogsByUser = (user, offset) => __awaiter(void 0, void 0, void 0, func
         log.publish_date = log.created_at.toISOString().slice(0, 10);
     });
     const totalPages = Math.ceil(count / 10);
-    const response = { logs, totalPages };
+    const response = { logs, totalPages, totalResults: count };
     return response;
 });
 exports.fetchLogsByUser = fetchLogsByUser;

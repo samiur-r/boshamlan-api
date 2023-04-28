@@ -69,7 +69,7 @@ const findAgentById = async (id: number) => {
   return agent;
 };
 
-const updateAgent = async (agentInfo: AgentInfoType, userId: number) => {
+const updateAgent = async (agentInfo: any, userId: number) => {
   const agent = await findAgentByUserId(userId);
 
   if (!agent) throw new ErrorHandler(404, `agent doesn't exists`);

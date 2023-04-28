@@ -68,6 +68,8 @@ exports.findUnVerifiedUsers = findUnVerifiedUsers;
 const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter, fromCreationDateToFilter, toCreationDateToFilter, orderByToFilter, offset) => __awaiter(void 0, void 0, void 0, function* () {
     let where = {};
     let order = 'user.created_at';
+    const today = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
     if (statusToFilter) {
         switch (statusToFilter) {
             case 'User':
@@ -92,7 +94,25 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
                 where = 'credits.agent > 0';
                 break;
             case 'Zero Free':
-                where = 'credits.free = 0';
+                where = `credits.free < 1 OR user.status = 'not_verified'`;
+                break;
+            case 'Active Today':
+                where = `user.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59' AND post.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
+                break;
+            case 'Active Yesterday':
+                where = `user.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59' AND post.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
+                break;
+            case 'Has Regular Credit History':
+                where = `transactions.status = 'completed' AND transactions.package_title = 'regular1' OR transactions.package_title = 'regular2'`;
+                break;
+            case 'Has Sticky Credit History':
+                where = `transactions.status = 'completed' AND (transactions.package_title = 'sticky1' OR transactions.package_title = 'sticky2')`;
+                break;
+            case 'Has Direct Sticky Credit History':
+                where = `transactions.status = 'completed' AND transactions.package_title = 'stickyDirect'`;
+                break;
+            case 'Has Agent History':
+                where = `transactions.status = 'completed' AND transactions.package_title = 'agent1' OR transactions.package_title = 'agent2'`;
                 break;
             default:
                 break;
@@ -101,13 +121,13 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
     if (phoneToFilter)
         where.phone = phoneToFilter;
     if (adminCommentToFilter)
-        where.admin_comment = adminCommentToFilter;
+        where.admin_comment = (0, typeorm_1.Like)(`%${adminCommentToFilter}%`);
     if (fromCreationDateToFilter && toCreationDateToFilter)
-        where.created_at = (0, typeorm_1.Between)(fromCreationDateToFilter, toCreationDateToFilter);
+        where.created_at = (0, typeorm_1.Between)(`${fromCreationDateToFilter} 00:00:00`, `${toCreationDateToFilter} 23:59:59`);
     else if (fromCreationDateToFilter)
-        where.created_at = (0, typeorm_1.MoreThanOrEqual)(fromCreationDateToFilter);
+        where.created_at = (0, typeorm_1.MoreThanOrEqual)(`${fromCreationDateToFilter} 00:00:00`);
     else if (toCreationDateToFilter)
-        where.created_at = (0, typeorm_1.LessThanOrEqual)(toCreationDateToFilter);
+        where.created_at = (0, typeorm_1.LessThanOrEqual)(`${toCreationDateToFilter} 23:59:59`);
     if (orderByToFilter) {
         switch (orderByToFilter) {
             case 'Registered':
@@ -132,7 +152,9 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
                 break;
         }
     }
-    const count = yield model_1.User.createQueryBuilder('user')
+    let count = 0;
+    let users = [];
+    count = yield model_1.User.createQueryBuilder('user')
         .leftJoinAndSelect('user.posts', 'post')
         .leftJoinAndSelect('user.archive_posts', 'archive_post')
         .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
@@ -141,7 +163,7 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
         .leftJoinAndSelect('user.agent', 'agent')
         .where(where)
         .getCount();
-    const users = yield model_1.User.createQueryBuilder('user')
+    users = yield model_1.User.createQueryBuilder('user')
         .leftJoinAndSelect('user.posts', 'post')
         .leftJoinAndSelect('user.archive_posts', 'archive_post')
         .leftJoinAndSelect('user.deleted_posts', 'deleted_post')

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.doesUserExists = exports.register = exports.logout = exports.login = void 0;
+exports.removeUser = exports.resetPassword = exports.doesUserExists = exports.register = exports.logout = exports.login = void 0;
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const passwordUtils_1 = require("../../../utils/passwordUtils");
 const config_1 = __importDefault(require("../../../config"));
@@ -24,6 +24,11 @@ const jwtUtils_1 = require("../../../utils/jwtUtils");
 const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
 const service_3 = require("../user_logs/service");
+const model_1 = require("./model");
+const Post_1 = require("../posts/models/Post");
+const ArchivePost_1 = require("../posts/models/ArchivePost");
+const service_4 = require("../posts/service");
+const service_5 = require("../locations/service");
 const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { phone, password } = req.body;
     try {
@@ -36,6 +41,8 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
             return res.status(200).json({ nextOperation: 'verify phone', userId: user.id });
         if (user && user.is_blocked)
             throw new ErrorHandler_1.default(403, 'You are blocked');
+        if (user && user.is_deleted)
+            throw new ErrorHandler_1.default(403, 'Your account has been deleted');
         const isValidPassword = yield (0, passwordUtils_1.verifyToken)(password, user.password);
         if (!isValidPassword)
             throw new ErrorHandler_1.default(403, 'Incorrect phone or password');
@@ -157,4 +164,32 @@ const resetPassword = (req, res, next) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.resetPassword = resetPassword;
+const removeUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId } = req.body;
+    try {
+        const user = yield (0, service_1.findUserById)(userId);
+        if (!user)
+            throw new ErrorHandler_1.default(404, 'User not found');
+        user.is_deleted = true;
+        yield model_1.User.save(user);
+        const activePosts = yield Post_1.Post.find({ where: { user: { id: userId } } });
+        const archivedPosts = yield ArchivePost_1.ArchivePost.find({ where: { user: { id: userId } } });
+        activePosts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
+            yield (0, service_4.removePost)(post.id, post);
+            yield (0, service_4.saveDeletedPost)(post, post.user);
+            yield (0, service_5.updateLocationCountValue)(post.city_id, 'decrement');
+        }));
+        archivedPosts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
+            yield (0, service_4.removeArchivedPost)(post.id, post);
+            yield (0, service_4.saveDeletedPost)(post, post.user);
+            yield (0, service_5.updateLocationCountValue)(post.city_id, 'decrement');
+        }));
+        return res.status(200).json({ success: 'User deleted successfully' });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        return next(error);
+    }
+});
+exports.removeUser = removeUser;
 //# sourceMappingURL=controller.js.map

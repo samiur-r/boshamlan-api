@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseTimestamp = void 0;
+exports.getLocaleDate = exports.parseTimestamp = void 0;
 const parseTimestamp = (timestamp) => {
     const dateObj = new Date(timestamp);
     const day = dateObj.getDate().toString().padStart(2, '0');
@@ -14,4 +14,12 @@ const parseTimestamp = (timestamp) => {
     return { parsedDate, parsedTime };
 };
 exports.parseTimestamp = parseTimestamp;
+const getLocaleDate = (timestamp) => {
+    const date = new Date(timestamp);
+    const year = date.getFullYear().toString();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0'); // add leading zero to month if necessary
+    const day = date.getDate().toString().padStart(2, '0'); // add leading zero to day if necessary
+    return `${year}-${month}-${day}`;
+};
+exports.getLocaleDate = getLocaleDate;
 //# sourceMappingURL=timestampUtls.js.map

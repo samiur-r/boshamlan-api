@@ -34,5 +34,6 @@ router.get('/logout', UserController.logout);
 router.post('/register', UserController.register);
 router.post('/check-user', UserController.doesUserExists);
 router.post('/password-reset', UserController.resetPassword);
+router.delete('/', UserController.removeUser);
 exports.default = router;
 //# sourceMappingURL=route.js.map

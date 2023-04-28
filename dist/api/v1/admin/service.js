@@ -82,14 +82,30 @@ const getPostHistory = (userId) => __awaiter(void 0, void 0, void 0, function* (
 exports.getPostHistory = getPostHistory;
 const getUserSummary = () => __awaiter(void 0, void 0, void 0, function* () {
     const [users, totalUsers] = yield model_4.User.findAndCount();
+    const posts = yield Post_1.Post.find();
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
-    const verifiedToday = users.filter((user) => user.status === 'verified' && user.created_at.toISOString().slice(0, 10) === today).length;
-    const verifiedYesterday = users.filter((user) => user.status === 'verified' && user.created_at.toISOString().slice(0, 10) === yesterday).length;
+    const registeredToday = users.filter((user) => user.created_at.toISOString().slice(0, 10) === today).length;
+    const registeredYesterday = users.filter((user) => user.created_at.toISOString().slice(0, 10) === yesterday).length;
     const notVerifiedToday = users.filter((user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === today).length;
     const notVerifiedYesterday = users.filter((user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === yesterday).length;
+    const activeToday = users.filter((user) => {
+        return user.created_at.toISOString().slice(0, 10) === today && posts.some((post) => post.user.id === user.id);
+    }).length;
+    const activeYesterday = users.filter((user) => {
+        return user.created_at.toISOString().slice(0, 10) === yesterday && posts.some((post) => post.user.id === user.id);
+    }).length;
     const activeAgents = users.filter((user) => user.is_agent).length;
-    return { totalUsers, activeAgents, verifiedToday, verifiedYesterday, notVerifiedToday, notVerifiedYesterday };
+    return {
+        totalUsers,
+        activeAgents,
+        registeredToday,
+        registeredYesterday,
+        notVerifiedToday,
+        notVerifiedYesterday,
+        activeToday,
+        activeYesterday,
+    };
 });
 exports.getUserSummary = getUserSummary;
 const getPostSummary = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -149,10 +165,10 @@ const getTransactionSummary = () => __awaiter(void 0, void 0, void 0, function* 
     const incomeToday = transactionsToday.reduce((sum, transaction) => sum + transaction.amount, 0);
     const incomeYesterday = transactionsYesterday.reduce((sum, transaction) => sum + transaction.amount, 0);
     const transactionsLastTwoMonths = yield model_3.Transaction.find({
-        where: [
-            { created_at: (0, typeorm_1.Between)(prevMonthStartDate, prevMonthEndDate) },
-            { created_at: (0, typeorm_1.Between)(currentMonthStartDate, currentMonthEndDate) },
-        ],
+        where: {
+            status: 'completed',
+            created_at: (0, typeorm_1.Between)(prevMonthStartDate, currentMonthEndDate),
+        },
     });
     const totalIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
         if (curr.created_at >= currentMonthStartDate && curr.created_at <= currentMonthEndDate) {
@@ -185,7 +201,7 @@ const getTransactionSummary = () => __awaiter(void 0, void 0, void 0, function* 
     const totalStickyIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
         if (curr.created_at >= currentMonthStartDate &&
             curr.created_at <= currentMonthEndDate &&
-            (curr.package.id === 5 || curr.package.id === 5)) {
+            (curr.package.id === 5 || curr.package.id === 6)) {
             return acc + curr.amount;
         }
         return acc;
@@ -193,7 +209,7 @@ const getTransactionSummary = () => __awaiter(void 0, void 0, void 0, function* 
     const totalStickyIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
         if (curr.created_at >= prevMonthStartDate &&
             curr.created_at <= prevMonthEndDate &&
-            (curr.package.id === 5 || curr.package.id === 5)) {
+            (curr.package.id === 5 || curr.package.id === 6)) {
             return acc + curr.amount;
         }
         return acc;
@@ -257,21 +273,24 @@ const getTransactionSummary = () => __awaiter(void 0, void 0, void 0, function* 
 });
 exports.getTransactionSummary = getTransactionSummary;
 const geCreditsSummary = () => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b, _c, _d;
     const usersWithHistoryRegular = yield model_3.Transaction.createQueryBuilder('transaction')
         .select('COUNT(DISTINCT transaction.user_id)', 'count')
-        .leftJoin(model_4.User, 'user', 'transaction.user_id = user.id')
         .where('transaction.status = :status', { status: 'completed' })
         .andWhere('transaction.package_title IN (:...titles)', { titles: ['regular1', 'regular2'] })
         .getRawOne();
     const usersWithHistorySticky = yield model_3.Transaction.createQueryBuilder('transaction')
         .select('COUNT(DISTINCT transaction.user_id)', 'count')
-        .leftJoin(model_4.User, 'user', 'transaction.user_id = user.id')
         .where('transaction.status = :status', { status: 'completed' })
-        .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect', 'sticky1', 'sticky2'] })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['sticky1', 'sticky2'] })
+        .getRawOne();
+    const usersWithHistoryStickyDirect = yield model_3.Transaction.createQueryBuilder('transaction')
+        .select('COUNT(DISTINCT transaction.user_id)', 'count')
+        .where('transaction.status = :status', { status: 'completed' })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect'] })
         .getRawOne();
     const usersWithHistoryAgent = yield model_3.Transaction.createQueryBuilder('transaction')
         .select('COUNT(DISTINCT transaction.user_id)', 'count')
-        .leftJoin(model_4.User, 'user', 'transaction.user_id = user.id')
         .where('transaction.status = :status', { status: 'completed' })
         .andWhere('transaction.package_title IN (:...titles)', { titles: ['agent1', 'agent2'] })
         .getRawOne();
@@ -285,7 +304,13 @@ const geCreditsSummary = () => __awaiter(void 0, void 0, void 0, function* () {
         .select('SUM(package.numberOfCredits)', 'count')
         .leftJoin(model_2.Package, 'package', 'transaction.package_id = package.id')
         .where('transaction.status = :status', { status: 'completed' })
-        .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect', 'sticky1', 'sticky2'] })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['sticky1', 'sticky2'] })
+        .getRawOne();
+    const totalHistoryStickyDirect = yield model_3.Transaction.createQueryBuilder('transaction')
+        .select('SUM(package.numberOfCredits)', 'count')
+        .leftJoin(model_2.Package, 'package', 'transaction.package_id = package.id')
+        .where('transaction.status = :status', { status: 'completed' })
+        .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect'] })
         .getRawOne();
     const totalHistoryAgent = yield model_3.Transaction.createQueryBuilder('transaction')
         .select('SUM(package.numberOfCredits)', 'count')
@@ -308,12 +333,14 @@ const geCreditsSummary = () => __awaiter(void 0, void 0, void 0, function* () {
     const usersWithHistory = {
         regular: usersWithHistoryRegular.count,
         sticky: usersWithHistorySticky.count,
+        stickyDirect: usersWithHistoryStickyDirect.count,
         agent: usersWithHistoryAgent.count,
     };
     const totalHistory = {
-        regular: totalHistoryRegular.count,
-        sticky: totalHistorySticky.count,
-        agent: totalHistoryAgent.count,
+        regular: (_a = totalHistoryRegular.count) !== null && _a !== void 0 ? _a : 0,
+        sticky: (_b = totalHistorySticky.count) !== null && _b !== void 0 ? _b : 0,
+        stickyDirect: (_c = totalHistoryStickyDirect.count) !== null && _c !== void 0 ? _c : 0,
+        agent: (_d = totalHistoryAgent.count) !== null && _d !== void 0 ? _d : 0,
     };
     const userWithActive = {
         regular: userWithActiveRegular,
@@ -325,7 +352,9 @@ const geCreditsSummary = () => __awaiter(void 0, void 0, void 0, function* () {
         sticky: totalActiveSticky,
         agent: totalActiveAgent,
     };
-    const totalZeroFreeCredits = yield model_1.Credit.count({ where: { free: 0 } });
+    const unVerifiedUsersCount = yield model_4.User.count({ where: { status: 'not_verified' } });
+    let totalZeroFreeCredits = yield model_1.Credit.count({ where: { free: 0 } });
+    totalZeroFreeCredits += unVerifiedUsersCount !== null && unVerifiedUsersCount !== void 0 ? unVerifiedUsersCount : 0;
     return { totalZeroFreeCredits, usersWithHistory, totalHistory, userWithActive, totalActive };
 });
 exports.geCreditsSummary = geCreditsSummary;

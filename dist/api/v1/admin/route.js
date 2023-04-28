@@ -51,6 +51,8 @@ router.get('/dashboard', AuthMiddleware_1.isAdminAuth, AdminController.fetchDash
 router.post('/get-test', AuthMiddleware_1.isAdminAuth, AdminController.fetchTestItems);
 router.put('/block-status', AuthMiddleware_1.isAdminAuth, AdminController.updateUserBlockStatus);
 router.put('/admin-comment', AuthMiddleware_1.isAdminAuth, AdminController.updateUserComment);
-router.get('/test', AdminController.test);
+router.delete('/user-permanent', AuthMiddleware_1.isAdminAuth, AdminController.removeUserPermanently);
+router.post('/restore', AuthMiddleware_1.isAdminAuth, AdminController.restore);
+router.post('/test', AdminController.test);
 exports.default = router;
 //# sourceMappingURL=route.js.map

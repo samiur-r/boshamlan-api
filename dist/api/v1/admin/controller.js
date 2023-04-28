@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUserComment = exports.rePost = exports.deletePostPermanently = exports.updateUserBlockStatus = exports.fetchTestItems = exports.fetchDashboardInfo = exports.fetchTransactions = exports.verifyUser = exports.editAgent = exports.editUser = exports.fetchUserWithAgentInfo = exports.fetchUser = exports.updateCredit = exports.filterUsers = exports.fetchLogs = exports.deletePost = exports.stickPost = exports.filterPosts = exports.logout = exports.login = exports.register = exports.test = void 0;
+exports.restore = exports.removeUserPermanently = exports.updateUserComment = exports.rePost = exports.deletePostPermanently = exports.updateUserBlockStatus = exports.fetchTestItems = exports.fetchDashboardInfo = exports.fetchTransactions = exports.verifyUser = exports.editAgent = exports.editUser = exports.fetchUserWithAgentInfo = exports.fetchUser = exports.updateCredit = exports.filterUsers = exports.fetchLogs = exports.deletePost = exports.stickPost = exports.filterPosts = exports.logout = exports.login = exports.register = exports.test = void 0;
 const axios_1 = __importDefault(require("axios"));
 const passwordUtils_1 = require("../../../utils/passwordUtils");
 const logger_1 = __importDefault(require("../../../utils/logger"));
@@ -29,11 +29,14 @@ const service_7 = require("../agents/service");
 const model_1 = require("../credits/model");
 const model_2 = require("../agents/model");
 const smsUtils_1 = require("../../../utils/smsUtils");
-const sortUsersFunctions_1 = __importDefault(require("../../../utils/sortUsersFunctions"));
 const model_3 = require("../users/model");
 const DeletedPost_1 = require("../posts/models/DeletedPost");
+const Post_1 = require("../posts/models/Post");
+const ArchivePost_1 = require("../posts/models/ArchivePost");
 const service_8 = require("../locations/service");
 const timestampUtls_1 = require("../../../utils/timestampUtls");
+const model_4 = require("../transactions/model");
+const model_5 = require("../otps/model");
 const register = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { phone, password, name } = req.body;
     try {
@@ -84,8 +87,8 @@ exports.logout = logout;
 const filterPosts = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset, } = req.body;
     try {
-        const { posts, totalPages } = yield (0, service_2.filterPostsForAdmin)(locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset);
-        return res.status(200).json({ posts, totalPages });
+        const { posts, totalPages, totalResults } = yield (0, service_2.filterPostsForAdmin)(locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset);
+        return res.status(200).json({ posts, totalPages, totalResults });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
@@ -114,16 +117,18 @@ const stickPost = (req, res, next) => __awaiter(void 0, void 0, void 0, function
 });
 exports.stickPost = stickPost;
 const deletePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { postId, isArchive } = req.body;
+    const { postId } = req.body;
     const userObj = res.locals.user.payload;
+    let isArchive = false;
     try {
         if (!postId)
             throw new ErrorHandler_1.default(404, 'Post not found');
         let post;
-        if (isArchive)
+        post = yield (0, service_2.findPostById)(parseInt(postId, 10));
+        if (!post) {
             post = yield (0, service_2.findArchivedPostById)(parseInt(postId, 10));
-        else
-            post = yield (0, service_2.findPostById)(parseInt(postId, 10));
+            isArchive = true;
+        }
         if (!post)
             throw new ErrorHandler_1.default(401, 'Post not found');
         const user = yield (0, service_3.findUserById)(post.user.id);
@@ -172,15 +177,11 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         if (!postId)
             throw new ErrorHandler_1.default(404, 'Invalid payload passed');
         let post;
-        post = yield (0, service_2.findArchivedPostById)(postId);
-        if (post)
-            yield (0, service_2.removeArchivedPost)(post.id);
-        else
-            post = yield (0, service_2.findDeletedPostById)(postId);
-        if (post)
-            yield DeletedPost_1.DeletedPost.delete({ id: postId });
-        else
-            throw new ErrorHandler_1.default(404, 'Post not found');
+        post = yield (0, service_2.findPostById)(postId);
+        if (!post)
+            post = yield (0, service_2.findArchivedPostById)(postId);
+        if (!post)
+            throw new ErrorHandler_1.default(500, 'Something went wrong');
         const publicDate = post.public_date;
         const postInfo = {
             id: post.id,
@@ -201,6 +202,7 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             views: post.views,
         };
         const newPost = yield (0, service_2.savePost)(postInfo, post.user, 'regular', publicDate);
+        yield (0, service_2.removeArchivedPost)(post.id);
         const repostCount = post.repost_count + 1;
         yield (0, service_2.updatePostRepostVals)(newPost, true, repostCount);
         yield (0, service_8.updateLocationCountValue)(post.city_id, 'increment');
@@ -222,7 +224,13 @@ const fetchLogs = (req, res, next) => __awaiter(void 0, void 0, void 0, function
             response = yield (0, service_4.fetchLogsByPostId)(postId, offset);
         else if (user)
             response = yield (0, service_4.fetchLogsByUser)(user, offset);
-        return res.status(200).json({ logs: response.logs, totalPages: response.totalPages });
+        response === null || response === void 0 ? void 0 : response.logs.forEach((log) => {
+            log.date = (0, timestampUtls_1.parseTimestamp)(log.publish_date).parsedDate;
+            log.time = (0, timestampUtls_1.parseTimestamp)(log.publish_date).parsedTime;
+        });
+        return res
+            .status(200)
+            .json({ logs: response.logs, totalPages: response.totalPages, totalResults: response.totalResults });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
@@ -237,7 +245,7 @@ const filterUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
         const { users, count } = yield (0, service_3.filterUsersForAdmin)(statusToFilter, phoneToFilter, adminCommentToFilter, fromCreationDateToFilter, toCreationDateToFilter, orderByToFilter, offset);
         totalPages = Math.ceil(count / 10);
         const parsedUsers = users.map((user) => {
-            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
             return ({
                 id: user.id,
                 phone: user.phone,
@@ -245,6 +253,7 @@ const filterUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 is_agent: user.is_agent,
                 adminComment: user.admin_comment,
                 is_blocked: user.is_blocked,
+                is_deleted: user.is_deleted,
                 lastPostDate: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedDate : null,
                 lastPostTime: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedTime : null,
                 registeredDate: (0, timestampUtls_1.parseTimestamp)(user.created_at).parsedDate,
@@ -274,10 +283,7 @@ const filterUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                     sticky: (_o = (_m = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _m === void 0 ? void 0 : _m.sticky) !== null && _o !== void 0 ? _o : 0,
                     agent: (_q = (_p = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _p === void 0 ? void 0 : _p.agent) !== null && _q !== void 0 ? _q : 0,
                 },
-                has_zero_credits: ((_r = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _r === void 0 ? void 0 : _r.free) <= 0 &&
-                    ((_s = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _s === void 0 ? void 0 : _s.regular) <= 0 &&
-                    ((_t = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _t === void 0 ? void 0 : _t.sticky) <= 0 &&
-                    ((_u = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _u === void 0 ? void 0 : _u.agent) <= 0,
+                has_zero_credits: ((_r = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _r === void 0 ? void 0 : _r.free) === 0 || user.status === 'not_verified',
                 payment: {
                     regular: user === null || user === void 0 ? void 0 : user.transactions.filter((transaction) => transaction.status === 'completed' && ['regular1', 'regular2'].includes(transaction.package_title)).reduce((total, transaction) => total + transaction.package.numberOfCredits, 0),
                     sticky: user.transactions
@@ -289,10 +295,7 @@ const filterUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 },
             });
         });
-        if (orderByToFilter && sortUsersFunctions_1.default[orderByToFilter]) {
-            parsedUsers.sort(sortUsersFunctions_1.default[orderByToFilter]);
-        }
-        return res.status(200).json({ users: parsedUsers, totalPages });
+        return res.status(200).json({ users: parsedUsers, totalPages, totalResults: count });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
@@ -316,6 +319,7 @@ const fetchUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function
             is_agent: user.is_agent,
             adminComment: user.admin_comment,
             is_blocked: user.is_blocked,
+            is_deleted: user.is_deleted,
             registeredDate: (0, timestampUtls_1.parseTimestamp)(user.created_at).parsedDate,
             registeredTime: (0, timestampUtls_1.parseTimestamp)(user.created_at).parsedTime,
             subscriptionStartDate: user.agent && user.agent.length && ((_a = user === null || user === void 0 ? void 0 : user.agent[0]) === null || _a === void 0 ? void 0 : _a.subscription_start_date)
@@ -345,9 +349,13 @@ const fetchUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function
                 agent: (_r = (_q = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _q === void 0 ? void 0 : _q.agent) !== null && _r !== void 0 ? _r : 0,
             },
             payment: {
-                regular: user === null || user === void 0 ? void 0 : user.transactions.filter((transaction) => ['regular1', 'regular2'].includes(transaction.package_title)).reduce((total, transaction) => total + transaction.amount, 0),
-                sticky: user === null || user === void 0 ? void 0 : user.transactions.filter((transaction) => ['sticky1', 'sticky2'].includes(transaction.package_title)).reduce((total, transaction) => total + transaction.amount, 0),
-                agent: user === null || user === void 0 ? void 0 : user.transactions.filter((transaction) => ['agent1', 'agent2'].includes(transaction.package_title)).reduce((total, transaction) => total + transaction.amount, 0),
+                regular: user === null || user === void 0 ? void 0 : user.transactions.filter((transaction) => transaction.status === 'completed' && ['regular1', 'regular2'].includes(transaction.package_title)).reduce((total, transaction) => total + transaction.package.numberOfCredits, 0),
+                sticky: user.transactions
+                    .filter((transaction) => transaction.status === 'completed' && ['sticky1', 'sticky2'].includes(transaction.package_title))
+                    .reduce((total, transaction) => total + transaction.package.numberOfCredits, 0),
+                agent: user.transactions
+                    .filter((transaction) => transaction.status === 'completed' && ['agent1', 'agent2'].includes(transaction.package_title))
+                    .reduce((total, transaction) => total + transaction.package.numberOfCredits, 0),
             },
         };
         return res.status(200).json({ user: parsedUser });
@@ -466,8 +474,8 @@ exports.verifyUser = verifyUser;
 const fetchTransactions = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId, offset } = req.body;
     try {
-        const { transactions, totalPages } = yield (0, service_6.filterTransactionsForAdmin)(statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId, offset);
-        return res.status(200).json({ transactions, totalPages });
+        const { transactions, totalPages, totalResults } = yield (0, service_6.filterTransactionsForAdmin)(statusToFilter, typeToFilter, fromCreationDateToFilter, toCreationDateToFilter, userId, offset);
+        return res.status(200).json({ transactions, totalPages, totalResults });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
@@ -520,6 +528,7 @@ const updateUserBlockStatus = (req, res, next) => __awaiter(void 0, void 0, void
         if (status) {
             // const socketIo: any = await getSocketIo();
             // socketIo.emit('userBlocked', { user: user.phone });
+            yield (0, service_7.setSubscriptionNull)(userId);
             yield (0, service_2.removeAllPostsOfUser)(userId);
             yield (0, service_5.setCreditsToZeroByUserId)(userId);
         }
@@ -548,12 +557,80 @@ const updateUserComment = (req, res, next) => __awaiter(void 0, void 0, void 0, 
     }
 });
 exports.updateUserComment = updateUserComment;
-const test = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const removeUserPermanently = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId } = req.body;
     try {
-        const { totalActiveRegular } = yield model_1.Credit.createQueryBuilder()
-            .select('SUM(credit.regular)', 'totalActiveRegular')
-            .getRawOne();
-        return res.status(200).json({ totalActiveRegular });
+        if (!userId)
+            throw new ErrorHandler_1.default(404, 'Invalid payload passed');
+        yield model_1.Credit.delete({ user: { id: userId } });
+        yield model_4.Transaction.delete({ user: { id: userId } });
+        yield model_5.Otp.delete({ user: { id: userId } });
+        yield model_2.Agent.delete({ user: { id: userId } });
+        yield model_3.User.delete({ id: userId });
+        yield model_1.Credit.delete({ user: { id: userId } });
+        yield model_4.Transaction.delete({ user: { id: userId } });
+        yield DeletedPost_1.DeletedPost.delete({ user: { id: userId } });
+        const activePosts = yield Post_1.Post.find({ where: { user: { id: userId } } });
+        const archivedPosts = yield ArchivePost_1.ArchivePost.find({ where: { user: { id: userId } } });
+        activePosts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
+            yield (0, service_2.removePost)(post.id, post);
+            yield (0, service_8.updateLocationCountValue)(post.city_id, 'decrement');
+        }));
+        archivedPosts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
+            yield (0, service_2.removeArchivedPost)(post.id, post);
+            yield (0, service_8.updateLocationCountValue)(post.city_id, 'decrement');
+        }));
+        return res.status(200).json({ success: 'User deleted permanently' });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        return next(error);
+    }
+});
+exports.removeUserPermanently = removeUserPermanently;
+const restore = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _s;
+    const user = res.locals.user.payload;
+    const { userId } = req.body;
+    try {
+        if (!userId)
+            throw new ErrorHandler_1.default(404, 'Invalid payload passed');
+        const userObj = yield (0, service_3.findUserById)(userId);
+        if (!userObj)
+            throw new ErrorHandler_1.default(500, 'Something went wrong');
+        userObj.is_deleted = false;
+        yield model_3.User.save(userObj);
+        const posts = yield DeletedPost_1.DeletedPost.find({ where: { user: { id: userId } } });
+        posts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
+            yield (0, service_2.removeDeletedPost)(post.id);
+            const postInfo = Post_1.Post.create(Object.assign(Object.assign({}, post), { post_type: 'active' }));
+            yield Post_1.Post.save(postInfo);
+            yield (0, service_8.updateLocationCountValue)(post.city_id, 'increment');
+        }));
+        logger_1.default.info(`User ${userObj.phone} restored by admin ${user === null || user === void 0 ? void 0 : user.phone}`);
+        yield (0, service_4.saveUserLog)([
+            {
+                post_id: undefined,
+                transaction: undefined,
+                user: (_s = userObj === null || userObj === void 0 ? void 0 : userObj.phone) !== null && _s !== void 0 ? _s : undefined,
+                activity: 'User restored successfully',
+            },
+        ]);
+        return res.status(200).json({ success: 'User is restored successfully' });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        logger_1.default.error(`User ${userId} restore attempt by admin ${user.phone} failed`);
+        yield (0, service_4.saveUserLog)([{ post_id: undefined, transaction: undefined, user: userId, activity: 'User restore failed' }]);
+        return next(error);
+    }
+});
+exports.restore = restore;
+const test = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId } = req.body;
+    try {
+        const posts = yield DeletedPost_1.DeletedPost.find({ where: { user: { id: userId } } });
+        return res.status(200).json({ posts });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
