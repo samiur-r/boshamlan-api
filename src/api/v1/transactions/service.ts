@@ -1,5 +1,5 @@
 /* eslint-disable no-param-reassign */
-import { Between, MoreThanOrEqual, LessThanOrEqual, Like } from 'typeorm';
+import { Between, MoreThanOrEqual, LessThanOrEqual, Like, Not, And, In } from 'typeorm';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
 import { parseTimestamp } from '../../../utils/timestampUtls';
@@ -153,7 +153,7 @@ const filterTransactionsForAdmin = async (
         where.package_title = Like('regular%');
         break;
       case 'Sticky':
-        where.package_title = Like('sticky%');
+        where.package_title = In(['sticky1', 'sticky2']);
         break;
       case 'Sticky Direct':
         where.package_title = 'stickyDirect';

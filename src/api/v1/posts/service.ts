@@ -840,8 +840,6 @@ const filterPostsForAdmin = async (
       })
       .join(' AND ');
 
-    console.log(whereClause);
-
     const query = `SELECT latest_posts.*, (SELECT COUNT(*) FROM (
         SELECT id, title, user_id, post_type, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
         FROM posts

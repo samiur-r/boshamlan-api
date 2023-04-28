@@ -1,6 +1,7 @@
 import { Between, In, MoreThan } from 'typeorm';
 import { Credit } from '../credits/model';
 import { Package } from '../packages/model';
+import { IPost } from '../posts/interfaces';
 import { ArchivePost } from '../posts/models/ArchivePost';
 import { DeletedPost } from '../posts/models/DeletedPost';
 import { Post } from '../posts/models/Post';
@@ -79,26 +80,37 @@ const getPostHistory = async (userId: number) => {
 
 const getUserSummary = async () => {
   const [users, totalUsers] = await User.findAndCount();
+  const posts = await Post.find();
 
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
 
-  const verifiedToday = users.filter(
-    (user) => user.status === 'verified' && user.created_at.toISOString().slice(0, 10) === today,
-  ).length;
-  const verifiedYesterday = users.filter(
-    (user) => user.status === 'verified' && user.created_at.toISOString().slice(0, 10) === yesterday,
-  ).length;
+  const registeredToday = users.filter((user) => user.created_at.toISOString().slice(0, 10) === today).length;
+  const registeredYesterday = users.filter((user) => user.created_at.toISOString().slice(0, 10) === yesterday).length;
   const notVerifiedToday = users.filter(
     (user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === today,
   ).length;
   const notVerifiedYesterday = users.filter(
     (user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === yesterday,
   ).length;
-
+  const activeToday = users.filter((user) => {
+    return user.created_at.toISOString().slice(0, 10) === today && posts.some((post) => post.user.id === user.id);
+  }).length;
+  const activeYesterday = users.filter((user) => {
+    return user.created_at.toISOString().slice(0, 10) === yesterday && posts.some((post) => post.user.id === user.id);
+  }).length;
   const activeAgents = users.filter((user) => user.is_agent).length;
 
-  return { totalUsers, activeAgents, verifiedToday, verifiedYesterday, notVerifiedToday, notVerifiedYesterday };
+  return {
+    totalUsers,
+    activeAgents,
+    registeredToday,
+    registeredYesterday,
+    notVerifiedToday,
+    notVerifiedYesterday,
+    activeToday,
+    activeYesterday,
+  };
 };
 
 const getPostSummary = async () => {
@@ -316,21 +328,24 @@ const getTransactionSummary = async () => {
 const geCreditsSummary = async () => {
   const usersWithHistoryRegular = await Transaction.createQueryBuilder('transaction')
     .select('COUNT(DISTINCT transaction.user_id)', 'count')
-    .leftJoin(User, 'user', 'transaction.user_id = user.id')
     .where('transaction.status = :status', { status: 'completed' })
     .andWhere('transaction.package_title IN (:...titles)', { titles: ['regular1', 'regular2'] })
     .getRawOne();
 
   const usersWithHistorySticky = await Transaction.createQueryBuilder('transaction')
     .select('COUNT(DISTINCT transaction.user_id)', 'count')
-    .leftJoin(User, 'user', 'transaction.user_id = user.id')
     .where('transaction.status = :status', { status: 'completed' })
-    .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect', 'sticky1', 'sticky2'] })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['sticky1', 'sticky2'] })
+    .getRawOne();
+
+  const usersWithHistoryStickyDirect = await Transaction.createQueryBuilder('transaction')
+    .select('COUNT(DISTINCT transaction.user_id)', 'count')
+    .where('transaction.status = :status', { status: 'completed' })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect'] })
     .getRawOne();
 
   const usersWithHistoryAgent = await Transaction.createQueryBuilder('transaction')
     .select('COUNT(DISTINCT transaction.user_id)', 'count')
-    .leftJoin(User, 'user', 'transaction.user_id = user.id')
     .where('transaction.status = :status', { status: 'completed' })
     .andWhere('transaction.package_title IN (:...titles)', { titles: ['agent1', 'agent2'] })
     .getRawOne();
@@ -346,7 +361,14 @@ const geCreditsSummary = async () => {
     .select('SUM(package.numberOfCredits)', 'count')
     .leftJoin(Package, 'package', 'transaction.package_id = package.id')
     .where('transaction.status = :status', { status: 'completed' })
-    .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect', 'sticky1', 'sticky2'] })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['sticky1', 'sticky2'] })
+    .getRawOne();
+
+  const totalHistoryStickyDirect = await Transaction.createQueryBuilder('transaction')
+    .select('SUM(package.numberOfCredits)', 'count')
+    .leftJoin(Package, 'package', 'transaction.package_id = package.id')
+    .where('transaction.status = :status', { status: 'completed' })
+    .andWhere('transaction.package_title IN (:...titles)', { titles: ['stickyDirect'] })
     .getRawOne();
 
   const totalHistoryAgent = await Transaction.createQueryBuilder('transaction')
@@ -373,13 +395,15 @@ const geCreditsSummary = async () => {
   const usersWithHistory = {
     regular: usersWithHistoryRegular.count,
     sticky: usersWithHistorySticky.count,
+    stickyDirect: usersWithHistoryStickyDirect.count,
     agent: usersWithHistoryAgent.count,
   };
 
   const totalHistory = {
-    regular: totalHistoryRegular.count,
-    sticky: totalHistorySticky.count,
-    agent: totalHistoryAgent.count,
+    regular: totalHistoryRegular.count ?? 0,
+    sticky: totalHistorySticky.count ?? 0,
+    stickyDirect: totalHistoryStickyDirect.count ?? 0,
+    agent: totalHistoryAgent.count ?? 0,
   };
 
   const userWithActive = {

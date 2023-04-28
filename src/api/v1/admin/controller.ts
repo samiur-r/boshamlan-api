@@ -385,10 +385,6 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       },
     }));
 
-    if (orderByToFilter && sortFunctions[orderByToFilter as keyof typeof sortFunctions]) {
-      parsedUsers.sort(sortFunctions[orderByToFilter as keyof typeof sortFunctions]);
-    }
-
     return res.status(200).json({ users: parsedUsers, totalPages, totalResults: count });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);

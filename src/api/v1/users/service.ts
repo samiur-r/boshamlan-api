@@ -1,6 +1,8 @@
 import { Between, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual } from 'typeorm';
 import AppDataSource from '../../../db';
 import { hashPassword } from '../../../utils/passwordUtils';
+import { getLocaleDate } from '../../../utils/timestampUtls';
+import { Post } from '../posts/models/Post';
 import { IUser } from './interfaces';
 import { User } from './model';
 
@@ -84,6 +86,9 @@ const filterUsersForAdmin = async (
   let where: any = {};
   let order = 'user.created_at';
 
+  const today = new Date().toISOString().slice(0, 10);
+  const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
+
   if (statusToFilter) {
     switch (statusToFilter) {
       case 'User':
@@ -109,6 +114,24 @@ const filterUsersForAdmin = async (
         break;
       case 'Zero Free':
         where = `credits.free < 1 OR user.status = 'not_verified'`;
+        break;
+      case 'Active Today':
+        where = `user.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59' AND post.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
+        break;
+      case 'Active Yesterday':
+        where = `user.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59' AND post.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
+        break;
+      case 'Has Regular Credit History':
+        where = `transactions.status = 'completed' AND transactions.package_title = 'regular1' OR transactions.package_title = 'regular2'`;
+        break;
+      case 'Has Sticky Credit History':
+        where = `transactions.status = 'completed' AND (transactions.package_title = 'sticky1' OR transactions.package_title = 'sticky2')`;
+        break;
+      case 'Has Direct Sticky Credit History':
+        where = `transactions.status = 'completed' AND transactions.package_title = 'stickyDirect'`;
+        break;
+      case 'Has Agent History':
+        where = `transactions.status = 'completed' AND transactions.package_title = 'agent1' OR transactions.package_title = 'agent2'`;
         break;
       default:
         break;
@@ -148,7 +171,10 @@ const filterUsersForAdmin = async (
     }
   }
 
-  const count = await User.createQueryBuilder('user')
+  let count = 0;
+  let users: any = [];
+
+  count = await User.createQueryBuilder('user')
     .leftJoinAndSelect('user.posts', 'post')
     .leftJoinAndSelect('user.archive_posts', 'archive_post')
     .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
@@ -158,7 +184,7 @@ const filterUsersForAdmin = async (
     .where(where)
     .getCount();
 
-  const users = await User.createQueryBuilder('user')
+  users = await User.createQueryBuilder('user')
     .leftJoinAndSelect('user.posts', 'post')
     .leftJoinAndSelect('user.archive_posts', 'archive_post')
     .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
