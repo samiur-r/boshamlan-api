@@ -782,10 +782,10 @@ const filterPostsForAdmin = async (
 
   switch (orderByToFilter) {
     case 'Created':
-      order.created_at = 'DESC';
+      order.public_date = 'DESC';
       break;
     case 'Public Date':
-      order.public_date = 'DESC';
+      order.created_at = 'DESC';
       break;
     case 'Sticked':
       order.is_sticky = 'DESC';
