@@ -908,7 +908,7 @@ const filterPostsForAdmin = async (
       `;
     const result = await AppDataSource.query(query);
     posts = result;
-    totalPosts = posts.length;
+    totalPosts = result.length > 0 ? result[0].total_count : 0;
 
     posts?.forEach((post: any) => {
       post.postedDate = parseTimestamp(post.created_at).parsedDate;
