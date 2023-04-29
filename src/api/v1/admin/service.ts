@@ -87,18 +87,28 @@ const getUserSummary = async () => {
 
   const registeredToday = users.filter((user) => user.created_at >= new Date(`${today} 00:00:00`)).length;
 
-  const registeredYesterday = users.filter((user) => user.created_at.toISOString().slice(0, 10) === yesterday).length;
+  const registeredYesterday = users.filter(
+    (user) =>
+      user.created_at >= new Date(`${yesterday} 00:00:00`) && user.created_at <= new Date(`${yesterday} 23:59:59`),
+  ).length;
   const notVerifiedToday = users.filter(
-    (user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === today,
+    (user) => user.status === 'not_verified' && user.created_at >= new Date(`${today} 00:00:00`),
   ).length;
   const notVerifiedYesterday = users.filter(
-    (user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === yesterday,
+    (user) =>
+      user.status === 'not_verified' &&
+      user.created_at >= new Date(`${yesterday} 00:00:00`) &&
+      user.created_at <= new Date(`${yesterday} 23:59:59`),
   ).length;
   const activeToday = users.filter((user) => {
-    return user.created_at.toISOString().slice(0, 10) === today && posts.some((post) => post.user.id === user.id);
+    return user.created_at >= new Date(`${today} 00:00:00`) && posts.some((post) => post.user.id === user.id);
   }).length;
   const activeYesterday = users.filter((user) => {
-    return user.created_at.toISOString().slice(0, 10) === yesterday && posts.some((post) => post.user.id === user.id);
+    return (
+      user.created_at >= new Date(`${yesterday} 00:00:00`) &&
+      user.created_at <= new Date(`${yesterday} 23:59:59`) &&
+      posts.some((post) => post.user.id === user.id)
+    );
   }).length;
   const activeAgents = users.filter((user) => user.is_agent).length;
 
@@ -124,13 +134,16 @@ const getPostSummary = async () => {
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
 
-  const postsToday = posts.filter((post) => post.public_date.toISOString().slice(0, 10) === today).length;
-  const postsYesterday = posts.filter((post) => post.public_date.toISOString().slice(0, 10) === yesterday).length;
+  const postsToday = posts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
+  const postsYesterday = posts.filter(
+    (post) =>
+      post.public_date >= new Date(`${yesterday} 00:00:00`) && post.public_date <= new Date(`${yesterday} 23:59:59`),
+  ).length;
   const postsByAgentToday =
     postsToday === 0
       ? 0
       : (
-          (posts.filter((post) => post.user.is_agent && post.public_date.toISOString().slice(0, 10) === today).length /
+          (posts.filter((post) => post.user.is_agent && post.public_date >= new Date(`${today} 00:00:00`)).length /
             postsToday) *
           100
         ).toFixed(2);
@@ -138,8 +151,12 @@ const getPostSummary = async () => {
     postsYesterday === 0
       ? 0
       : (
-          (posts.filter((post) => post.user.is_agent && post.public_date.toISOString().slice(0, 10) === yesterday)
-            .length /
+          (posts.filter(
+            (post) =>
+              post.user.is_agent &&
+              post.public_date >= new Date(`${yesterday} 00:00:00`) &&
+              post.public_date <= new Date(`${yesterday} 23:59:59`),
+          ).length /
             postsYesterday) *
           100
         ).toFixed(2);
@@ -177,21 +194,25 @@ const getTransactionSummary = async () => {
   const prevMonthEndDate = new Date(now.getFullYear(), now.getMonth(), 0);
 
   const transactionsToday = transactions.filter(
-    (transaction) => transaction.status === 'completed' && transaction.created_at.toISOString().slice(0, 10) === today,
+    (transaction) => transaction.status === 'completed' && transaction.created_at >= new Date(`${today} 00:00:00`),
   );
   const transactionsYesterday = transactions.filter(
     (transaction) =>
-      transaction.status === 'completed' && transaction.created_at.toISOString().slice(0, 10) === yesterday,
+      transaction.status === 'completed' &&
+      transaction.created_at >= new Date(`${yesterday} 00:00:00`) &&
+      transaction.created_at <= new Date(`${yesterday} 23:59:59`),
   );
 
   const completedTransactionsToday = transactionsToday.length;
   const completedTransactionsYesterday = transactionsYesterday.length;
 
   const totalTransactionsToday = transactions.filter(
-    (transaction) => transaction.created_at.toISOString().slice(0, 10) === today,
+    (transaction) => transaction.created_at >= new Date(`${today} 00:00:00`),
   ).length;
   const totalTransactionsYesterday = transactions.filter(
-    (transaction) => transaction.created_at.toISOString().slice(0, 10) === yesterday,
+    (transaction) =>
+      transaction.created_at >= new Date(`${yesterday} 00:00:00`) &&
+      transaction.created_at <= new Date(`${yesterday} 23:59:59`),
   ).length;
 
   const incomeToday = transactionsToday.reduce((sum, transaction) => sum + transaction.amount, 0);
