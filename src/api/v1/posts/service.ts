@@ -110,6 +110,7 @@ const savePost = async (
     views: postInfo.views ?? 0,
     repost_count: postInfo.repost_count ?? 0,
     post_type: 'active',
+    created_at: today,
     user,
   });
 
@@ -586,6 +587,7 @@ const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {
     sticky_expires: isSticky ? oneDayFromToday : undefined,
     expiry_date: isSticky ? twoDaysFromToday : oneDayFromToday,
     is_sticky: isSticky,
+    created_at: today,
   });
   await Post.save(newPost);
 };
@@ -705,6 +707,8 @@ const filterPostsForAdmin = async (
   toPriceToFilter: number | undefined,
   fromCreationDateToFilter: Date | undefined,
   toCreationDateToFilter: Date | undefined,
+  fromPublicDateToFilter: Date | undefined,
+  toPublicDateToFilter: Date | undefined,
   stickyStatusToFilter: number,
   userTypeToFilter: string | undefined,
   orderByToFilter: string,
@@ -752,6 +756,21 @@ const filterPostsForAdmin = async (
   } else if (toCreationDateToFilter) {
     where.public_date = {
       '<=': `${toCreationDateToFilter} 23:59:59`,
+    };
+  }
+
+  if (fromPublicDateToFilter && toPublicDateToFilter) {
+    where.created_at = {
+      '>=': `${fromPublicDateToFilter} 00:00:00`,
+      '<=': `${toPublicDateToFilter} 23:59:59`,
+    };
+  } else if (fromPublicDateToFilter) {
+    where.created_at = {
+      '>=': `${fromPublicDateToFilter} 00:00:00`,
+    };
+  } else if (toPublicDateToFilter) {
+    where.created_at = {
+      '<=': `${toPublicDateToFilter} 23:59:59`,
     };
   }
 
@@ -826,6 +845,19 @@ const filterPostsForAdmin = async (
             return `latest_posts.public_date <= '${to}'`;
           }
         }
+        if (key === 'created_at') {
+          const from = value['>='];
+          const to = value['<='];
+          if (from && to) {
+            return `latest_posts.created_at >= '${from}' AND latest_posts.created_at <= '${to}'`;
+          }
+          if (from) {
+            return `latest_posts.created_at >= '${from}'`;
+          }
+          if (to) {
+            return `latest_posts.created_at <= '${to}'`;
+          }
+        }
         if (key === 'price') {
           const from = value['>='] && value['>='];
           const to = value['<='] && value['<='];
@@ -879,8 +911,8 @@ const filterPostsForAdmin = async (
     totalPosts = posts.length;
 
     posts?.forEach((post: any) => {
-      post.postedDate = parseTimestamp(post.updated_at).parsedDate;
-      post.postedTime = parseTimestamp(post.updated_at).parsedTime;
+      post.postedDate = parseTimestamp(post.created_at).parsedDate;
+      post.postedTime = parseTimestamp(post.created_at).parsedTime;
       post.publicDate = parseTimestamp(post.public_date).parsedDate;
       post.publicTime = parseTimestamp(post.public_date).parsedTime;
       post.expiredDate = parseTimestamp(post.expiry_date).parsedDate;
