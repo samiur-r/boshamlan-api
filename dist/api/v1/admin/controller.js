@@ -225,8 +225,8 @@ const fetchLogs = (req, res, next) => __awaiter(void 0, void 0, void 0, function
         else if (user)
             response = yield (0, service_4.fetchLogsByUser)(user, offset);
         response === null || response === void 0 ? void 0 : response.logs.forEach((log) => {
-            log.date = (0, timestampUtls_1.parseTimestamp)(log.publish_date).parsedDate;
-            log.time = (0, timestampUtls_1.parseTimestamp)(log.publish_date).parsedTime;
+            log.date = (0, timestampUtls_1.parseTimestamp)(log.created_at).parsedDate;
+            log.time = (0, timestampUtls_1.parseTimestamp)(log.created_at).parsedTime;
         });
         return res
             .status(200)

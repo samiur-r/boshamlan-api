@@ -115,16 +115,16 @@ const getPostSummary = () => __awaiter(void 0, void 0, void 0, function* () {
     const totalPosts = totalActivePosts + totalArchivedPosts + totalDeletedPosts;
     const today = new Date().toISOString().slice(0, 10);
     const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
-    const postsToday = posts.filter((post) => post.created_at.toISOString().slice(0, 10) === today).length;
-    const postsYesterday = posts.filter((post) => post.created_at.toISOString().slice(0, 10) === yesterday).length;
+    const postsToday = posts.filter((post) => post.public_date.toISOString().slice(0, 10) === today).length;
+    const postsYesterday = posts.filter((post) => post.public_date.toISOString().slice(0, 10) === yesterday).length;
     const postsByAgentToday = postsToday === 0
         ? 0
-        : ((posts.filter((post) => post.user.is_agent && post.created_at.toISOString().slice(0, 10) === today).length /
+        : ((posts.filter((post) => post.user.is_agent && post.public_date.toISOString().slice(0, 10) === today).length /
             postsToday) *
             100).toFixed(2);
     const postsByAgentYesterday = postsYesterday === 0
         ? 0
-        : ((posts.filter((post) => post.user.is_agent && post.created_at.toISOString().slice(0, 10) === yesterday)
+        : ((posts.filter((post) => post.user.is_agent && post.public_date.toISOString().slice(0, 10) === yesterday)
             .length /
             postsYesterday) *
             100).toFixed(2);

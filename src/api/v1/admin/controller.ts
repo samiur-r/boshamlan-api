@@ -284,8 +284,8 @@ const fetchLogs = async (req: Request, res: Response, next: NextFunction) => {
     if (postId) response = await fetchLogsByPostId(postId, offset);
     else if (user) response = await fetchLogsByUser(user, offset);
     response?.logs.forEach((log: any) => {
-      log.date = parseTimestamp(log.publish_date).parsedDate;
-      log.time = parseTimestamp(log.publish_date).parsedTime;
+      log.date = parseTimestamp(log.created_at).parsedDate;
+      log.time = parseTimestamp(log.created_at).parsedTime;
     });
     return res
       .status(200)
