@@ -88,7 +88,7 @@ const getUserSummary = async () => {
   const registeredToday = users.filter((user) => user.created_at.toISOString() >= `${today} 00:00:00`).length;
 
   users.forEach((user) => {
-    console.log(user.created_at.toISOString());
+    console.log(user.created_at.toString());
   });
 
   const registeredYesterday = users.filter((user) => user.created_at.toISOString().slice(0, 10) === yesterday).length;
