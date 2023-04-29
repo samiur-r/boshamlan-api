@@ -741,16 +741,16 @@ const filterPostsForAdmin = async (
   }
 
   if (fromCreationDateToFilter && toCreationDateToFilter) {
-    where.created_at = {
+    where.public_date = {
       '>=': `${fromCreationDateToFilter} 00:00:00`,
       '<=': `${toCreationDateToFilter} 23:59:59`,
     };
   } else if (fromCreationDateToFilter) {
-    where.created_at = {
+    where.public_date = {
       '>=': `${fromCreationDateToFilter} 00:00:00`,
     };
   } else if (toCreationDateToFilter) {
-    where.created_at = {
+    where.public_date = {
       '<=': `${toCreationDateToFilter} 23:59:59`,
     };
   }
@@ -784,6 +784,9 @@ const filterPostsForAdmin = async (
     case 'Created':
       order.created_at = 'DESC';
       break;
+    case 'Public Date':
+      order.public_date = 'DESC';
+      break;
     case 'Sticked':
       order.is_sticky = 'DESC';
       break;
@@ -810,7 +813,7 @@ const filterPostsForAdmin = async (
         if (key === 'is_agent') {
           return `users.${key} = ${value}`;
         }
-        if (key === 'created_at') {
+        if (key === 'public_date') {
           const from = value['>='];
           const to = value['<='];
           if (from && to) {
@@ -873,7 +876,7 @@ const filterPostsForAdmin = async (
       `;
     const result = await AppDataSource.query(query);
     posts = result;
-    totalPosts = result.length > 0 ? result[0].total_count : 0;
+    totalPosts = posts.length;
 
     posts?.forEach((post: any) => {
       post.postedDate = parseTimestamp(post.updated_at).parsedDate;
@@ -897,6 +900,7 @@ const filterPostsForAdmin = async (
     logger.error(`${error.name}: ${error.message}`);
   }
   const totalPages = totalPosts ? Math.ceil(totalPosts / 10) : null;
+
   return { posts, totalPages, totalResults: totalPosts };
 };
 
