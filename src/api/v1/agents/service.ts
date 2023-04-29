@@ -162,6 +162,7 @@ const fireAgentExpirationAlert = async (userIds: number[]) => {
 
 const setSubscriptionNull = async (userId: number) => {
   const agent = await findAgentByUserId(userId);
+  if (!agent) return;
 
   const agentData = Agent.create({
     ...agent,
