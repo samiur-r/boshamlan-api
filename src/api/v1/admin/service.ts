@@ -87,6 +87,10 @@ const getUserSummary = async () => {
 
   const registeredToday = users.filter((user) => user.created_at.toISOString() >= `${today} 00:00:00`).length;
 
+  users.forEach((user) => {
+    console.log(user.created_at.toISOString());
+  });
+
   const registeredYesterday = users.filter((user) => user.created_at.toISOString().slice(0, 10) === yesterday).length;
   const notVerifiedToday = users.filter(
     (user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === today,
