@@ -126,40 +126,97 @@ const getUserSummary = async () => {
 
 const getPostSummary = async () => {
   const [posts, totalActivePosts] = await Post.findAndCount();
-  const totalArchivedPosts = await ArchivePost.count();
-  const totalDeletedPosts = await DeletedPost.count();
+  const [archivedPosts, totalArchivedPosts] = await ArchivePost.findAndCount();
+  const [deletedPosts, totalDeletedPosts] = await DeletedPost.findAndCount();
 
   const totalPosts = totalActivePosts + totalArchivedPosts + totalDeletedPosts;
 
   const today = new Date().toISOString().slice(0, 10);
   const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
 
-  const postsToday = posts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
-  const postsYesterday = posts.filter(
+  const activePostsToday = posts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
+  const archivedPostsToday = archivedPosts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
+  const deletedPostsToday = deletedPosts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
+
+  const postsToday = activePostsToday + archivedPostsToday + deletedPostsToday;
+
+  const activePostsYesterday = posts.filter(
     (post) =>
       post.public_date >= new Date(`${yesterday} 00:00:00`) && post.public_date <= new Date(`${yesterday} 23:59:59`),
   ).length;
-  const postsByAgentToday =
+  const archivedPostsYesterday = archivedPosts.filter(
+    (post) =>
+      post.public_date >= new Date(`${yesterday} 00:00:00`) && post.public_date <= new Date(`${yesterday} 23:59:59`),
+  ).length;
+  const deletedPostsYesterday = deletedPosts.filter(
+    (post) =>
+      post.public_date >= new Date(`${yesterday} 00:00:00`) && post.public_date <= new Date(`${yesterday} 23:59:59`),
+  ).length;
+
+  const postsYesterday = activePostsYesterday + archivedPostsYesterday + deletedPostsYesterday;
+
+  const activePostsByAgentToday =
     postsToday === 0
       ? 0
-      : (
-          (posts.filter((post) => post.user.is_agent && post.public_date >= new Date(`${today} 00:00:00`)).length /
-            postsToday) *
-          100
-        ).toFixed(2);
-  const postsByAgentYesterday =
+      : (posts.filter((post) => post.user.is_agent && post.public_date >= new Date(`${today} 00:00:00`)).length /
+          postsToday) *
+        100;
+  const archivedPostsByAgentToday =
+    postsToday === 0
+      ? 0
+      : (archivedPosts.filter((post) => post.user.is_agent && post.public_date >= new Date(`${today} 00:00:00`))
+          .length /
+          postsToday) *
+        100;
+  const deletedPostsByAgentToday =
+    postsToday === 0
+      ? 0
+      : (deletedPosts.filter((post) => post.user.is_agent && post.public_date >= new Date(`${today} 00:00:00`)).length /
+          postsToday) *
+        100;
+
+  const postsByAgentToday = (activePostsByAgentToday + archivedPostsByAgentToday + deletedPostsByAgentToday).toFixed(2);
+
+  const activePostsByAgentYesterday =
     postsYesterday === 0
       ? 0
-      : (
-          (posts.filter(
-            (post) =>
-              post.user.is_agent &&
-              post.public_date >= new Date(`${yesterday} 00:00:00`) &&
-              post.public_date <= new Date(`${yesterday} 23:59:59`),
-          ).length /
-            postsYesterday) *
-          100
-        ).toFixed(2);
+      : (posts.filter(
+          (post) =>
+            post.user.is_agent &&
+            post.public_date >= new Date(`${yesterday} 00:00:00`) &&
+            post.public_date <= new Date(`${yesterday} 23:59:59`),
+        ).length /
+          postsYesterday) *
+        100;
+  const archivedPostsByAgentYesterday =
+    postsYesterday === 0
+      ? 0
+      : (archivedPosts.filter(
+          (post) =>
+            post.user.is_agent &&
+            post.public_date >= new Date(`${yesterday} 00:00:00`) &&
+            post.public_date <= new Date(`${yesterday} 23:59:59`),
+        ).length /
+          postsYesterday) *
+        100;
+  const deletedPostsByAgentYesterday =
+    postsYesterday === 0
+      ? 0
+      : (deletedPosts.filter(
+          (post) =>
+            post.user.is_agent &&
+            post.public_date >= new Date(`${yesterday} 00:00:00`) &&
+            post.public_date <= new Date(`${yesterday} 23:59:59`),
+        ).length /
+          postsYesterday) *
+        100;
+
+  const postsByAgentYesterday = (
+    activePostsByAgentYesterday +
+    archivedPostsByAgentYesterday +
+    deletedPostsByAgentYesterday
+  ).toFixed(2);
+
   const totalActiveStickyPosts = posts.filter((post) => post.is_sticky).length;
   const totalActiveAgentPosts =
     totalActivePosts === 0
