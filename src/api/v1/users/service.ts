@@ -62,7 +62,7 @@ const updateBulkIsUserAnAgent = async (ids: number[], status: boolean) => {
 const getLastActivity = (user: any) => {
   user.posts.sort(
     (a: { public_date: { getTime: () => number } }, b: { public_date: { getTime: () => number } }) =>
-      a.public_date.getTime() - b.public_date.getTime(),
+      b.public_date.getTime() - a.public_date.getTime(),
   );
 
   return user.posts[0].public_date;

@@ -440,8 +440,8 @@ const fetchUser = async (req: Request, res: Response, next: NextFunction) => {
         user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
           ? parseTimestamp(user.agent[0].subscription_ends_date).parsedTime
           : null,
-      lastPostDate: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedDate : null,
-      lastPostTime: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedTime : null,
+      lastActivityDate: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedDate : null,
+      lastActivityTime: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedTime : null,
       post: {
         active: user.posts?.length,
         repost: user.posts?.filter((post: IPost) => post.is_reposted).length,

@@ -942,8 +942,6 @@ const filterPostsForAdmin = async (
     posts = result;
     totalPosts = result.length > 0 ? totalCount : 0;
 
-    console.log(posts);
-
     posts?.forEach((post: any) => {
       post.publicDate = parseTimestamp(post.public_date).parsedDate;
       post.publicTime = parseTimestamp(post.public_date).parsedTime;
