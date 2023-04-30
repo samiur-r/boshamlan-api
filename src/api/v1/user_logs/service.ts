@@ -1,6 +1,7 @@
 /* eslint-disable no-param-reassign */
 import e from 'express';
 import ErrorHandler from '../../../utils/ErrorHandler';
+import { getLocaleDate } from '../../../utils/timestampUtls';
 import { IUser } from '../users/interfaces';
 import { findUserById, findUserByPhone } from '../users/service';
 import { UserLog } from './model';
@@ -30,7 +31,7 @@ const fetchLogsByPostId = async (postId: number, offset: number) => {
   });
 
   logs?.forEach((log: { publish_date: any; created_at: { toISOString: () => string | any[] } }) => {
-    log.publish_date = log.created_at.toISOString().slice(0, 10);
+    log.publish_date = getLocaleDate(log.created_at);
   });
   const totalPages = Math.ceil(count / 10);
   const response = { logs, totalPages, totalResults: count };
@@ -55,7 +56,7 @@ const fetchLogsByUser = async (user: string, offset: number) => {
   });
 
   logs?.forEach((log: { publish_date: any; created_at: { toISOString: () => string | any[] } }) => {
-    log.publish_date = log.created_at.toISOString().slice(0, 10);
+    log.publish_date = getLocaleDate(log.created_at);
   });
 
   const totalPages = Math.ceil(count / 10);

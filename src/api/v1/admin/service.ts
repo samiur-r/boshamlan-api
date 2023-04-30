@@ -1,4 +1,5 @@
 import { Between, In, MoreThan } from 'typeorm';
+import { getLocaleDate } from '../../../utils/timestampUtls';
 import { Credit } from '../credits/model';
 import { Package } from '../packages/model';
 import { IPost } from '../posts/interfaces';
@@ -82,8 +83,8 @@ const getUserSummary = async () => {
   const [users, totalUsers] = await User.findAndCount();
   const posts = await Post.find();
 
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
+  const today = getLocaleDate(new Date());
+  const yesterday = getLocaleDate(new Date(new Date().setDate(new Date().getDate() - 1)));
 
   const registeredToday = users.filter((user) => user.created_at >= new Date(`${today} 00:00:00`)).length;
 
@@ -131,8 +132,8 @@ const getPostSummary = async () => {
 
   const totalPosts = totalActivePosts + totalArchivedPosts + totalDeletedPosts;
 
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
+  const today = getLocaleDate(new Date());
+  const yesterday = getLocaleDate(new Date(new Date().setDate(new Date().getDate() - 1)));
 
   const activePostsToday = posts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
   const archivedPostsToday = archivedPosts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
@@ -240,8 +241,8 @@ const getPostSummary = async () => {
 const getTransactionSummary = async () => {
   const transactions = await Transaction.find();
 
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
+  const today = getLocaleDate(new Date());
+  const yesterday = getLocaleDate(new Date(new Date().setDate(new Date().getDate() - 1)));
 
   // Get the current month's and previous month's start and end dates
   const now = new Date();
@@ -249,6 +250,8 @@ const getTransactionSummary = async () => {
   const currentMonthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
   const prevMonthStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevMonthEndDate = new Date(now.getFullYear(), now.getMonth(), 0);
+
+  console.log(new Date(now.getFullYear(), now.getMonth(), 1));
 
   const transactionsToday = transactions.filter(
     (transaction) => transaction.status === 'completed' && transaction.created_at >= new Date(`${today} 00:00:00`),

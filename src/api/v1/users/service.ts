@@ -86,8 +86,8 @@ const filterUsersForAdmin = async (
   let where: any = {};
   let order = 'user.created_at';
 
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
+  const today = getLocaleDate(new Date());
+  const yesterday = getLocaleDate(new Date(new Date().setDate(new Date().getDate() - 1)));
 
   if (statusToFilter) {
     switch (statusToFilter) {
