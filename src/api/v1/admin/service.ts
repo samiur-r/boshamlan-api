@@ -246,12 +246,10 @@ const getTransactionSummary = async () => {
 
   // Get the current month's and previous month's start and end dates
   const now = new Date();
-  const currentMonthStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-  const currentMonthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const prevMonthStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonthEndDate = new Date(now.getFullYear(), now.getMonth(), 0);
-
-  console.log(new Date(now.getFullYear(), now.getMonth(), 1));
+  const currentMonthStartDate = new Date(now.getFullYear(), now.getMonth(), 2);
+  const currentMonthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const prevMonthStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 2);
+  const prevMonthEndDate = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const transactionsToday = transactions.filter(
     (transaction) => transaction.status === 'completed' && transaction.created_at >= new Date(`${today} 00:00:00`),
