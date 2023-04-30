@@ -901,7 +901,7 @@ const filterPostsForAdmin = async (
       .select(
         'post.id, post.user_id, post.post_type, post.title, post.city_id, post.city_title, post.category_id, post.category_title, post.property_id, post.property_title, post.price, post.description, post.is_sticky, post.is_reposted, post.repost_count, post.sticked_date, post.sticky_expires, post.repost_date, post.posted_date, post.public_date, post.expiry_date, post.created_at, post.updated_at, post.deleted_at',
       )
-      .addSelect('u.id as user_id, u.phone as user_phone, u.is_agent as user_is_agent')
+      .addSelect('u.phone as user_phone, u.is_agent as user_is_agent')
       .leftJoin(User, 'u', 'post.user_id = u.id')
       .getQuery();
 
@@ -909,7 +909,7 @@ const filterPostsForAdmin = async (
       .select(
         'post.id, post.user_id, post.post_type, post.title, post.city_id, post.city_title, post.category_id, post.category_title, post.property_id, post.property_title, post.price, post.description, post.is_sticky, post.is_reposted, post.repost_count, post.sticked_date, post.sticky_expires, post.repost_date, post.posted_date, post.public_date, post.expiry_date, post.created_at, post.updated_at, post.deleted_at',
       )
-      .addSelect('u.id as user_id, u.phone as user_phone, u.is_agent as user_is_agent')
+      .addSelect('u.phone as user_phone, u.is_agent as user_is_agent')
       .leftJoin(User, 'u', 'post.user_id = u.id')
       .getQuery();
 
@@ -917,7 +917,7 @@ const filterPostsForAdmin = async (
       .select(
         'post.id, post.user_id, post.post_type, post.title, post.city_id, post.city_title, post.category_id, post.category_title, post.property_id, post.property_title, post.price, post.description, post.is_sticky, post.is_reposted, post.repost_count, post.sticked_date, post.sticky_expires, post.repost_date, post.posted_date, post.public_date, post.expiry_date, post.created_at, post.updated_at, post.deleted_at',
       )
-      .addSelect('u.id as user_id, u.phone as user_phone, u.is_agent as user_is_agent')
+      .addSelect('u.phone as user_phone, u.is_agent as user_is_agent')
       .leftJoin(User, 'u', 'post.user_id = u.id')
       .getQuery();
 
@@ -941,6 +941,8 @@ const filterPostsForAdmin = async (
     const totalCount = countResult[0].count;
     posts = result;
     totalPosts = result.length > 0 ? totalCount : 0;
+
+    console.log(posts);
 
     posts?.forEach((post: any) => {
       post.publicDate = parseTimestamp(post.public_date).parsedDate;

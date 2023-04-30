@@ -139,8 +139,6 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
     date.setSeconds(0);
     date.setMilliseconds(0);
 
-    console.log(date);
-
     const { posts, totalPages, totalResults } = await filterPostsForAdmin(
       locationToFilter,
       categoryToFilter,
