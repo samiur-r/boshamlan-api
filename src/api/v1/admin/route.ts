@@ -23,7 +23,6 @@ router.put('/edit-agent', isAdminAuth, AdminController.editAgent);
 router.post('/verify-user', isAdminAuth, AdminController.verifyUser);
 router.post('/get-transactions', isAdminAuth, AdminController.fetchTransactions);
 router.get('/dashboard', isAdminAuth, AdminController.fetchDashboardInfo);
-router.post('/get-test', isAdminAuth, AdminController.fetchTestItems);
 router.put('/block-status', isAdminAuth, AdminController.updateUserBlockStatus);
 router.put('/admin-comment', isAdminAuth, AdminController.updateUserComment);
 router.delete('/user-permanent', isAdminAuth, AdminController.removeUserPermanently);

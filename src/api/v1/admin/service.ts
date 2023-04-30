@@ -102,13 +102,14 @@ const getUserSummary = async () => {
       user.created_at <= new Date(`${yesterday} 23:59:59`),
   ).length;
   const activeToday = users.filter((user) => {
-    return user.created_at >= new Date(`${today} 00:00:00`) && posts.some((post) => post.user.id === user.id);
+    return posts.some((post) => post.user.id === user.id && post.created_at >= new Date(`${today} 00:00:00`));
   }).length;
   const activeYesterday = users.filter((user) => {
-    return (
-      user.created_at >= new Date(`${yesterday} 00:00:00`) &&
-      user.created_at <= new Date(`${yesterday} 23:59:59`) &&
-      posts.some((post) => post.user.id === user.id)
+    return posts.some(
+      (post) =>
+        post.user.id === user.id &&
+        post.created_at >= new Date(`${yesterday} 00:00:00`) &&
+        post.created_at <= new Date(`${yesterday} 23:59:59`),
     );
   }).length;
   const activeAgents = users.filter((user) => user.is_agent).length;
@@ -135,23 +136,23 @@ const getPostSummary = async () => {
   const today = getLocaleDate(new Date());
   const yesterday = getLocaleDate(new Date(new Date().setDate(new Date().getDate() - 1)));
 
-  const activePostsToday = posts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
-  const archivedPostsToday = archivedPosts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
-  const deletedPostsToday = deletedPosts.filter((post) => post.public_date >= new Date(`${today} 00:00:00`)).length;
+  const activePostsToday = posts.filter((post) => post.posted_date >= new Date(`${today} 00:00:00`)).length;
+  const archivedPostsToday = archivedPosts.filter((post) => post.posted_date >= new Date(`${today} 00:00:00`)).length;
+  const deletedPostsToday = deletedPosts.filter((post) => post.posted_date >= new Date(`${today} 00:00:00`)).length;
 
   const postsToday = activePostsToday + archivedPostsToday + deletedPostsToday;
 
   const activePostsYesterday = posts.filter(
     (post) =>
-      post.public_date >= new Date(`${yesterday} 00:00:00`) && post.public_date <= new Date(`${yesterday} 23:59:59`),
+      post.posted_date >= new Date(`${yesterday} 00:00:00`) && post.posted_date <= new Date(`${yesterday} 23:59:59`),
   ).length;
   const archivedPostsYesterday = archivedPosts.filter(
     (post) =>
-      post.public_date >= new Date(`${yesterday} 00:00:00`) && post.public_date <= new Date(`${yesterday} 23:59:59`),
+      post.posted_date >= new Date(`${yesterday} 00:00:00`) && post.posted_date <= new Date(`${yesterday} 23:59:59`),
   ).length;
   const deletedPostsYesterday = deletedPosts.filter(
     (post) =>
-      post.public_date >= new Date(`${yesterday} 00:00:00`) && post.public_date <= new Date(`${yesterday} 23:59:59`),
+      post.posted_date >= new Date(`${yesterday} 00:00:00`) && post.posted_date <= new Date(`${yesterday} 23:59:59`),
   ).length;
 
   const postsYesterday = activePostsYesterday + archivedPostsYesterday + deletedPostsYesterday;
@@ -159,20 +160,20 @@ const getPostSummary = async () => {
   const activePostsByAgentToday =
     postsToday === 0
       ? 0
-      : (posts.filter((post) => post.user.is_agent && post.public_date >= new Date(`${today} 00:00:00`)).length /
+      : (posts.filter((post) => post.user.is_agent && post.posted_date >= new Date(`${today} 00:00:00`)).length /
           postsToday) *
         100;
   const archivedPostsByAgentToday =
     postsToday === 0
       ? 0
-      : (archivedPosts.filter((post) => post.user.is_agent && post.public_date >= new Date(`${today} 00:00:00`))
+      : (archivedPosts.filter((post) => post.user.is_agent && post.posted_date >= new Date(`${today} 00:00:00`))
           .length /
           postsToday) *
         100;
   const deletedPostsByAgentToday =
     postsToday === 0
       ? 0
-      : (deletedPosts.filter((post) => post.user.is_agent && post.public_date >= new Date(`${today} 00:00:00`)).length /
+      : (deletedPosts.filter((post) => post.user.is_agent && post.posted_date >= new Date(`${today} 00:00:00`)).length /
           postsToday) *
         100;
 
@@ -184,8 +185,8 @@ const getPostSummary = async () => {
       : (posts.filter(
           (post) =>
             post.user.is_agent &&
-            post.public_date >= new Date(`${yesterday} 00:00:00`) &&
-            post.public_date <= new Date(`${yesterday} 23:59:59`),
+            post.posted_date >= new Date(`${yesterday} 00:00:00`) &&
+            post.posted_date <= new Date(`${yesterday} 23:59:59`),
         ).length /
           postsYesterday) *
         100;
@@ -195,8 +196,8 @@ const getPostSummary = async () => {
       : (archivedPosts.filter(
           (post) =>
             post.user.is_agent &&
-            post.public_date >= new Date(`${yesterday} 00:00:00`) &&
-            post.public_date <= new Date(`${yesterday} 23:59:59`),
+            post.posted_date >= new Date(`${yesterday} 00:00:00`) &&
+            post.posted_date <= new Date(`${yesterday} 23:59:59`),
         ).length /
           postsYesterday) *
         100;
@@ -206,8 +207,8 @@ const getPostSummary = async () => {
       : (deletedPosts.filter(
           (post) =>
             post.user.is_agent &&
-            post.public_date >= new Date(`${yesterday} 00:00:00`) &&
-            post.public_date <= new Date(`${yesterday} 23:59:59`),
+            post.posted_date >= new Date(`${yesterday} 00:00:00`) &&
+            post.posted_date <= new Date(`${yesterday} 23:59:59`),
         ).length /
           postsYesterday) *
         100;

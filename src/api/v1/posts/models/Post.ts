@@ -93,6 +93,9 @@ export class Post extends BaseEntity implements IPost {
   @Column()
   public_date: Date;
 
+  @Column({ nullable: true })
+  posted_date: Date;
+
   @Column()
   expiry_date: Date;
 

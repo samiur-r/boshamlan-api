@@ -61,11 +61,11 @@ const updateBulkIsUserAnAgent = async (ids: number[], status: boolean) => {
 
 const getLastActivity = (user: any) => {
   user.posts.sort(
-    (a: { created_at: { getTime: () => number } }, b: { created_at: { getTime: () => number } }) =>
-      a.created_at.getTime() - b.created_at.getTime(),
+    (a: { public_date: { getTime: () => number } }, b: { public_date: { getTime: () => number } }) =>
+      a.public_date.getTime() - b.public_date.getTime(),
   );
 
-  return user.posts[0].created_at;
+  return user.posts[0].public_date;
 };
 
 const findUnVerifiedUsers = async () => {
@@ -116,10 +116,10 @@ const filterUsersForAdmin = async (
         where = `(credits.free < 1 OR user.status = 'not_verified')`;
         break;
       case 'Active Today':
-        where = `user.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59' AND post.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
+        where = `post.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
         break;
       case 'Active Yesterday':
-        where = `user.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59' AND post.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
+        where = `post.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
         break;
       case 'Has Regular Credit History':
         where = `transactions.status = 'completed' AND (transactions.package_title = 'regular1' OR transactions.package_title = 'regular2')`;

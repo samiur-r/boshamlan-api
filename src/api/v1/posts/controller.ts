@@ -159,9 +159,10 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
 
       postInfo.media = media;
 
+      const postedDate = new Date();
       const publicDate = new Date();
 
-      const newPost = await savePost(postInfo, user, typeOfCredit, publicDate);
+      const newPost = await savePost(postInfo, user, typeOfCredit, postedDate, publicDate);
       await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
       logger.info(`User: ${user.phone} created new post: ${newPost.id}`);
       logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
@@ -355,9 +356,10 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
       views: post.views,
     };
 
-    const publicDate = post.public_date;
+    const postedDate = post.posted_date;
+    const publicDate = new Date();
 
-    const newPost = await savePost(postInfo, user as IUser, typeOfCredit, publicDate);
+    const newPost = await savePost(postInfo, user as IUser, typeOfCredit, postedDate, publicDate);
     await removeArchivedPost(post.id);
     await updateCredit(user.id, typeOfCredit, 1, 'SUB', credit);
     const repostCount = post.repost_count + 1;
@@ -414,6 +416,7 @@ const restore = async (req: Request, res: Response, next: NextFunction) => {
       repost_count: post.repost_count,
       views: post.views,
       expiry_date: post.expiry_date,
+      posted_date: post.posted_date,
       public_date: post.public_date,
       is_sticky: post.is_sticky,
       post_type: 'active',

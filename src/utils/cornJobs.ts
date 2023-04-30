@@ -8,7 +8,7 @@ import { alertOnSlack } from './slackUtils';
 
 async function scheduledTaskPerHour() {
   try {
-    logger.info('Running hourly cron job');
+    logger.info('Running half hourly cron job');
     const ids = await getExpiredAgentUserIds();
     await updateBulkIsUserAnAgent(ids, false);
     await updateAgentCredit(ids, 0);
@@ -36,7 +36,7 @@ async function scheduledTaskPerFiveMins() {
   }
 }
 
-const cronJobPerHour = cron.schedule('*/1 * * * *', scheduledTaskPerHour);
+const cronJobPerHour = cron.schedule('*/30 * * * *', scheduledTaskPerHour);
 const cronJobPerFiveMins = cron.schedule('*/5 * * * *', scheduledTaskPerFiveMins);
 
 cronJobPerHour.on('error', (err) => {

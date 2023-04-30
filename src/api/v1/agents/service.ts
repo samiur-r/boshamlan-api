@@ -107,6 +107,14 @@ const initOrUpdateAgent = async (user: IUser) => {
     today.getSeconds(),
   );
 
+  today.setMinutes(Math.ceil(today.getMinutes() / 30) * 30);
+  today.setSeconds(0);
+  today.setMilliseconds(0);
+
+  twoDaysFromToday.setMinutes(Math.ceil(twoDaysFromToday.getMinutes() / 30) * 30);
+  twoDaysFromToday.setSeconds(0);
+  twoDaysFromToday.setMilliseconds(0);
+
   let agentData;
 
   if (agent) {

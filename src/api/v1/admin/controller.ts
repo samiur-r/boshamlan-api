@@ -132,6 +132,15 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
     offset,
   } = req.body;
   try {
+    const date = new Date();
+
+    // Set the minutes to the next half hour
+    date.setMinutes(Math.ceil(date.getMinutes() / 30) * 30);
+    date.setSeconds(0);
+    date.setMilliseconds(0);
+
+    console.log(date);
+
     const { posts, totalPages, totalResults } = await filterPostsForAdmin(
       locationToFilter,
       categoryToFilter,
@@ -244,7 +253,8 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     if (!post) post = await findArchivedPostById(postId);
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
 
-    const publicDate = post.public_date;
+    const postedDate = post.posted_date;
+    const publicDate = new Date();
 
     const postInfo = {
       id: post.id,
@@ -265,7 +275,7 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
       views: post.views,
     };
 
-    const newPost = await savePost(postInfo, post.user, 'regular', publicDate);
+    const newPost = await savePost(postInfo, post.user, 'regular', postedDate, publicDate);
     await removeArchivedPost(post.id);
     const repostCount = post.repost_count + 1;
     await updatePostRepostVals(newPost, true, repostCount);
@@ -333,8 +343,8 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       adminComment: user.admin_comment,
       is_blocked: user.is_blocked,
       is_deleted: user.is_deleted,
-      lastPostDate: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedDate : null,
-      lastPostTime: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedTime : null,
+      lastActivityDate: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedDate : null,
+      lastActivityTime: user.posts && user.posts.length ? parseTimestamp(getLastActivity(user)).parsedTime : null,
       registeredDate: parseTimestamp(user.created_at).parsedDate,
       registeredTime: parseTimestamp(user.created_at).parsedTime,
       created_at: user.created_at,

@@ -25,6 +25,7 @@ export interface IPost {
   repost_date?: any;
   expiry_date: Date;
   public_date?: Date;
+  posted_date?: Date;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date;
