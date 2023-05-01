@@ -132,13 +132,6 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
     offset,
   } = req.body;
   try {
-    const date = new Date();
-
-    // Set the minutes to the next half hour
-    date.setMinutes(Math.ceil(date.getMinutes() / 30) * 30);
-    date.setSeconds(0);
-    date.setMilliseconds(0);
-
     const { posts, totalPages, totalResults } = await filterPostsForAdmin(
       locationToFilter,
       categoryToFilter,

@@ -1,4 +1,4 @@
-import { Between, In, MoreThan } from 'typeorm';
+import { Between, In, LessThanOrEqual, MoreThan, MoreThanOrEqual } from 'typeorm';
 import { getLocaleDate } from '../../../utils/timestampUtls';
 import { Credit } from '../credits/model';
 import { Package } from '../packages/model';
@@ -247,10 +247,10 @@ const getTransactionSummary = async () => {
 
   // Get the current month's and previous month's start and end dates
   const now = new Date();
-  const currentMonthStartDate = new Date(now.getFullYear(), now.getMonth(), 2);
-  const currentMonthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const prevMonthStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 2);
-  const prevMonthEndDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  const currentMonthStartDate = getLocaleDate(new Date(now.getFullYear(), now.getMonth(), 1));
+  const currentMonthEndDate = getLocaleDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  const prevMonthStartDate = getLocaleDate(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const prevMonthEndDate = getLocaleDate(new Date(now.getFullYear(), now.getMonth(), 0));
 
   const transactionsToday = transactions.filter(
     (transaction) => transaction.status === 'completed' && transaction.created_at >= new Date(`${today} 00:00:00`),
@@ -285,14 +285,20 @@ const getTransactionSummary = async () => {
   });
 
   const totalIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-    if (curr.created_at >= currentMonthStartDate && curr.created_at <= currentMonthEndDate) {
+    if (
+      curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`)
+    ) {
       return acc + curr.amount;
     }
     return acc;
   }, 0);
 
   const totalIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-    if (curr.created_at >= prevMonthStartDate && curr.created_at <= prevMonthEndDate) {
+    if (
+      curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`)
+    ) {
       return acc + curr.amount;
     }
     return acc;
@@ -300,8 +306,8 @@ const getTransactionSummary = async () => {
 
   const totalRegularIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
     if (
-      curr.created_at >= currentMonthStartDate &&
-      curr.created_at <= currentMonthEndDate &&
+      curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
       (curr.package.id === 1 || curr.package.id === 2)
     ) {
       return acc + curr.amount;
@@ -311,8 +317,8 @@ const getTransactionSummary = async () => {
 
   const totalRegularIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
     if (
-      curr.created_at >= prevMonthStartDate &&
-      curr.created_at <= prevMonthEndDate &&
+      curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
       (curr.package.id === 1 || curr.package.id === 2)
     ) {
       return acc + curr.amount;
@@ -322,8 +328,8 @@ const getTransactionSummary = async () => {
 
   const totalStickyIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
     if (
-      curr.created_at >= currentMonthStartDate &&
-      curr.created_at <= currentMonthEndDate &&
+      curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
       (curr.package.id === 5 || curr.package.id === 6)
     ) {
       return acc + curr.amount;
@@ -333,8 +339,8 @@ const getTransactionSummary = async () => {
 
   const totalStickyIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
     if (
-      curr.created_at >= prevMonthStartDate &&
-      curr.created_at <= prevMonthEndDate &&
+      curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
       (curr.package.id === 5 || curr.package.id === 6)
     ) {
       return acc + curr.amount;
@@ -343,42 +349,66 @@ const getTransactionSummary = async () => {
   }, 0);
 
   const totalStickyDirectIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-    if (curr.created_at >= currentMonthStartDate && curr.created_at <= currentMonthEndDate && curr.package.id === 7) {
+    if (
+      curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
+      curr.package.id === 7
+    ) {
       return acc + curr.amount;
     }
     return acc;
   }, 0);
 
   const totalStickyDirectIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-    if (curr.created_at >= prevMonthStartDate && curr.created_at <= prevMonthEndDate && curr.package.id === 7) {
+    if (
+      curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
+      curr.package.id === 7
+    ) {
       return acc + curr.amount;
     }
     return acc;
   }, 0);
 
   const totalAgentTwoIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-    if (curr.created_at >= currentMonthStartDate && curr.created_at <= currentMonthEndDate && curr.package.id === 3) {
+    if (
+      curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
+      curr.package.id === 3
+    ) {
       return acc + curr.amount;
     }
     return acc;
   }, 0);
 
   const totalAgentTwoIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-    if (curr.created_at >= prevMonthStartDate && curr.created_at <= prevMonthEndDate && curr.package.id === 3) {
+    if (
+      curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
+      curr.package.id === 3
+    ) {
       return acc + curr.amount;
     }
     return acc;
   }, 0);
 
   const totalAgentSixIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-    if (curr.created_at >= currentMonthStartDate && curr.created_at <= currentMonthEndDate && curr.package.id === 4) {
+    if (
+      curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
+      curr.package.id === 4
+    ) {
       return acc + curr.amount;
     }
     return acc;
   }, 0);
 
   const totalAgentSixIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-    if (curr.created_at >= prevMonthStartDate && curr.created_at <= prevMonthEndDate && curr.package.id === 4) {
+    if (
+      curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+      curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
+      curr.package.id === 4
+    ) {
       return acc + curr.amount;
     }
     return acc;

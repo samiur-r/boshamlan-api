@@ -848,6 +848,8 @@ const filterPostsForAdmin = async (
       break;
   }
 
+  console.log(order)
+
   try {
     const whereClause = Object.entries(where)
       .map(([key, value]: [string, any]) => {
@@ -927,7 +929,7 @@ const filterPostsForAdmin = async (
       SELECT *
       FROM (${unionQuery}) AS latest_posts
       ${whereClause ? `WHERE ${whereClause}` : ''}
-      ORDER BY created_at DESC
+      ORDER BY latest_posts.${Object.keys(order)[0]} DESC
       LIMIT 10
       OFFSET ${offset}
     `);
