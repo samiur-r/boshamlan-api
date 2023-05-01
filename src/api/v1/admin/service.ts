@@ -280,7 +280,7 @@ const getTransactionSummary = async () => {
   const transactionsLastTwoMonths = await Transaction.find({
     where: {
       status: 'completed',
-      created_at: Between(prevMonthStartDate, currentMonthEndDate),
+      created_at: Between(new Date(`${prevMonthStartDate} 00:00:00`), new Date(`${currentMonthEndDate} 23:59:59`)),
     },
   });
 

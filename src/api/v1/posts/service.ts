@@ -196,6 +196,8 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
     deleted_at: today,
     updated_at: postInfo.updated_at,
     post_type: 'deleted',
+    is_sticky: postInfo.is_sticky,
+    sticky_expires: postInfo.sticky_expires,
     user,
   });
 
@@ -848,7 +850,7 @@ const filterPostsForAdmin = async (
       break;
   }
 
-  console.log(order)
+  console.log(order);
 
   try {
     const whereClause = Object.entries(where)

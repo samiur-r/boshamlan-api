@@ -698,7 +698,6 @@ const removeUserPermanently = async (req: Request, res: Response, next: NextFunc
     await Transaction.delete({ user: { id: userId } });
     await Otp.delete({ user: { id: userId } });
     await Agent.delete({ user: { id: userId } });
-    await User.delete({ id: userId });
     await Credit.delete({ user: { id: userId } });
     await Transaction.delete({ user: { id: userId } });
     await DeletedPost.delete({ user: { id: userId } });
@@ -715,6 +714,8 @@ const removeUserPermanently = async (req: Request, res: Response, next: NextFunc
       await removeArchivedPost(post.id, post);
       await updateLocationCountValue(post.city_id, 'decrement');
     });
+
+    await User.delete({ id: userId });
 
     return res.status(200).json({ success: 'User deleted permanently' });
   } catch (error) {

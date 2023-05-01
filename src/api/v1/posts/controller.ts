@@ -419,6 +419,7 @@ const restore = async (req: Request, res: Response, next: NextFunction) => {
       posted_date: post.posted_date,
       public_date: post.public_date,
       is_sticky: post.is_sticky,
+      sticky_expires: post.sticky_expires,
       post_type: 'active',
       credit_type: post.credit_type,
       user: userObj,
