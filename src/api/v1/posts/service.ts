@@ -836,6 +836,9 @@ const filterPostsForAdmin = async (
     case 'Repost Date':
       order.repost_date = 'DESC';
       break;
+    case 'Repost Count':
+      order.repost_count = 'DESC';
+      break;
     case 'City':
       order.city_id = 'DESC';
       break;
