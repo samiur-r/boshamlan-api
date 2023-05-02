@@ -850,8 +850,6 @@ const filterPostsForAdmin = async (
       break;
   }
 
-  console.log(order);
-
   try {
     const whereClause = Object.entries(where)
       .map(([key, value]: [string, any]) => {
@@ -927,6 +925,13 @@ const filterPostsForAdmin = async (
 
     const unionQuery = `(${postsQuery}) UNION (${archivedPostsQuery}) UNION (${deletedPostsQuery})`;
 
+    const temp = await AppDataSource.query(`
+      SELECT *
+      FROM (${unionQuery}) AS latest_posts
+      ${whereClause ? `WHERE ${whereClause}` : ''}
+      ORDER BY latest_posts.${Object.keys(order)[0]} DESC
+    `);
+
     const result = await AppDataSource.query(`
       SELECT *
       FROM (${unionQuery}) AS latest_posts
@@ -935,6 +940,10 @@ const filterPostsForAdmin = async (
       LIMIT 10
       OFFSET ${offset}
     `);
+
+    console.log(temp);
+    console.log('-----');
+    console.log(result);
 
     const countResult = await AppDataSource.query(`
       SELECT COUNT(*) AS count
