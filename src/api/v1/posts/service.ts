@@ -825,7 +825,7 @@ const filterPostsForAdmin = async (
 
   switch (orderByToFilter) {
     case 'Created':
-      order.public_date = 'DESC';
+      order.posted_date = 'DESC';
       break;
     case 'Public Date':
       order.public_date = 'DESC';
@@ -846,7 +846,7 @@ const filterPostsForAdmin = async (
       order.category_id = 'DESC';
       break;
     default:
-      order.public_date = 'DESC';
+      order.posted_date = 'DESC';
       break;
   }
 
