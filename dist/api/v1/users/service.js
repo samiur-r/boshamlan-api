@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getLastActivity = exports.updateUser = exports.findUserWithAgentInfo = exports.filterUsersForAdmin = exports.findUnVerifiedUsers = exports.updateBulkIsUserAnAgent = exports.updateIsUserAnAgent = exports.updateUserPassword = exports.updateUserStatus = exports.saveUser = exports.findUserByPhone = exports.findUserById = void 0;
 const typeorm_1 = require("typeorm");
 const passwordUtils_1 = require("../../../utils/passwordUtils");
+const timestampUtls_1 = require("../../../utils/timestampUtls");
 const model_1 = require("./model");
 const findUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield model_1.User.findOneBy({ id });
@@ -55,8 +56,8 @@ const updateBulkIsUserAnAgent = (ids, status) => __awaiter(void 0, void 0, void 
 });
 exports.updateBulkIsUserAnAgent = updateBulkIsUserAnAgent;
 const getLastActivity = (user) => {
-    user.posts.sort((a, b) => a.created_at.getTime() - b.created_at.getTime());
-    return user.posts[0].created_at;
+    user.posts.sort((a, b) => b.public_date.getTime() - a.public_date.getTime());
+    return user.posts[0].public_date;
 };
 exports.getLastActivity = getLastActivity;
 const findUnVerifiedUsers = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -68,8 +69,8 @@ exports.findUnVerifiedUsers = findUnVerifiedUsers;
 const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter, fromCreationDateToFilter, toCreationDateToFilter, orderByToFilter, offset) => __awaiter(void 0, void 0, void 0, function* () {
     let where = {};
     let order = 'user.created_at';
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
+    const today = (0, timestampUtls_1.getLocaleDate)(new Date());
+    const yesterday = (0, timestampUtls_1.getLocaleDate)(new Date(new Date().setDate(new Date().getDate() - 1)));
     if (statusToFilter) {
         switch (statusToFilter) {
             case 'User':
@@ -97,10 +98,10 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
                 where = `(credits.free < 1 OR user.status = 'not_verified')`;
                 break;
             case 'Active Today':
-                where = `user.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59' AND post.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
+                where = `post.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
                 break;
             case 'Active Yesterday':
-                where = `user.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59' AND post.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
+                where = `post.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
                 break;
             case 'Has Regular Credit History':
                 where = `transactions.status = 'completed' AND (transactions.package_title = 'regular1' OR transactions.package_title = 'regular2')`;

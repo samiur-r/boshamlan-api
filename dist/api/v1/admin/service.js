@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.geCreditsSummary = exports.getTransactionSummary = exports.getPostSummary = exports.getUserSummary = exports.getPostHistory = exports.getPaymentHistory = exports.findAdminByPhone = exports.saveAdmin = void 0;
 const typeorm_1 = require("typeorm");
+const timestampUtls_1 = require("../../../utils/timestampUtls");
 const model_1 = require("../credits/model");
 const model_2 = require("../packages/model");
 const ArchivePost_1 = require("../posts/models/ArchivePost");
@@ -83,17 +84,21 @@ exports.getPostHistory = getPostHistory;
 const getUserSummary = () => __awaiter(void 0, void 0, void 0, function* () {
     const [users, totalUsers] = yield model_4.User.findAndCount();
     const posts = yield Post_1.Post.find();
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
-    const registeredToday = users.filter((user) => user.created_at.toISOString().slice(0, 10) === today).length;
-    const registeredYesterday = users.filter((user) => user.created_at.toISOString().slice(0, 10) === yesterday).length;
-    const notVerifiedToday = users.filter((user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === today).length;
-    const notVerifiedYesterday = users.filter((user) => user.status === 'not_verified' && user.created_at.toISOString().slice(0, 10) === yesterday).length;
+    const today = (0, timestampUtls_1.getLocaleDate)(new Date());
+    const yesterday = (0, timestampUtls_1.getLocaleDate)(new Date(new Date().setDate(new Date().getDate() - 1)));
+    const registeredToday = users.filter((user) => user.created_at >= new Date(`${today} 00:00:00`)).length;
+    const registeredYesterday = users.filter((user) => user.created_at >= new Date(`${yesterday} 00:00:00`) && user.created_at <= new Date(`${yesterday} 23:59:59`)).length;
+    const notVerifiedToday = users.filter((user) => user.status === 'not_verified' && user.created_at >= new Date(`${today} 00:00:00`)).length;
+    const notVerifiedYesterday = users.filter((user) => user.status === 'not_verified' &&
+        user.created_at >= new Date(`${yesterday} 00:00:00`) &&
+        user.created_at <= new Date(`${yesterday} 23:59:59`)).length;
     const activeToday = users.filter((user) => {
-        return user.created_at.toISOString().slice(0, 10) === today && posts.some((post) => post.user.id === user.id);
+        return posts.some((post) => post.user.id === user.id && post.created_at >= new Date(`${today} 00:00:00`));
     }).length;
     const activeYesterday = users.filter((user) => {
-        return user.created_at.toISOString().slice(0, 10) === yesterday && posts.some((post) => post.user.id === user.id);
+        return posts.some((post) => post.user.id === user.id &&
+            post.created_at >= new Date(`${yesterday} 00:00:00`) &&
+            post.created_at <= new Date(`${yesterday} 23:59:59`));
     }).length;
     const activeAgents = users.filter((user) => user.is_agent).length;
     return {
@@ -110,24 +115,60 @@ const getUserSummary = () => __awaiter(void 0, void 0, void 0, function* () {
 exports.getUserSummary = getUserSummary;
 const getPostSummary = () => __awaiter(void 0, void 0, void 0, function* () {
     const [posts, totalActivePosts] = yield Post_1.Post.findAndCount();
-    const totalArchivedPosts = yield ArchivePost_1.ArchivePost.count();
-    const totalDeletedPosts = yield DeletedPost_1.DeletedPost.count();
+    const [archivedPosts, totalArchivedPosts] = yield ArchivePost_1.ArchivePost.findAndCount();
+    const [deletedPosts, totalDeletedPosts] = yield DeletedPost_1.DeletedPost.findAndCount();
     const totalPosts = totalActivePosts + totalArchivedPosts + totalDeletedPosts;
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
-    const postsToday = posts.filter((post) => post.public_date.toISOString().slice(0, 10) === today).length;
-    const postsYesterday = posts.filter((post) => post.public_date.toISOString().slice(0, 10) === yesterday).length;
-    const postsByAgentToday = postsToday === 0
+    const today = (0, timestampUtls_1.getLocaleDate)(new Date());
+    const yesterday = (0, timestampUtls_1.getLocaleDate)(new Date(new Date().setDate(new Date().getDate() - 1)));
+    const activePostsToday = posts.filter((post) => post.posted_date >= new Date(`${today} 00:00:00`)).length;
+    const archivedPostsToday = archivedPosts.filter((post) => post.posted_date >= new Date(`${today} 00:00:00`)).length;
+    const deletedPostsToday = deletedPosts.filter((post) => post.posted_date >= new Date(`${today} 00:00:00`)).length;
+    const postsToday = activePostsToday + archivedPostsToday + deletedPostsToday;
+    const activePostsYesterday = posts.filter((post) => post.posted_date >= new Date(`${yesterday} 00:00:00`) && post.posted_date <= new Date(`${yesterday} 23:59:59`)).length;
+    const archivedPostsYesterday = archivedPosts.filter((post) => post.posted_date >= new Date(`${yesterday} 00:00:00`) && post.posted_date <= new Date(`${yesterday} 23:59:59`)).length;
+    const deletedPostsYesterday = deletedPosts.filter((post) => post.posted_date >= new Date(`${yesterday} 00:00:00`) && post.posted_date <= new Date(`${yesterday} 23:59:59`)).length;
+    const postsYesterday = activePostsYesterday + archivedPostsYesterday + deletedPostsYesterday;
+    const activePostsByAgentToday = postsToday === 0
         ? 0
-        : ((posts.filter((post) => post.user.is_agent && post.public_date.toISOString().slice(0, 10) === today).length /
+        : (posts.filter((post) => post.user.is_agent && post.posted_date >= new Date(`${today} 00:00:00`)).length /
             postsToday) *
-            100).toFixed(2);
-    const postsByAgentYesterday = postsYesterday === 0
+            100;
+    const archivedPostsByAgentToday = postsToday === 0
         ? 0
-        : ((posts.filter((post) => post.user.is_agent && post.public_date.toISOString().slice(0, 10) === yesterday)
+        : (archivedPosts.filter((post) => post.user.is_agent && post.posted_date >= new Date(`${today} 00:00:00`))
             .length /
+            postsToday) *
+            100;
+    const deletedPostsByAgentToday = postsToday === 0
+        ? 0
+        : (deletedPosts.filter((post) => post.user.is_agent && post.posted_date >= new Date(`${today} 00:00:00`)).length /
+            postsToday) *
+            100;
+    const postsByAgentToday = (activePostsByAgentToday + archivedPostsByAgentToday + deletedPostsByAgentToday).toFixed(2);
+    const activePostsByAgentYesterday = postsYesterday === 0
+        ? 0
+        : (posts.filter((post) => post.user.is_agent &&
+            post.posted_date >= new Date(`${yesterday} 00:00:00`) &&
+            post.posted_date <= new Date(`${yesterday} 23:59:59`)).length /
             postsYesterday) *
-            100).toFixed(2);
+            100;
+    const archivedPostsByAgentYesterday = postsYesterday === 0
+        ? 0
+        : (archivedPosts.filter((post) => post.user.is_agent &&
+            post.posted_date >= new Date(`${yesterday} 00:00:00`) &&
+            post.posted_date <= new Date(`${yesterday} 23:59:59`)).length /
+            postsYesterday) *
+            100;
+    const deletedPostsByAgentYesterday = postsYesterday === 0
+        ? 0
+        : (deletedPosts.filter((post) => post.user.is_agent &&
+            post.posted_date >= new Date(`${yesterday} 00:00:00`) &&
+            post.posted_date <= new Date(`${yesterday} 23:59:59`)).length /
+            postsYesterday) *
+            100;
+    const postsByAgentYesterday = (activePostsByAgentYesterday +
+        archivedPostsByAgentYesterday +
+        deletedPostsByAgentYesterday).toFixed(2);
     const totalActiveStickyPosts = posts.filter((post) => post.is_sticky).length;
     const totalActiveAgentPosts = totalActivePosts === 0
         ? 0
@@ -148,104 +189,121 @@ const getPostSummary = () => __awaiter(void 0, void 0, void 0, function* () {
 exports.getPostSummary = getPostSummary;
 const getTransactionSummary = () => __awaiter(void 0, void 0, void 0, function* () {
     const transactions = yield model_3.Transaction.find();
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().slice(0, 10);
+    const today = (0, timestampUtls_1.getLocaleDate)(new Date());
+    const yesterday = (0, timestampUtls_1.getLocaleDate)(new Date(new Date().setDate(new Date().getDate() - 1)));
     // Get the current month's and previous month's start and end dates
     const now = new Date();
-    const currentMonthStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
-    const currentMonthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const prevMonthStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevMonthEndDate = new Date(now.getFullYear(), now.getMonth(), 0);
-    const transactionsToday = transactions.filter((transaction) => transaction.status === 'completed' && transaction.created_at.toISOString().slice(0, 10) === today);
-    const transactionsYesterday = transactions.filter((transaction) => transaction.status === 'completed' && transaction.created_at.toISOString().slice(0, 10) === yesterday);
+    const currentMonthStartDate = (0, timestampUtls_1.getLocaleDate)(new Date(now.getFullYear(), now.getMonth(), 1));
+    const currentMonthEndDate = (0, timestampUtls_1.getLocaleDate)(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+    const prevMonthStartDate = (0, timestampUtls_1.getLocaleDate)(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    const prevMonthEndDate = (0, timestampUtls_1.getLocaleDate)(new Date(now.getFullYear(), now.getMonth(), 0));
+    const transactionsToday = transactions.filter((transaction) => transaction.status === 'completed' && transaction.created_at >= new Date(`${today} 00:00:00`));
+    const transactionsYesterday = transactions.filter((transaction) => transaction.status === 'completed' &&
+        transaction.created_at >= new Date(`${yesterday} 00:00:00`) &&
+        transaction.created_at <= new Date(`${yesterday} 23:59:59`));
     const completedTransactionsToday = transactionsToday.length;
     const completedTransactionsYesterday = transactionsYesterday.length;
-    const totalTransactionsToday = transactions.filter((transaction) => transaction.created_at.toISOString().slice(0, 10) === today).length;
-    const totalTransactionsYesterday = transactions.filter((transaction) => transaction.created_at.toISOString().slice(0, 10) === yesterday).length;
+    const totalTransactionsToday = transactions.filter((transaction) => transaction.created_at >= new Date(`${today} 00:00:00`)).length;
+    const totalTransactionsYesterday = transactions.filter((transaction) => transaction.created_at >= new Date(`${yesterday} 00:00:00`) &&
+        transaction.created_at <= new Date(`${yesterday} 23:59:59`)).length;
     const incomeToday = transactionsToday.reduce((sum, transaction) => sum + transaction.amount, 0);
     const incomeYesterday = transactionsYesterday.reduce((sum, transaction) => sum + transaction.amount, 0);
     const transactionsLastTwoMonths = yield model_3.Transaction.find({
         where: {
             status: 'completed',
-            created_at: (0, typeorm_1.Between)(prevMonthStartDate, currentMonthEndDate),
+            created_at: (0, typeorm_1.Between)(new Date(`${prevMonthStartDate} 00:00:00`), new Date(`${currentMonthEndDate} 23:59:59`)),
         },
     });
     const totalIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= currentMonthStartDate && curr.created_at <= currentMonthEndDate) {
+        if (curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`)) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= prevMonthStartDate && curr.created_at <= prevMonthEndDate) {
+        if (curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`)) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalRegularIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= currentMonthStartDate &&
-            curr.created_at <= currentMonthEndDate &&
+        if (curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
             (curr.package.id === 1 || curr.package.id === 2)) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalRegularIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= prevMonthStartDate &&
-            curr.created_at <= prevMonthEndDate &&
+        if (curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
             (curr.package.id === 1 || curr.package.id === 2)) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalStickyIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= currentMonthStartDate &&
-            curr.created_at <= currentMonthEndDate &&
+        if (curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
             (curr.package.id === 5 || curr.package.id === 6)) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalStickyIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= prevMonthStartDate &&
-            curr.created_at <= prevMonthEndDate &&
+        if (curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
             (curr.package.id === 5 || curr.package.id === 6)) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalStickyDirectIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= currentMonthStartDate && curr.created_at <= currentMonthEndDate && curr.package.id === 7) {
+        if (curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
+            curr.package.id === 7) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalStickyDirectIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= prevMonthStartDate && curr.created_at <= prevMonthEndDate && curr.package.id === 7) {
+        if (curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
+            curr.package.id === 7) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalAgentTwoIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= currentMonthStartDate && curr.created_at <= currentMonthEndDate && curr.package.id === 3) {
+        if (curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
+            curr.package.id === 3) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalAgentTwoIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= prevMonthStartDate && curr.created_at <= prevMonthEndDate && curr.package.id === 3) {
+        if (curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
+            curr.package.id === 3) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalAgentSixIncomeThisMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= currentMonthStartDate && curr.created_at <= currentMonthEndDate && curr.package.id === 4) {
+        if (curr.created_at >= new Date(`${currentMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${currentMonthEndDate} 23:59:59`) &&
+            curr.package.id === 4) {
             return acc + curr.amount;
         }
         return acc;
     }, 0);
     const totalAgentSixIncomeLastMonth = transactionsLastTwoMonths.reduce((acc, curr) => {
-        if (curr.created_at >= prevMonthStartDate && curr.created_at <= prevMonthEndDate && curr.package.id === 4) {
+        if (curr.created_at >= new Date(`${prevMonthStartDate} 00:00:00`) &&
+            curr.created_at <= new Date(`${prevMonthEndDate} 23:59:59`) &&
+            curr.package.id === 4) {
             return acc + curr.amount;
         }
         return acc;

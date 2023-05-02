@@ -24,6 +24,7 @@ const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const timestampUtls_1 = require("../../../utils/timestampUtls");
 const service_1 = require("../locations/service");
+const model_1 = require("../users/model");
 const service_2 = require("../users/service");
 const service_3 = require("../user_logs/service");
 const ArchivePost_1 = require("./models/ArchivePost");
@@ -40,7 +41,7 @@ const generatePostId = () => __awaiter(void 0, void 0, void 0, function* () {
     return maxId;
 });
 exports.generatePostId = generatePostId;
-const savePost = (postInfo, user, typeOfCredit, publicDate) => __awaiter(void 0, void 0, void 0, function* () {
+const savePost = (postInfo, user, typeOfCredit, postedDate, publicDate) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const today = new Date();
     // const oneMonthFromToday = new Date(
@@ -51,7 +52,13 @@ const savePost = (postInfo, user, typeOfCredit, publicDate) => __awaiter(void 0,
     //   today.getMinutes(),
     //   today.getSeconds(),
     // );
+    // oneMonthFromToday.setMinutes(Math.ceil(oneMonthFromToday.getMinutes() / 30) * 30);
+    // oneMonthFromToday.setSeconds(0);
+    // oneMonthFromToday.setMilliseconds(0);
     const twoDaysFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, today.getHours(), today.getMinutes(), today.getSeconds());
+    twoDaysFromToday.setMinutes(Math.ceil(twoDaysFromToday.getMinutes() / 30) * 30);
+    twoDaysFromToday.setSeconds(0);
+    twoDaysFromToday.setMilliseconds(0);
     const newPost = Post_1.Post.create({
         title: postInfo.title,
         city_id: postInfo.cityId,
@@ -65,6 +72,7 @@ const savePost = (postInfo, user, typeOfCredit, publicDate) => __awaiter(void 0,
         price: postInfo.price,
         description: postInfo.description,
         expiry_date: twoDaysFromToday,
+        posted_date: postedDate,
         public_date: publicDate,
         sticked_date: typeOfCredit === 'sticky' ? today : undefined,
         media: postInfo.media,
@@ -73,6 +81,7 @@ const savePost = (postInfo, user, typeOfCredit, publicDate) => __awaiter(void 0,
         views: (_a = postInfo.views) !== null && _a !== void 0 ? _a : 0,
         repost_count: (_b = postInfo.repost_count) !== null && _b !== void 0 ? _b : 0,
         post_type: 'active',
+        created_at: today,
         user,
     });
     if (postInfo.id !== undefined) {
@@ -103,6 +112,7 @@ const saveArchivedPost = (postInfo, user) => __awaiter(void 0, void 0, void 0, f
         price: postInfo.price,
         description: postInfo.description,
         expiry_date: postInfo.expiry_date,
+        posted_date: postInfo.posted_date,
         public_date: postInfo.public_date,
         sticked_date: postInfo.sticked_date,
         repost_date: postInfo.repost_date,
@@ -135,6 +145,7 @@ const saveDeletedPost = (postInfo, user) => __awaiter(void 0, void 0, void 0, fu
         price: postInfo.price,
         description: postInfo.description,
         expiry_date: postInfo.expiry_date,
+        posted_date: postInfo.posted_date,
         public_date: postInfo.public_date,
         sticked_date: postInfo.sticked_date,
         repost_date: postInfo.repost_date,
@@ -145,6 +156,8 @@ const saveDeletedPost = (postInfo, user) => __awaiter(void 0, void 0, void 0, fu
         deleted_at: today,
         updated_at: postInfo.updated_at,
         post_type: 'deleted',
+        is_sticky: postInfo.is_sticky,
+        sticky_expires: postInfo.sticky_expires,
         user,
     });
     yield DeletedPost_1.DeletedPost.save(newPost);
@@ -290,8 +303,9 @@ const moveTempPost = (track_id) => __awaiter(void 0, void 0, void 0, function* (
         description: post.description,
         media: post.media,
     };
+    const postedDate = new Date();
     const publicDate = new Date();
-    yield savePost(postInfo, user, 'sticky', publicDate);
+    yield savePost(postInfo, user, 'sticky', postedDate, publicDate);
     yield removeTempPost(post.id);
 });
 exports.moveTempPost = moveTempPost;
@@ -389,8 +403,14 @@ const updatePostStickyVal = (post, isSticky) => __awaiter(void 0, void 0, void 0
     //   today.getSeconds(),
     // );
     const twoDaysFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, today.getHours(), today.getMinutes(), today.getSeconds());
+    twoDaysFromToday.setMinutes(Math.ceil(twoDaysFromToday.getMinutes() / 30) * 30);
+    twoDaysFromToday.setSeconds(0);
+    twoDaysFromToday.setMilliseconds(0);
     const oneDayFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, today.getHours(), today.getMinutes(), today.getSeconds());
-    const newPost = Post_1.Post.create(Object.assign(Object.assign({}, post), { sticked_date: isSticky ? today : undefined, sticky_expires: isSticky ? oneDayFromToday : undefined, expiry_date: isSticky ? twoDaysFromToday : oneDayFromToday, is_sticky: isSticky }));
+    oneDayFromToday.setMinutes(Math.ceil(oneDayFromToday.getMinutes() / 30) * 30);
+    oneDayFromToday.setSeconds(0);
+    oneDayFromToday.setMilliseconds(0);
+    const newPost = Post_1.Post.create(Object.assign(Object.assign({}, post), { sticked_date: isSticky ? today : undefined, sticky_expires: isSticky ? oneDayFromToday : undefined, expiry_date: isSticky ? twoDaysFromToday : oneDayFromToday, is_sticky: isSticky, public_date: isSticky ? today : post.public_date }));
     yield Post_1.Post.save(newPost);
 });
 exports.updatePostStickyVal = updatePostStickyVal;
@@ -472,7 +492,7 @@ const searchPosts = (limit, offset, city, stateId, propertyId, categoryId, price
     return { posts, count };
 });
 exports.searchPosts = searchPosts;
-const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset) => __awaiter(void 0, void 0, void 0, function* () {
+const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, fromPublicDateToFilter, toPublicDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset) => __awaiter(void 0, void 0, void 0, function* () {
     let posts;
     let totalPosts;
     const where = {};
@@ -503,19 +523,35 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
         };
     }
     if (fromCreationDateToFilter && toCreationDateToFilter) {
-        where.created_at = {
+        where.posted_date = {
             '>=': `${fromCreationDateToFilter} 00:00:00`,
             '<=': `${toCreationDateToFilter} 23:59:59`,
         };
     }
     else if (fromCreationDateToFilter) {
-        where.created_at = {
+        where.posted_date = {
             '>=': `${fromCreationDateToFilter} 00:00:00`,
         };
     }
     else if (toCreationDateToFilter) {
-        where.created_at = {
+        where.posted_date = {
             '<=': `${toCreationDateToFilter} 23:59:59`,
+        };
+    }
+    if (fromPublicDateToFilter && toPublicDateToFilter) {
+        where.public_date = {
+            '>=': `${fromPublicDateToFilter} 00:00:00`,
+            '<=': `${toPublicDateToFilter} 23:59:59`,
+        };
+    }
+    else if (fromPublicDateToFilter) {
+        where.public_date = {
+            '>=': `${fromPublicDateToFilter} 00:00:00`,
+        };
+    }
+    else if (toPublicDateToFilter) {
+        where.public_date = {
+            '<=': `${toPublicDateToFilter} 23:59:59`,
         };
     }
     if (stickyStatusToFilter === -1)
@@ -523,9 +559,9 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
     else if (stickyStatusToFilter === 1)
         where.is_sticky = true;
     if (userTypeToFilter && userTypeToFilter === 'regular')
-        where.is_agent = false;
+        where.user_is_agent = false;
     else if (userTypeToFilter && userTypeToFilter === 'agent')
-        where.is_agent = true;
+        where.user_is_agent = true;
     if (postStatusToFilter) {
         switch (postStatusToFilter) {
             case 'Active':
@@ -546,7 +582,10 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
     }
     switch (orderByToFilter) {
         case 'Created':
-            order.created_at = 'DESC';
+            order.posted_date = 'DESC';
+            break;
+        case 'Public Date':
+            order.public_date = 'DESC';
             break;
         case 'Sticked':
             order.is_sticky = 'DESC';
@@ -564,7 +603,7 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
             order.category_id = 'DESC';
             break;
         default:
-            order.created_at = 'DESC';
+            order.posted_date = 'DESC';
             break;
     }
     try {
@@ -573,7 +612,20 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
             if (key === 'is_agent') {
                 return `users.${key} = ${value}`;
             }
-            if (key === 'created_at') {
+            if (key === 'posted_date') {
+                const from = value['>='];
+                const to = value['<='];
+                if (from && to) {
+                    return `latest_posts.posted_date >= '${from}' AND latest_posts.posted_date <= '${to}'`;
+                }
+                if (from) {
+                    return `latest_posts.posted_date >= '${from}'`;
+                }
+                if (to) {
+                    return `latest_posts.posted_date <= '${to}'`;
+                }
+            }
+            if (key === 'public_date') {
                 const from = value['>='];
                 const to = value['<='];
                 if (from && to) {
@@ -602,46 +654,57 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
             return `${key} = '${value}'`;
         })
             .join(' AND ');
-        const query = `SELECT latest_posts.*, (SELECT COUNT(*) FROM (
-        SELECT id, title, user_id, post_type, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
-        FROM posts
-        UNION ALL
-        SELECT id, title, user_id, post_type, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
-        FROM archive_posts
-        UNION ALL
-        SELECT id, title, user_id, post_type, city_id, city_title, category_id, category_title, property_id, property_title, price, description, is_sticky, is_reposted, repost_count, sticked_date, sticky_expires, repost_date, public_date, expiry_date, created_at, updated_at, deleted_at
-        FROM deleted_posts
-      ) AS latest_posts_count
+        const postsQuery = Post_1.Post.createQueryBuilder('post')
+            .select('post.id, post.user_id, post.post_type, post.title, post.city_id, post.city_title, post.category_id, post.category_title, post.property_id, post.property_title, post.price, post.description, post.is_sticky, post.is_reposted, post.repost_count, post.sticked_date, post.sticky_expires, post.repost_date, post.posted_date, post.public_date, post.expiry_date, post.created_at, post.updated_at, post.deleted_at')
+            .addSelect('u.phone as user_phone, u.is_agent as user_is_agent')
+            .leftJoin(model_1.User, 'u', 'post.user_id = u.id')
+            .getQuery();
+        const archivedPostsQuery = ArchivePost_1.ArchivePost.createQueryBuilder('post')
+            .select('post.id, post.user_id, post.post_type, post.title, post.city_id, post.city_title, post.category_id, post.category_title, post.property_id, post.property_title, post.price, post.description, post.is_sticky, post.is_reposted, post.repost_count, post.sticked_date, post.sticky_expires, post.repost_date, post.posted_date, post.public_date, post.expiry_date, post.created_at, post.updated_at, post.deleted_at')
+            .addSelect('u.phone as user_phone, u.is_agent as user_is_agent')
+            .leftJoin(model_1.User, 'u', 'post.user_id = u.id')
+            .getQuery();
+        const deletedPostsQuery = DeletedPost_1.DeletedPost.createQueryBuilder('post')
+            .select('post.id, post.user_id, post.post_type, post.title, post.city_id, post.city_title, post.category_id, post.category_title, post.property_id, post.property_title, post.price, post.description, post.is_sticky, post.is_reposted, post.repost_count, post.sticked_date, post.sticky_expires, post.repost_date, post.posted_date, post.public_date, post.expiry_date, post.created_at, post.updated_at, post.deleted_at')
+            .addSelect('u.phone as user_phone, u.is_agent as user_is_agent')
+            .leftJoin(model_1.User, 'u', 'post.user_id = u.id')
+            .getQuery();
+        const unionQuery = `(${postsQuery}) UNION (${archivedPostsQuery}) UNION (${deletedPostsQuery})`;
+        const temp = yield db_1.default.query(`
+      SELECT *
+      FROM (${unionQuery}) AS latest_posts
       ${whereClause ? `WHERE ${whereClause}` : ''}
-      ) AS total_count,
-        users.id as user_id,
-        users.phone as user_phone,
-        users.is_agent as user_is_agent
-      FROM (
-        SELECT posts.id, posts.user_id, posts.post_type, posts.title, posts.city_id, posts.city_title, posts.category_id, posts.category_title, posts.property_id, posts.property_title, posts.price, posts.description, posts.is_sticky, posts.is_reposted, posts.repost_count, posts.sticked_date, posts.sticky_expires, posts.repost_date, posts.public_date, posts.expiry_date, posts.created_at, posts.updated_at, posts.deleted_at
-        FROM posts
-        UNION ALL
-        SELECT archive_posts.id, archive_posts.user_id, archive_posts.post_type, archive_posts.title, archive_posts.city_id, archive_posts.city_title, archive_posts.category_id, archive_posts.category_title, archive_posts.property_id, archive_posts.property_title, archive_posts.price, archive_posts.description, archive_posts.is_sticky, archive_posts.is_reposted, archive_posts.repost_count, archive_posts.sticked_date, archive_posts.sticky_expires, archive_posts.repost_date, archive_posts.public_date, archive_posts.expiry_date, archive_posts.created_at, archive_posts.updated_at, archive_posts.deleted_at
-        FROM archive_posts
-        UNION ALL
-        SELECT deleted_posts.id,  deleted_posts.user_id, deleted_posts.post_type, deleted_posts.title, deleted_posts.city_id, deleted_posts.city_title, deleted_posts.category_id, deleted_posts.category_title, deleted_posts.property_id, deleted_posts.property_title, deleted_posts.price, deleted_posts.description, deleted_posts.is_sticky, deleted_posts.is_reposted, deleted_posts.repost_count, deleted_posts.sticked_date, deleted_posts.sticky_expires, deleted_posts.repost_date, deleted_posts.public_date, deleted_posts.expiry_date, deleted_posts.created_at, deleted_posts.updated_at, deleted_posts.deleted_at
-        FROM deleted_posts
-      ) AS latest_posts
-        LEFT JOIN users ON latest_posts.user_id = users.id
-        ${whereClause ? `WHERE ${whereClause}` : ''}
-        ORDER BY latest_posts.${Object.keys(order)[0]} DESC
-        LIMIT 10
-        OFFSET ${offset}
-      `;
-        const result = yield db_1.default.query(query);
+      ORDER BY latest_posts.${Object.keys(order)[0]} DESC
+    `);
+        const result = yield db_1.default.query(`
+      SELECT *
+      FROM (${unionQuery}) AS latest_posts
+      ${whereClause ? `WHERE ${whereClause}` : ''}
+      ORDER BY latest_posts.${Object.keys(order)[0]} DESC
+      LIMIT 10
+      OFFSET ${offset}
+    `);
+        const allPosts = [];
+        const filteredPosts = [];
+        temp.forEach((post) => allPosts.push(post.id));
+        result.forEach((post) => filteredPosts.push(post.id));
+        console.log(allPosts);
+        console.log('-----');
+        console.log(filteredPosts);
+        const countResult = yield db_1.default.query(`
+      SELECT COUNT(*) AS count
+      FROM (${unionQuery}) AS latest_posts
+      ${whereClause ? `WHERE ${whereClause}` : ''}
+    `);
+        const totalCount = countResult[0].count;
         posts = result;
-        totalPosts = result.length > 0 ? result[0].total_count : 0;
+        totalPosts = result.length > 0 ? totalCount : 0;
         posts === null || posts === void 0 ? void 0 : posts.forEach((post) => {
             var _a, _b;
-            post.postedDate = (0, timestampUtls_1.parseTimestamp)(post.updated_at).parsedDate;
-            post.postedTime = (0, timestampUtls_1.parseTimestamp)(post.updated_at).parsedTime;
             post.publicDate = (0, timestampUtls_1.parseTimestamp)(post.public_date).parsedDate;
             post.publicTime = (0, timestampUtls_1.parseTimestamp)(post.public_date).parsedTime;
+            post.postedDate = (0, timestampUtls_1.parseTimestamp)(post.posted_date).parsedDate;
+            post.postedTime = (0, timestampUtls_1.parseTimestamp)(post.posted_date).parsedTime;
             post.expiredDate = (0, timestampUtls_1.parseTimestamp)(post.expiry_date).parsedDate;
             post.expiredTime = (0, timestampUtls_1.parseTimestamp)(post.expiry_date).parsedTime;
             post.repostedDate = post.repost_date ? (0, timestampUtls_1.parseTimestamp)(post.repost_date).parsedDate : null;

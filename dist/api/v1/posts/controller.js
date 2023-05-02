@@ -144,8 +144,9 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
                 }
             }
             postInfo.media = media;
+            const postedDate = new Date();
             const publicDate = new Date();
-            const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit, publicDate);
+            const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit, postedDate, publicDate);
             yield (0, service_2.updateCredit)(userId, typeOfCredit, 1, 'SUB', credit);
             logger_1.default.info(`User: ${user.phone} created new post: ${newPost.id}`);
             logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
@@ -338,8 +339,9 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             repost_count: post.repost_count,
             views: post.views,
         };
-        const publicDate = post.public_date;
-        const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit, publicDate);
+        const postedDate = post.posted_date;
+        const publicDate = new Date();
+        const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit, postedDate, publicDate);
         yield (0, service_3.removeArchivedPost)(post.id);
         yield (0, service_2.updateCredit)(user.id, typeOfCredit, 1, 'SUB', credit);
         const repostCount = post.repost_count + 1;
@@ -397,8 +399,10 @@ const restore = (req, res, next) => __awaiter(void 0, void 0, void 0, function* 
             repost_count: post.repost_count,
             views: post.views,
             expiry_date: post.expiry_date,
+            posted_date: post.posted_date,
             public_date: post.public_date,
             is_sticky: post.is_sticky,
+            sticky_expires: post.sticky_expires,
             post_type: 'active',
             credit_type: post.credit_type,
             user: userObj,

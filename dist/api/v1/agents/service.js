@@ -98,6 +98,12 @@ const initOrUpdateAgent = (user) => __awaiter(void 0, void 0, void 0, function* 
     //   today.getSeconds(),
     // );
     const twoDaysFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, today.getHours(), today.getMinutes(), today.getSeconds());
+    today.setMinutes(Math.ceil(today.getMinutes() / 30) * 30);
+    today.setSeconds(0);
+    today.setMilliseconds(0);
+    twoDaysFromToday.setMinutes(Math.ceil(twoDaysFromToday.getMinutes() / 30) * 30);
+    twoDaysFromToday.setSeconds(0);
+    twoDaysFromToday.setMilliseconds(0);
     let agentData;
     if (agent) {
         agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { subscription_start_date: today, subscription_ends_date: twoDaysFromToday }));
@@ -143,6 +149,8 @@ const fireAgentExpirationAlert = (userIds) => __awaiter(void 0, void 0, void 0, 
 exports.fireAgentExpirationAlert = fireAgentExpirationAlert;
 const setSubscriptionNull = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const agent = yield findAgentByUserId(userId);
+    if (!agent)
+        return;
     const agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { 
         // @ts-ignore
         subscription_start_date: null, subscription_ends_date: null }));

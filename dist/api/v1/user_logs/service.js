@@ -14,6 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.fetchLogsByUser = exports.fetchLogsByPostId = exports.saveUserLog = void 0;
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
+const timestampUtls_1 = require("../../../utils/timestampUtls");
 const service_1 = require("../users/service");
 const model_1 = require("./model");
 const saveUserLog = (logs) => __awaiter(void 0, void 0, void 0, function* () {
@@ -33,7 +34,7 @@ const fetchLogsByPostId = (postId, offset) => __awaiter(void 0, void 0, void 0, 
         take: 10,
     });
     logs === null || logs === void 0 ? void 0 : logs.forEach((log) => {
-        log.publish_date = log.created_at.toISOString().slice(0, 10);
+        log.publish_date = (0, timestampUtls_1.getLocaleDate)(log.created_at);
     });
     const totalPages = Math.ceil(count / 10);
     const response = { logs, totalPages, totalResults: count };
@@ -57,7 +58,7 @@ const fetchLogsByUser = (user, offset) => __awaiter(void 0, void 0, void 0, func
         take: 10,
     });
     logs === null || logs === void 0 ? void 0 : logs.forEach((log) => {
-        log.publish_date = log.created_at.toISOString().slice(0, 10);
+        log.publish_date = (0, timestampUtls_1.getLocaleDate)(log.created_at);
     });
     const totalPages = Math.ceil(count / 10);
     const response = { logs, totalPages, totalResults: count };

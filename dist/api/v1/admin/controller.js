@@ -85,9 +85,9 @@ const logout = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.logout = logout;
 const filterPosts = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset, } = req.body;
+    const { locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, fromPublicDateToFilter, toPublicDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset, } = req.body;
     try {
-        const { posts, totalPages, totalResults } = yield (0, service_2.filterPostsForAdmin)(locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset);
+        const { posts, totalPages, totalResults } = yield (0, service_2.filterPostsForAdmin)(locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, fromPublicDateToFilter, toPublicDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset);
         return res.status(200).json({ posts, totalPages, totalResults });
     }
     catch (error) {
@@ -182,7 +182,8 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             post = yield (0, service_2.findArchivedPostById)(postId);
         if (!post)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
-        const publicDate = post.public_date;
+        const postedDate = post.posted_date;
+        const publicDate = new Date();
         const postInfo = {
             id: post.id,
             title: post.title,
@@ -201,7 +202,7 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             repost_count: post.repost_count + 1,
             views: post.views,
         };
-        const newPost = yield (0, service_2.savePost)(postInfo, post.user, 'regular', publicDate);
+        const newPost = yield (0, service_2.savePost)(postInfo, post.user, 'regular', postedDate, publicDate);
         yield (0, service_2.removeArchivedPost)(post.id);
         const repostCount = post.repost_count + 1;
         yield (0, service_2.updatePostRepostVals)(newPost, true, repostCount);
@@ -254,8 +255,8 @@ const filterUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 adminComment: user.admin_comment,
                 is_blocked: user.is_blocked,
                 is_deleted: user.is_deleted,
-                lastPostDate: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedDate : null,
-                lastPostTime: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedTime : null,
+                lastActivityDate: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedDate : null,
+                lastActivityTime: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedTime : null,
                 registeredDate: (0, timestampUtls_1.parseTimestamp)(user.created_at).parsedDate,
                 registeredTime: (0, timestampUtls_1.parseTimestamp)(user.created_at).parsedTime,
                 created_at: user.created_at,
@@ -334,8 +335,8 @@ const fetchUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function
             subscriptionEndsTime: user.agent && user.agent.length && ((_d = user === null || user === void 0 ? void 0 : user.agent[0]) === null || _d === void 0 ? void 0 : _d.subscription_ends_date)
                 ? (0, timestampUtls_1.parseTimestamp)(user.agent[0].subscription_ends_date).parsedTime
                 : null,
-            lastPostDate: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedDate : null,
-            lastPostTime: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedTime : null,
+            lastActivityDate: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedDate : null,
+            lastActivityTime: user.posts && user.posts.length ? (0, timestampUtls_1.parseTimestamp)((0, service_3.getLastActivity)(user)).parsedTime : null,
             post: {
                 active: (_e = user.posts) === null || _e === void 0 ? void 0 : _e.length,
                 repost: (_f = user.posts) === null || _f === void 0 ? void 0 : _f.filter((post) => post.is_reposted).length,
@@ -566,7 +567,6 @@ const removeUserPermanently = (req, res, next) => __awaiter(void 0, void 0, void
         yield model_4.Transaction.delete({ user: { id: userId } });
         yield model_5.Otp.delete({ user: { id: userId } });
         yield model_2.Agent.delete({ user: { id: userId } });
-        yield model_3.User.delete({ id: userId });
         yield model_1.Credit.delete({ user: { id: userId } });
         yield model_4.Transaction.delete({ user: { id: userId } });
         yield DeletedPost_1.DeletedPost.delete({ user: { id: userId } });
@@ -580,6 +580,7 @@ const removeUserPermanently = (req, res, next) => __awaiter(void 0, void 0, void
             yield (0, service_2.removeArchivedPost)(post.id, post);
             yield (0, service_8.updateLocationCountValue)(post.city_id, 'decrement');
         }));
+        yield model_3.User.delete({ id: userId });
         return res.status(200).json({ success: 'User deleted permanently' });
     }
     catch (error) {

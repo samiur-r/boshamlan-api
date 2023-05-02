@@ -23,7 +23,7 @@ const slackUtils_1 = require("./slackUtils");
 function scheduledTaskPerHour() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            logger_1.default.info('Running hourly cron job');
+            logger_1.default.info('Running half hourly cron job');
             const ids = yield (0, service_1.getExpiredAgentUserIds)();
             yield (0, service_4.updateBulkIsUserAnAgent)(ids, false);
             yield (0, service_2.updateAgentCredit)(ids, 0);
@@ -53,7 +53,7 @@ function scheduledTaskPerFiveMins() {
         }
     });
 }
-const cronJobPerHour = node_cron_1.default.schedule('*/1 * * * *', scheduledTaskPerHour);
+const cronJobPerHour = node_cron_1.default.schedule('*/30 * * * *', scheduledTaskPerHour);
 exports.cronJobPerHour = cronJobPerHour;
 const cronJobPerFiveMins = node_cron_1.default.schedule('*/5 * * * *', scheduledTaskPerFiveMins);
 exports.cronJobPerFiveMins = cronJobPerFiveMins;

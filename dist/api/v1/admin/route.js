@@ -48,7 +48,6 @@ router.put('/edit-agent', AuthMiddleware_1.isAdminAuth, AdminController.editAgen
 router.post('/verify-user', AuthMiddleware_1.isAdminAuth, AdminController.verifyUser);
 router.post('/get-transactions', AuthMiddleware_1.isAdminAuth, AdminController.fetchTransactions);
 router.get('/dashboard', AuthMiddleware_1.isAdminAuth, AdminController.fetchDashboardInfo);
-router.post('/get-test', AuthMiddleware_1.isAdminAuth, AdminController.fetchTestItems);
 router.put('/block-status', AuthMiddleware_1.isAdminAuth, AdminController.updateUserBlockStatus);
 router.put('/admin-comment', AuthMiddleware_1.isAdminAuth, AdminController.updateUserComment);
 router.delete('/user-permanent', AuthMiddleware_1.isAdminAuth, AdminController.removeUserPermanently);

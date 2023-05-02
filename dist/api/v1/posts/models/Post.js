@@ -115,6 +115,10 @@ __decorate([
     __metadata("design:type", Date)
 ], Post.prototype, "public_date", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
+], Post.prototype, "posted_date", void 0);
+__decorate([
     (0, typeorm_1.Column)(),
     __metadata("design:type", Date)
 ], Post.prototype, "expiry_date", void 0);

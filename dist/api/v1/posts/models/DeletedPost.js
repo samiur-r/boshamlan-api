@@ -109,6 +109,10 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", Date)
+], DeletedPost.prototype, "posted_date", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ nullable: true }),
+    __metadata("design:type", Date)
 ], DeletedPost.prototype, "sticked_date", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
