@@ -825,7 +825,7 @@ const filterPostsForAdmin = async (
 
   switch (orderByToFilter) {
     case 'Created':
-      order.posted_date = 'DESC';
+      order.public_date = 'DESC';
       break;
     case 'Public Date':
       order.public_date = 'DESC';
@@ -846,7 +846,7 @@ const filterPostsForAdmin = async (
       order.category_id = 'DESC';
       break;
     default:
-      order.posted_date = 'DESC';
+      order.public_date = 'DESC';
       break;
   }
 
@@ -925,13 +925,6 @@ const filterPostsForAdmin = async (
 
     const unionQuery = `(${postsQuery}) UNION (${archivedPostsQuery}) UNION (${deletedPostsQuery})`;
 
-    const temp = await AppDataSource.query(`
-      SELECT *
-      FROM (${unionQuery}) AS latest_posts
-      ${whereClause ? `WHERE ${whereClause}` : ''}
-      ORDER BY latest_posts.${Object.keys(order)[0]} DESC
-    `);
-
     const result = await AppDataSource.query(`
       SELECT *
       FROM (${unionQuery}) AS latest_posts
@@ -940,16 +933,6 @@ const filterPostsForAdmin = async (
       LIMIT 10
       OFFSET ${offset}
     `);
-
-    const allPosts: any[] = [];
-    const filteredPosts: any[] = [];
-
-    temp.forEach((post: { id: any }) => allPosts.push(post.id));
-    result.forEach((post: { id: any }) => filteredPosts.push(post.id));
-    console.log(offset);
-    console.log(allPosts);
-    console.log('-----');
-    console.log(filteredPosts);
 
     const countResult = await AppDataSource.query(`
       SELECT COUNT(*) AS count
