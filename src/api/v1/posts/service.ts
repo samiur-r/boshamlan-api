@@ -941,9 +941,9 @@ const filterPostsForAdmin = async (
       OFFSET ${offset}
     `);
 
-    console.log(temp);
+    temp.forEach((post: { id: any }) => console.log(post.id));
     console.log('-----');
-    console.log(result);
+    result.forEach((post: { id: any }) => console.log(post.id));
 
     const countResult = await AppDataSource.query(`
       SELECT COUNT(*) AS count
