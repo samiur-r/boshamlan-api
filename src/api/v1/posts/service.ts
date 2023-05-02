@@ -946,6 +946,7 @@ const filterPostsForAdmin = async (
 
     temp.forEach((post: { id: any }) => allPosts.push(post.id));
     result.forEach((post: { id: any }) => filteredPosts.push(post.id));
+    console.log(offset);
     console.log(allPosts);
     console.log('-----');
     console.log(filteredPosts);
