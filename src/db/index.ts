@@ -29,7 +29,7 @@ const AppDataSource = new DataSource({
   migrationsRun: false,
   ssl: {
     rejectUnauthorized: false,
-  }, 
+  },
   entities: [
     User,
     Credit,
