@@ -849,7 +849,7 @@ const filterPostsForAdmin = async (
       order.category_id = 'DESC';
       break;
     default:
-      order.posted_date = 'DESC';
+      order.public_date = 'DESC';
       break;
   }
 
@@ -933,7 +933,7 @@ const filterPostsForAdmin = async (
       FROM (${unionQuery}) AS latest_posts
       ${whereClause ? `WHERE ${whereClause}` : ''}
       ORDER BY latest_posts.${Object.keys(order)[0]} DESC
-      LIMIT 10
+      LIMIT 50
       OFFSET ${offset}
     `);
 
@@ -968,7 +968,7 @@ const filterPostsForAdmin = async (
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
   }
-  const totalPages = totalPosts ? Math.ceil(totalPosts / 10) : null;
+  const totalPages = totalPosts ? Math.ceil(totalPosts / 50) : null;
 
   return { posts, totalPages, totalResults: totalPosts };
 };

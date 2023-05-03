@@ -121,8 +121,9 @@ const handleKpayResponse = async (req: Request, res: Response) => {
           } else {
             await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits as string, 10), 'ADD');
             if (packageTitle === 'agent') {
+              const { package_title } = response.data;
               const user = await updateIsUserAnAgent(response.data.user.id, true);
-              await initOrUpdateAgent(response.data.user);
+              await initOrUpdateAgent(response.data.user, package_title);
 
               logger.info(`Agent subscription initiated for user ${user.phone}`);
               await saveUserLog([

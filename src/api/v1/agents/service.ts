@@ -86,7 +86,7 @@ const updateAgent = async (agentInfo: any, userId: number) => {
   await Agent.save(agentData);
 };
 
-const initOrUpdateAgent = async (user: IUser) => {
+const initOrUpdateAgent = async (user: IUser, packageTitle: string) => {
   const agent = await findAgentByUserId(user.id);
   const today = new Date();
   // const twoMonthsFromToday = new Date(
@@ -97,6 +97,15 @@ const initOrUpdateAgent = async (user: IUser) => {
   //   today.getMinutes(),
   //   today.getSeconds(),
   // );
+
+  const oneDayFromToday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate() + 1,
+    today.getHours(),
+    today.getMinutes(),
+    today.getSeconds(),
+  );
 
   const twoDaysFromToday = new Date(
     today.getFullYear(),
@@ -111,6 +120,10 @@ const initOrUpdateAgent = async (user: IUser) => {
   today.setSeconds(0);
   today.setMilliseconds(0);
 
+  oneDayFromToday.setMinutes(Math.ceil(oneDayFromToday.getMinutes() / 30) * 30);
+  oneDayFromToday.setSeconds(0);
+  oneDayFromToday.setMilliseconds(0);
+
   twoDaysFromToday.setMinutes(Math.ceil(twoDaysFromToday.getMinutes() / 30) * 30);
   twoDaysFromToday.setSeconds(0);
   twoDaysFromToday.setMilliseconds(0);
@@ -121,13 +134,13 @@ const initOrUpdateAgent = async (user: IUser) => {
     agentData = Agent.create({
       ...agent,
       subscription_start_date: today,
-      subscription_ends_date: twoDaysFromToday,
+      subscription_ends_date: packageTitle === 'agent1' ? oneDayFromToday : twoDaysFromToday,
     });
   } else {
     agentData = Agent.create({
       name: 'agent',
       subscription_start_date: today,
-      subscription_ends_date: twoDaysFromToday,
+      subscription_ends_date: packageTitle === 'agent1' ? oneDayFromToday : twoDaysFromToday,
       user,
     });
   }

@@ -27,13 +27,13 @@ const fetchLogsByPostId = async (postId: number, offset: number) => {
     where: { post_id: postId },
     order: { created_at: 'DESC' },
     skip: offset,
-    take: 10,
+    take: 50,
   });
 
   logs?.forEach((log: { publish_date: any; created_at: { toISOString: () => string | any[] } }) => {
     log.publish_date = getLocaleDate(log.created_at);
   });
-  const totalPages = Math.ceil(count / 10);
+  const totalPages = Math.ceil(count / 50);
   const response = { logs, totalPages, totalResults: count };
 
   return response;
@@ -52,14 +52,14 @@ const fetchLogsByUser = async (user: string, offset: number) => {
     where: [{ user: userObj.phone }, { user: userObj.id.toString() }],
     order: { created_at: 'DESC' },
     skip: offset,
-    take: 10,
+    take: 50,
   });
 
   logs?.forEach((log: { publish_date: any; created_at: { toISOString: () => string | any[] } }) => {
     log.publish_date = getLocaleDate(log.created_at);
   });
 
-  const totalPages = Math.ceil(count / 10);
+  const totalPages = Math.ceil(count / 50);
   const response = { logs, totalPages, totalResults: count };
 
   return response;

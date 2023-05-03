@@ -175,7 +175,7 @@ const filterTransactionsForAdmin = async (
     where,
     order: { created_at: 'desc' },
     skip: offset,
-    take: 10,
+    take: 50,
   });
 
   transactions.forEach((transactionItem: any) => {
@@ -185,7 +185,7 @@ const filterTransactionsForAdmin = async (
     transactionItem.updatedTime = parseTimestamp(transactionItem.updated_at).parsedTime;
   });
 
-  const totalPages = Math.ceil(count / 10);
+  const totalPages = Math.ceil(count / 50);
   return { transactions, totalPages, totalResults: count };
 };
 

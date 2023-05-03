@@ -324,7 +324,7 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       offset,
     );
 
-    totalPages = Math.ceil(count / 10);
+    totalPages = Math.ceil(count / 50);
 
     const parsedUsers = users.map((user: any) => ({
       id: user.id,
@@ -621,19 +621,6 @@ const fetchDashboardInfo = async (req: Request, res: Response, next: NextFunctio
   }
 };
 
-const fetchTestItems = async (req: Request, res: Response, next: NextFunction) => {
-  const { offset } = req.body;
-  try {
-    let totalPages = null;
-    if (offset === 0) totalPages = Math.ceil(100 / 10);
-    const { data } = await axios.get(`https://jsonplaceholder.typicode.com/posts?_start=${offset}&_limit=10`);
-    return res.status(200).json({ totalPages, items: data });
-  } catch (error) {
-    logger.error(`${error.name}: ${error.message}`);
-    return next(error);
-  }
-};
-
 const updateUserBlockStatus = async (req: Request, res: Response, next: NextFunction) => {
   const { userId, status } = req.body;
 
@@ -798,7 +785,6 @@ export {
   verifyUser,
   fetchTransactions,
   fetchDashboardInfo,
-  fetchTestItems,
   updateUserBlockStatus,
   deletePostPermanently,
   rePost,

@@ -214,7 +214,7 @@ const filterUsersForAdmin = async (
     .orderBy(order, 'DESC')
     .where(where)
     .skip(offset)
-    .take(10)
+    .take(50)
     .getMany();
 
   return { users, count };
