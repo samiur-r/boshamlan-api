@@ -16,7 +16,7 @@ router.delete('/delete-post', isAdminAuth, AdminController.deletePost);
 router.delete('/delete-post-permanent', isAdminAuth, AdminController.deletePostPermanently);
 router.post('/repost', isAdminAuth, AdminController.rePost);
 router.post('/get-logs', isAdminAuth, AdminController.fetchLogs);
-router.post('/update-credit', isAdminAuth, AdminController.updateCredit);
+router.post('/update-credit', isAdminAuth, AdminController.updateUserCredit);
 router.post('/get-user-info', isAdminAuth, AdminController.fetchUserWithAgentInfo);
 router.put('/edit-user', isAdminAuth, AdminController.editUser);
 router.put('/edit-agent', isAdminAuth, AdminController.editAgent);

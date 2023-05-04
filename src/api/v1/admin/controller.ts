@@ -3,8 +3,6 @@
 /* eslint-disable no-param-reassign */
 import { NextFunction, Request, Response } from 'express';
 
-import axios from 'axios';
-import { getConnection, getRepository, QueryBuilder } from 'typeorm';
 import { hashPassword, verifyToken } from '../../../utils/passwordUtils';
 import logger from '../../../utils/logger';
 import {
@@ -38,13 +36,14 @@ import {
   findUserById,
   findUserWithAgentInfo,
   getLastActivity,
+  updateIsUserAnAgent,
   updateUser,
   updateUserStatus,
 } from '../users/service';
 import { fetchLogsByPostId, fetchLogsByUser, saveUserLog } from '../user_logs/service';
-import { findCreditByUserId, initCredits, setCreditsToZeroByUserId } from '../credits/service';
+import { findCreditByUserId, initCredits, setCreditsToZeroByUserId, updateCredit } from '../credits/service';
 import { filterTransactionsForAdmin, findTransactionById } from '../transactions/service';
-import { findAgentById, findAgentByUserId, setSubscriptionNull } from '../agents/service';
+import { findAgentById, findAgentByUserId, initOrUpdateAgent, setSubscriptionNull } from '../agents/service';
 import { Credit } from '../credits/model';
 import { Agent } from '../agents/model';
 import { sendSms } from '../../../utils/smsUtils';
@@ -476,7 +475,7 @@ const fetchUser = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-const updateCredit = async (req: Request, res: Response, next: NextFunction) => {
+const updateUserCredit = async (req: Request, res: Response, next: NextFunction) => {
   const { creditAmount, creditType, userId } = req.body;
 
   try {
@@ -688,6 +687,17 @@ const updateTransactionStatus = async (req: Request, res: Response, next: NextFu
       status: transactionStatus,
     });
 
+    if (transactionStatus === 'completed') {
+      const packageTitle = transaction.package_title.slice(0, -1);
+
+      await updateCredit(transaction.user.id, packageTitle, transaction.package.numberOfCredits, 'ADD');
+
+      if (packageTitle === 'agent') {
+        await updateIsUserAnAgent(transaction.user.id, true);
+        await initOrUpdateAgent(transaction.user, transaction.package_title);
+      }
+    }
+
     return res.status(200).json({ success: `Transaction updated successfully` });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
@@ -797,7 +807,7 @@ export {
   deletePost,
   fetchLogs,
   filterUsers,
-  updateCredit,
+  updateUserCredit,
   fetchUser,
   fetchUserWithAgentInfo,
   editUser,
