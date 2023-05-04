@@ -400,6 +400,7 @@ const findPostByUserId = async (userId: number) => {
 const findArchivedPostByUserId = async (limit: number, offset: number | undefined, userId: number | undefined) => {
   const archivePosts: IPost[] | null = await ArchivePost.find({
     where: { user: { id: userId } },
+    order: { public_date: 'DESC' },
     take: limit,
     skip: offset,
   });
@@ -644,7 +645,7 @@ const findPosts = async (limit: number, offset: number | undefined, userId: numb
   const queryOptions: any = {
     order: {
       is_sticky: 'DESC',
-      created_at: 'DESC',
+      public_date: 'DESC',
     },
     take: limit,
     skip: offset,
@@ -706,7 +707,7 @@ const searchPosts = async (
     where: searchCriteria,
     order: {
       is_sticky: 'DESC',
-      created_at: 'DESC',
+      public_date: 'DESC',
     },
     take: limit,
     skip: offset,

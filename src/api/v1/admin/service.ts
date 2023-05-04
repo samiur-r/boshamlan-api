@@ -102,14 +102,14 @@ const getUserSummary = async () => {
       user.created_at <= new Date(`${yesterday} 23:59:59`),
   ).length;
   const activeToday = users.filter((user) => {
-    return posts.some((post) => post.user.id === user.id && post.created_at >= new Date(`${today} 00:00:00`));
+    return posts.some((post) => post.user.id === user.id && post.public_date >= new Date(`${today} 00:00:00`));
   }).length;
   const activeYesterday = users.filter((user) => {
     return posts.some(
       (post) =>
         post.user.id === user.id &&
-        post.created_at >= new Date(`${yesterday} 00:00:00`) &&
-        post.created_at <= new Date(`${yesterday} 23:59:59`),
+        post.public_date >= new Date(`${yesterday} 00:00:00`) &&
+        post.public_date <= new Date(`${yesterday} 23:59:59`),
     );
   }).length;
   const activeAgents = users.filter((user) => user.is_agent).length;

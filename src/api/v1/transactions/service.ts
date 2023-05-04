@@ -189,10 +189,16 @@ const filterTransactionsForAdmin = async (
   return { transactions, totalPages, totalResults: count };
 };
 
+const findTransactionById = async (transactionId: number) => {
+  const transaction = await Transaction.findOne({ where: { id: transactionId } });
+  return transaction;
+};
+
 export {
   saveTransaction,
   editTransaction,
   editTransactionStatus,
   findTransactionsByUserId,
   filterTransactionsForAdmin,
+  findTransactionById,
 };

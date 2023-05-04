@@ -43,7 +43,7 @@ import {
 } from '../users/service';
 import { fetchLogsByPostId, fetchLogsByUser, saveUserLog } from '../user_logs/service';
 import { findCreditByUserId, initCredits, setCreditsToZeroByUserId } from '../credits/service';
-import { filterTransactionsForAdmin } from '../transactions/service';
+import { filterTransactionsForAdmin, findTransactionById } from '../transactions/service';
 import { findAgentById, findAgentByUserId, setSubscriptionNull } from '../agents/service';
 import { Credit } from '../credits/model';
 import { Agent } from '../agents/model';
@@ -675,6 +675,26 @@ const updateUserComment = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+const updateTransactionStatus = async (req: Request, res: Response, next: NextFunction) => {
+  const { transactionId, transactionStatus } = req.body;
+
+  try {
+    if (!transactionId) throw new ErrorHandler(404, 'Invalid transaction id');
+    const transaction = await findTransactionById(transactionId);
+    if (!transaction) throw new ErrorHandler(401, 'transaction not found');
+
+    await Transaction.save({
+      ...transaction,
+      status: transactionStatus,
+    });
+
+    return res.status(200).json({ success: `Transaction updated successfully` });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
 const removeUserPermanently = async (req: Request, res: Response, next: NextFunction) => {
   const { userId } = req.body;
 
@@ -791,4 +811,5 @@ export {
   updateUserComment,
   removeUserPermanently,
   restore,
+  updateTransactionStatus,
 };

@@ -116,10 +116,10 @@ const filterUsersForAdmin = async (
         where = `(credits.free < 1 OR user.status = 'not_verified')`;
         break;
       case 'Active Today':
-        where = `post.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
+        where = `post.public_date BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
         break;
       case 'Active Yesterday':
-        where = `post.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
+        where = `post.public_date BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
         break;
       case 'Has Regular Credit History':
         where = `transactions.status = 'completed' AND (transactions.package_title = 'regular1' OR transactions.package_title = 'regular2')`;

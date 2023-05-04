@@ -25,6 +25,7 @@ router.post('/get-transactions', isAdminAuth, AdminController.fetchTransactions)
 router.get('/dashboard', isAdminAuth, AdminController.fetchDashboardInfo);
 router.put('/block-status', isAdminAuth, AdminController.updateUserBlockStatus);
 router.put('/admin-comment', isAdminAuth, AdminController.updateUserComment);
+router.put('/transaction-status', isAdminAuth, AdminController.updateTransactionStatus);
 router.delete('/user-permanent', isAdminAuth, AdminController.removeUserPermanently);
 router.post('/restore', isAdminAuth, AdminController.restore);
 router.post('/test', AdminController.test);
