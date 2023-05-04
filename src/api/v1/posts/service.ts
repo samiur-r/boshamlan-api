@@ -314,12 +314,13 @@ const unstickPost = async () => {
 
   if (affectedPostIds && affectedPostIds.length) {
     for (const id of affectedPostIds) {
+      logger.info(`Post ${id} un sticked`);
       await saveUserLog([
         {
           post_id: id,
           transaction: undefined,
           user: undefined,
-          activity: 'Post un sticked',
+          activity: `Post ${id} un sticked`,
         },
       ]);
     }
@@ -333,6 +334,15 @@ const moveExpiredPosts = async () => {
     await removePost(post.id, post);
     await saveArchivedPost(post, post.user);
     await updateLocationCountValue(post.city_id, 'decrement');
+    logger.info(`Post ${post.id} by user ${post.user.phone} has archived`);
+    await saveUserLog([
+      {
+        post_id: post.id,
+        transaction: undefined,
+        user: post.user.phone,
+        activity: `Post ${post.id} by user ${post.user.phone} has archived`,
+      },
+    ]);
   });
 
   return expiredPosts;

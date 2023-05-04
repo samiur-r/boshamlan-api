@@ -197,6 +197,16 @@ const removeUser = async (req: Request, res: Response, next: NextFunction) => {
       await updateLocationCountValue(post.city_id, 'decrement');
     });
 
+    logger.info(`User ${user?.phone} deleted`);
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: undefined,
+        user: user?.phone,
+        activity: `User ${user?.phone} deleted`,
+      },
+    ]);
+
     return res.status(200).json({ success: 'User deleted successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);

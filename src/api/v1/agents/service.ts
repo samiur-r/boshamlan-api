@@ -8,6 +8,7 @@ import { sendSms } from '../../../utils/smsUtils';
 
 import { IUser } from '../users/interfaces';
 import { User } from '../users/model';
+import { saveUserLog } from '../user_logs/service';
 import { AgentInfoType, IAgent } from './interfaces';
 import { Agent } from './model';
 
@@ -175,6 +176,16 @@ const fireAgentExpirationAlert = async (userIds: number[]) => {
       await alertOnSlack('imp', slackMsg);
       // eslint-disable-next-line no-await-in-loop
       await sendSms(user.phone, 'Your subscription ended');
+      logger.info(`Agent ${user.phone} subscription has ended`);
+      // eslint-disable-next-line no-await-in-loop
+      await saveUserLog([
+        {
+          post_id: undefined,
+          transaction: undefined,
+          user: user?.phone,
+          activity: `Agent ${user.phone} subscription has ended`,
+        },
+      ]);
     } catch (error) {
       logger.error(`${error.name}: ${error.message}`);
     }

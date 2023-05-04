@@ -271,7 +271,15 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     await updatePostRepostVals(newPost, true, repostCount);
     await updateLocationCountValue(post.city_id, 'increment');
 
-    logger.info(`Post ${post.id} reposted by user ${user?.phone}`);
+    logger.info(`Post ${post.id} reposted by admin ${user?.phone}`);
+    await saveUserLog([
+      {
+        post_id: post.id,
+        transaction: undefined,
+        user: post.user.id,
+        activity: `Post ${post.id} reposted by admin ${user?.phone}`,
+      },
+    ]);
     return res.status(200).json({ success: 'Post is reposted successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
@@ -482,10 +490,21 @@ const updateUserCredit = async (req: Request, res: Response, next: NextFunction)
     const credit = await findCreditByUserId(userId);
     if (!credit) throw new ErrorHandler(401, 'Credit record not found');
 
-    await Credit.save({
+    const updatedCredit = await Credit.save({
       ...credit,
       [creditType]: creditAmount,
     });
+    logger.info(
+      `User ${credit?.user?.phone} credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`,
+    );
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: undefined,
+        user: credit?.user?.phone,
+        activity: `User ${credit?.user?.phone} credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`,
+      },
+    ]);
     return res.status(200).json({ success: 'Credit updated successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
@@ -508,12 +527,37 @@ const fetchUserWithAgentInfo = async (req: Request, res: Response, next: NextFun
 
 const editUser = async (req: Request, res: Response, next: NextFunction) => {
   const { id, phone, adminComment, password } = req.body;
+  const admin = res.locals?.user?.payload;
 
   try {
     const user = await findUserById(id);
     if (!user) throw new ErrorHandler(401, 'User not found');
 
     await updateUser(user, phone, adminComment, password);
+
+    if (phone !== user.phone) {
+      logger.info(`User ${user?.phone} phone updated to ${phone} by the admin ${admin?.phone}`);
+      await saveUserLog([
+        {
+          post_id: undefined,
+          transaction: undefined,
+          user: user?.phone,
+          activity: `User ${user?.phone} phone updated to ${phone} by the admin ${admin?.phone}`,
+        },
+      ]);
+    }
+
+    if (password) {
+      logger.info(`User ${user?.phone} password updated`);
+      await saveUserLog([
+        {
+          post_id: undefined,
+          transaction: undefined,
+          user: user?.phone,
+          activity: `User ${user?.phone} password updated`,
+        },
+      ]);
+    }
 
     return res.status(200).json({ success: 'User updated successfully' });
   } catch (error) {
@@ -622,6 +666,7 @@ const fetchDashboardInfo = async (req: Request, res: Response, next: NextFunctio
 
 const updateUserBlockStatus = async (req: Request, res: Response, next: NextFunction) => {
   const { userId, status } = req.body;
+  const admin = res.locals?.user?.payload;
 
   try {
     if (!userId) throw new ErrorHandler(404, 'Invalid user id');
@@ -646,6 +691,16 @@ const updateUserBlockStatus = async (req: Request, res: Response, next: NextFunc
       await removeAllPostsOfUser(userId);
       await setCreditsToZeroByUserId(userId);
     }
+
+    logger.info(`User ${user.phone} ${status ? 'blocked' : 'unblocked'} by admin ${admin.phone}`);
+    await saveUserLog([
+      {
+        post_id: undefined,
+        transaction: undefined,
+        user: user.phone,
+        activity: `User ${user.phone} ${status ? 'blocked' : 'unblocked'} by admin ${admin.phone}`,
+      },
+    ]);
 
     return res.status(200).json({ success: `User ${status === true ? ' blocked' : ' unblocked'} successfully` });
   } catch (error) {
@@ -773,14 +828,16 @@ const restore = async (req: Request, res: Response, next: NextFunction) => {
         post_id: undefined,
         transaction: undefined,
         user: userObj?.phone ?? undefined,
-        activity: 'User restored successfully',
+        activity: `User ${userObj.phone} restored by admin ${user?.phone}`,
       },
     ]);
     return res.status(200).json({ success: 'User is restored successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     logger.error(`User ${userId} restore attempt by admin ${user.phone} failed`);
-    await saveUserLog([{ post_id: undefined, transaction: undefined, user: userId, activity: 'User restore failed' }]);
+    await saveUserLog([
+      { post_id: undefined, transaction: undefined, user: userId, activity: 'User restoration failed' },
+    ]);
     return next(error);
   }
 };
