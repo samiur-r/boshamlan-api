@@ -542,7 +542,7 @@ const editUser = async (req: Request, res: Response, next: NextFunction) => {
         {
           post_id: undefined,
           transaction: undefined,
-          user: user?.phone,
+          user: phone !== user.phone ? phone : user?.phone,
           activity: `User ${user?.phone} phone updated to ${phone} by the admin ${admin?.phone}`,
         },
       ]);
