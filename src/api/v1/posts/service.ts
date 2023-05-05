@@ -310,17 +310,15 @@ const unstickPost = async () => {
 
   await Post.save(updatedPosts);
 
-  const affectedPostIds = affectedPosts.map((post) => post.id);
-
-  if (affectedPostIds && affectedPostIds.length) {
-    for (const id of affectedPostIds) {
-      logger.info(`Post ${id} un sticked`);
+  if (affectedPosts && affectedPosts.length) {
+    for (const post of affectedPosts) {
+      logger.info(`Post ${post.id} un sticked`);
       await saveUserLog([
         {
-          post_id: id,
+          post_id: post.id,
           transaction: undefined,
-          user: undefined,
-          activity: `Post ${id} un sticked`,
+          user: post.user.phone,
+          activity: `Post ${post.id} un sticked`,
         },
       ]);
     }

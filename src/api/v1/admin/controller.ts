@@ -40,7 +40,7 @@ import {
   updateUser,
   updateUserStatus,
 } from '../users/service';
-import { fetchLogsByPostId, fetchLogsByUser, saveUserLog } from '../user_logs/service';
+import { fetchLogsByPostId, fetchLogsByUser, saveUserLog, updatePhoneOfLogs } from '../user_logs/service';
 import { findCreditByUserId, initCredits, setCreditsToZeroByUserId, updateCredit } from '../credits/service';
 import { filterTransactionsForAdmin, findTransactionById } from '../transactions/service';
 import { findAgentById, findAgentByUserId, initOrUpdateAgent, setSubscriptionNull } from '../agents/service';
@@ -536,6 +536,7 @@ const editUser = async (req: Request, res: Response, next: NextFunction) => {
     await updateUser(user, phone, adminComment, password);
 
     if (phone !== user.phone) {
+      await updatePhoneOfLogs(user.phone, phone);
       logger.info(`User ${user?.phone} phone updated to ${phone} by the admin ${admin?.phone}`);
       await saveUserLog([
         {

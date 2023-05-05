@@ -65,4 +65,8 @@ const fetchLogsByUser = async (user: string, offset: number) => {
   return response;
 };
 
-export { saveUserLog, fetchLogsByPostId, fetchLogsByUser };
+const updatePhoneOfLogs = async (prevPhone: string, newPhone: string) => {
+  await UserLog.update({ user: prevPhone }, { user: newPhone });
+};
+
+export { saveUserLog, fetchLogsByPostId, fetchLogsByUser, updatePhoneOfLogs };
