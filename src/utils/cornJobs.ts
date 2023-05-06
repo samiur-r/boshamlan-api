@@ -37,7 +37,7 @@ async function scheduledTaskPerFiveMins() {
 }
 
 const cronJobPerHour = cron.schedule('*/30 * * * *', scheduledTaskPerHour);
-const cronJobPerFiveMins = cron.schedule('*/1 * * * *', scheduledTaskPerFiveMins);
+const cronJobPerFiveMins = cron.schedule('*/5 * * * *', scheduledTaskPerFiveMins);
 
 cronJobPerHour.on('error', (err) => {
   logger.info('Cron job error:', err.message);
