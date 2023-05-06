@@ -25,8 +25,6 @@ async function scheduledTaskPerFiveMins() {
     logger.info('Running per 5 mins cron job');
     const users = await findUnVerifiedUsers();
 
-    console.log(users);
-
     let slackMsg = `Unverified users: `;
 
     users.forEach((user) => {

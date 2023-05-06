@@ -69,8 +69,7 @@ const getLastActivity = (user: any) => {
 };
 
 const findUnVerifiedUsers = async () => {
-  const lessThanFiveMins = new Date(Date.now() - 1 * 60 * 1000); // 5 minutes ago
-  console.log(new Date(), lessThanFiveMins);
+  const lessThanFiveMins = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
   const users = await User.find({ where: { status: 'not_verified', created_at: MoreThan(lessThanFiveMins) } });
   return users;
 };
