@@ -192,8 +192,8 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
     const slackMsg = `Failed to create post\n\n ${
       postInfo?.phone ? `User: <https://wa.me/965${postInfo?.phone}|${postInfo?.phone}>` : ''
     }`;
-    logs.push({ post_id: undefined, transaction: undefined, user: `${userId}`, activity: 'Failed to create post' });
     await alertOnSlack('non-imp', slackMsg);
+    logs.push({ post_id: undefined, transaction: undefined, user: `${userId}`, activity: 'Failed to create post' });
     if (logs && logs.length) await saveUserLog(logs);
     return next(error);
   }
@@ -282,6 +282,8 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
     if (post.is_sticky) throw new ErrorHandler(304, 'Post is already sticky');
 
     await updatePostStickyVal(post, true);
+    const slackMsg = `Post ${post.id} by user: <https://wa.me/965${post?.user.phone}|${post?.user.phone}> is sticked`;
+    await alertOnSlack('imp', slackMsg);
     logger.info(`Post ${post.id} sticked by user ${user?.phone}`);
     await saveUserLog([
       {

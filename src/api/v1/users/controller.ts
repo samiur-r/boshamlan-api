@@ -207,6 +207,9 @@ const removeUser = async (req: Request, res: Response, next: NextFunction) => {
       },
     ]);
 
+    const slackMsg = `User: <https://wa.me/965${user.phone}|${user.phone}> is deleted`;
+    await alertOnSlack('imp', slackMsg);
+
     return res.status(200).json({ success: 'User deleted successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);

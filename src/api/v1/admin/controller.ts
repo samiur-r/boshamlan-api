@@ -61,6 +61,7 @@ import AppDataSource from '../../../db';
 import { Transaction } from '../transactions/model';
 import { Package } from '../packages/model';
 import { Otp } from '../otps/model';
+import { alertOnSlack } from '../../../utils/slackUtils';
 
 const register = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password, name } = req.body;
@@ -165,6 +166,8 @@ const stickPost = async (req: Request, res: Response, next: NextFunction) => {
     if (post.is_sticky) throw new ErrorHandler(304, 'Post is already sticky');
 
     await updatePostStickyVal(post, true);
+    const slackMsg = `Post ${post.id} by user: <https://wa.me/965${post?.user.phone}|${post?.user.phone}> is sticked`;
+    await alertOnSlack('imp', slackMsg);
     logger.info(`Post ${post.id} sticked by user ${user?.phone}`);
     return res.status(200).json({ success: 'Post is sticked successfully' });
   } catch (error) {
@@ -485,6 +488,7 @@ const fetchUser = async (req: Request, res: Response, next: NextFunction) => {
 
 const updateUserCredit = async (req: Request, res: Response, next: NextFunction) => {
   const { creditAmount, creditType, userId } = req.body;
+  const admin = res.locals.user.payload;
 
   try {
     const credit = await findCreditByUserId(userId);
@@ -505,6 +509,8 @@ const updateUserCredit = async (req: Request, res: Response, next: NextFunction)
         activity: `User ${credit?.user?.phone} credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`,
       },
     ]);
+    const slackMsg = `User credits updated by admin ${admin.phone} \n\n <https://wa.me/965${credit?.user?.phone}|${credit?.user?.phone}> credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`;
+    await alertOnSlack('imp', slackMsg);
     return res.status(200).json({ success: 'Credit updated successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
@@ -546,6 +552,8 @@ const editUser = async (req: Request, res: Response, next: NextFunction) => {
           activity: `User ${user?.phone} phone updated to ${phone} by the admin ${admin?.phone}`,
         },
       ]);
+      const slackMsg = `User ${user?.phone} phone updated to <https://wa.me/965${phone}|${phone}> by the admin ${admin?.phone}`;
+      await alertOnSlack('imp', slackMsg);
     }
 
     if (password) {

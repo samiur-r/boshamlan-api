@@ -5,6 +5,7 @@ import { sendSms } from '../../../utils/smsUtils';
 import { parseTimestamp } from '../../../utils/timestampUtls';
 import { IPackage } from '../packages/interfaces';
 import { IUser } from '../users/interfaces';
+import { findUserById, findUserByPhone } from '../users/service';
 import { Transaction } from './model';
 
 const saveTransaction = async (payload: {
@@ -45,7 +46,7 @@ const saveTransaction = async (payload: {
   if (status === 'created') {
     const slackMsg = `Payment created\n\n ${
       user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
-    }`;
+    }\n\nAdmin Comment: ${user.admin_comment || '-'} \n\nPackage Title: ${packageTitle}\n\nCost: ${amount}`;
     await alertOnSlack('imp', slackMsg);
   }
   return transaction;
@@ -81,27 +82,33 @@ const editTransaction = async (trackId: number, reference_id: string, tran_id: s
 
     switch (packageTitle) {
       case 'agent':
-        slackMsg = `Payment ${status === 'completed' ? 'successful. Subscription started.' : 'failed.'}\n\n ${
+        slackMsg = `Payment ${status} ${status === 'completed' ? '. Subscription started.' : ''}\n\n ${
           transactionObj?.user?.phone
             ? `User: <https://wa.me/965${transactionObj?.user?.phone}|${transactionObj?.user?.phone}>`
             : ''
-        }`;
+        }\n\nAdmin Comment: ${transactionObj.user.admin_comment || '-'}\n\nPackage Title: ${
+          transactionObj.package_title
+        }\n\nCost: ${transactionObj.amount}`;
         smsMsg = `Payment ${status === 'completed' ? 'successful. Subscription started.' : 'failed.'}`;
         break;
       case 'stickyDirec':
-        slackMsg = `Payment ${status === 'completed' ? 'successful. Post sticked.' : 'failed.'}\n\n ${
+        slackMsg = `Payment ${status} ${status === 'completed' ? '. Post sticked.' : 'failed.'}\n\n${
           transactionObj?.user?.phone
             ? `User: <https://wa.me/965${transactionObj?.user?.phone}|${transactionObj?.user?.phone}>`
             : ''
-        }`;
+        }\n\nAdmin Comment: ${transactionObj.user.admin_comment || '-'}\n\nPackage Title: ${
+          transactionObj.package_title
+        }\n\nCost: ${transactionObj.amount}`;
         smsMsg = `Payment ${status === 'completed' ? 'successful. Post sticked.' : 'failed.'}`;
         break;
       default:
-        slackMsg = `Payment ${status === 'completed' ? 'successful.' : 'failed.'}\n\n ${
+        slackMsg = `Payment ${status}\n\n ${
           transactionObj?.user?.phone
             ? `User: <https://wa.me/965${transactionObj?.user?.phone}|${transactionObj?.user?.phone}>`
             : ''
-        }`;
+        }\n\nAdmin Comment: ${transactionObj.user.admin_comment || '-'}\n\nPackage Title: ${
+          transactionObj.package_title
+        }\n\nCost: ${transactionObj.amount}`;
         smsMsg = `Payment ${status === 'completed' ? 'successful.' : 'failed.'}`;
         break;
     }
@@ -122,9 +129,11 @@ const editTransactionStatus = async (trackId: string | null, status: string) => 
     status,
   });
 
-  const slackMsg = `Payment canceled.\n\n${
+  const slackMsg = `Payment canceled.\n\nUser:${
     transaction?.user?.phone ? `User: <https://wa.me/965${transaction?.user?.phone}|${transaction?.user?.phone}>` : ''
-  }`;
+  }\n\nAdmin Commnet: ${transaction.user.admin_comment || '-'}\n\nPackage Title: ${
+    transaction.package_title
+  }\n\nCost: ${transaction.amount}`;
   const smsMsg = `Payment canceled`;
 
   await alertOnSlack('imp', slackMsg);
