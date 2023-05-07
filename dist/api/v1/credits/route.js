@@ -31,5 +31,7 @@ const AuthMiddleware_1 = require("../../../middlewares/AuthMiddleware");
 const CreditController = __importStar(require("./controller"));
 const router = express_1.default.Router();
 router.get('/sticky-credit', AuthMiddleware_1.isUserAuth, CreditController.fetchStickyCredits);
+router.get('/free-credit', AuthMiddleware_1.isUserAuth, CreditController.fetchFreeCredits);
+router.get('/user-has-only-sticky', AuthMiddleware_1.isUserAuth, CreditController.checkIfUserHasOnlySticky);
 exports.default = router;
 //# sourceMappingURL=route.js.map

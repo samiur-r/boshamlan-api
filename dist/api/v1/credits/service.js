@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setCreditsToZeroByUserId = exports.findStickyCredits = exports.typeOfCreditToDeduct = exports.findCreditByUserId = exports.updateAgentCredit = exports.updateCredit = exports.initCredits = void 0;
+exports.findFreeCredits = exports.setCreditsToZeroByUserId = exports.findStickyCredits = exports.typeOfCreditToDeduct = exports.findCreditByUserId = exports.updateAgentCredit = exports.updateCredit = exports.initCredits = void 0;
 const typeorm_1 = require("typeorm");
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const model_1 = require("./model");
@@ -48,12 +48,16 @@ creditData) => __awaiter(void 0, void 0, void 0, function* () {
     return updatedCredit;
 });
 exports.updateCredit = updateCredit;
-const typeOfCreditToDeduct = (userId, is_agent, isStickyPost) => __awaiter(void 0, void 0, void 0, function* () {
+const typeOfCreditToDeduct = (userId, is_agent, isStickyPost, isStickyOnly) => __awaiter(void 0, void 0, void 0, function* () {
     const credit = yield findCreditByUserId(userId);
     if (!credit)
         throw new ErrorHandler_1.default(500, 'Something went wrong');
     let typeOfCredit;
-    if (isStickyPost) {
+    if (isStickyOnly) {
+        if (credit.sticky > 0)
+            typeOfCredit = 'sticky';
+    }
+    else if (isStickyPost) {
         if (credit.sticky > 0)
             typeOfCredit = 'sticky';
     }
@@ -77,6 +81,13 @@ const findStickyCredits = (userId) => __awaiter(void 0, void 0, void 0, function
     return credits.sticky;
 });
 exports.findStickyCredits = findStickyCredits;
+const findFreeCredits = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const credits = yield model_1.Credit.findOne({ where: { user: { id: userId } } });
+    if (!credits)
+        return 0;
+    return credits.free;
+});
+exports.findFreeCredits = findFreeCredits;
 const setCreditsToZeroByUserId = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const credits = yield model_1.Credit.findOne({ where: { user: { id: userId } } });
     yield model_1.Credit.save(Object.assign(Object.assign({}, credits), { regular: 0, free: 0, sticky: 0, agent: 0 }));

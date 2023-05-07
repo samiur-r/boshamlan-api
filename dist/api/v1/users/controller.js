@@ -29,6 +29,8 @@ const Post_1 = require("../posts/models/Post");
 const ArchivePost_1 = require("../posts/models/ArchivePost");
 const service_4 = require("../posts/service");
 const service_5 = require("../locations/service");
+const service_6 = require("../credits/service");
+const doesUserHaveCredits_1 = __importDefault(require("../../../utils/doesUserHaveCredits"));
 const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { phone, password } = req.body;
     try {
@@ -36,7 +38,7 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
         yield validation_1.passwordSchema.validate(password, { abortEarly: false });
         const user = yield (0, service_1.findUserByPhone)(phone);
         if (!user)
-            throw new ErrorHandler_1.default(403, 'Incorrect phone or password');
+            return res.status(200).json({ isRedirectToRegister: true });
         if (user && user.status === 'not_verified')
             return res.status(200).json({ nextOperation: 'verify phone', userId: user.id });
         if (user && user.is_blocked)
@@ -46,11 +48,14 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
         const isValidPassword = yield (0, passwordUtils_1.verifyToken)(password, user.password);
         if (!isValidPassword)
             throw new ErrorHandler_1.default(403, 'Incorrect phone or password');
+        const credits = yield (0, service_6.findCreditByUserId)(user.id);
+        const userHasCredits = credits ? (0, doesUserHaveCredits_1.default)(credits) : false;
         const userPayload = {
             id: user.id,
             phone: user.phone,
             is_agent: user.is_agent,
             status: user.status,
+            userHasCredits,
         };
         const token = yield (0, jwtUtils_1.signJwt)(userPayload);
         logger_1.default.info(`User: ${user === null || user === void 0 ? void 0 : user.phone} logged in successfully`);
@@ -85,7 +90,7 @@ const register = (req, res, next) => __awaiter(void 0, void 0, void 0, function*
         yield validation_1.passwordSchema.validate(password, { abortEarly: false });
         const user = yield (0, service_1.findUserByPhone)(phone);
         if (user && user.status !== 'not_verified')
-            throw new ErrorHandler_1.default(409, 'User already exists');
+            return res.status(200).json({ isRedirectToLogin: true });
         if (user && user.status === 'not_verified')
             return res.status(200).json({ nextOperation: 'verify mobile', userId: user.id });
         const hashedPassword = yield (0, passwordUtils_1.hashPassword)(password);
@@ -153,7 +158,19 @@ const resetPassword = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         const slackMsg = `Password reset successfully\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         yield (0, smsUtils_1.sendSms)(user.phone, 'Password reset successfully');
-        return res.status(200).json({ success: 'Password updated successfully' });
+        const credits = yield (0, service_6.findCreditByUserId)(user.id);
+        const userHasCredits = credits ? (0, doesUserHaveCredits_1.default)(credits) : false;
+        const userPayload = {
+            id: user.id,
+            phone: user.phone,
+            is_agent: user.is_agent,
+            status: user.status,
+            userHasCredits,
+        };
+        const token = yield (0, jwtUtils_1.signJwt)(userPayload);
+        // @ts-ignore
+        res.cookie('token', token, config_1.default.cookieOptions);
+        return res.status(200).json({ success: userPayload });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);

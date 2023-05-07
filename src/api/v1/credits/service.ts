@@ -1,4 +1,4 @@
-import { In, MoreThan } from 'typeorm';
+import { In } from 'typeorm';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import { IUser } from '../users/interfaces';
 import { ICredit } from './interfaces';
@@ -46,13 +46,20 @@ const updateCredit = async (
   return updatedCredit;
 };
 
-const typeOfCreditToDeduct = async (userId: number, is_agent: boolean, isStickyPost: boolean) => {
+const typeOfCreditToDeduct = async (
+  userId: number,
+  is_agent: boolean,
+  isStickyPost: boolean,
+  isStickyOnly: boolean | undefined,
+) => {
   const credit = await findCreditByUserId(userId);
   if (!credit) throw new ErrorHandler(500, 'Something went wrong');
 
   let typeOfCredit;
 
-  if (isStickyPost) {
+  if (isStickyOnly) {
+    if (credit.sticky > 0) typeOfCredit = 'sticky';
+  } else if (isStickyPost) {
     if (credit.sticky > 0) typeOfCredit = 'sticky';
   } else if (credit.free > 0) typeOfCredit = 'free';
   else if (credit.agent > 0 && is_agent) typeOfCredit = 'agent';
@@ -70,6 +77,13 @@ const findStickyCredits = async (userId: number) => {
 
   if (!credits) return 0;
   return credits.sticky;
+};
+
+const findFreeCredits = async (userId: number) => {
+  const credits = await Credit.findOne({ where: { user: { id: userId } } });
+
+  if (!credits) return 0;
+  return credits.free;
 };
 
 const setCreditsToZeroByUserId = async (userId: number) => {
@@ -92,4 +106,5 @@ export {
   typeOfCreditToDeduct,
   findStickyCredits,
   setCreditsToZeroByUserId,
+  findFreeCredits,
 };

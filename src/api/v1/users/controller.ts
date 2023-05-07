@@ -17,6 +17,8 @@ import { Post } from '../posts/models/Post';
 import { ArchivePost } from '../posts/models/ArchivePost';
 import { removeArchivedPost, removePost, saveDeletedPost } from '../posts/service';
 import { updateLocationCountValue } from '../locations/service';
+import { findCreditByUserId } from '../credits/service';
+import hasCredits from '../../../utils/doesUserHaveCredits';
 
 const login = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
@@ -26,7 +28,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     await passwordSchema.validate(password, { abortEarly: false });
 
     const user = await findUserByPhone(phone);
-    if (!user) throw new ErrorHandler(403, 'Incorrect phone or password');
+    if (!user) return res.status(200).json({ isRedirectToRegister: true });
 
     if (user && user.status === 'not_verified')
       return res.status(200).json({ nextOperation: 'verify phone', userId: user.id });
@@ -37,11 +39,16 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     const isValidPassword = await verifyToken(password, user.password);
     if (!isValidPassword) throw new ErrorHandler(403, 'Incorrect phone or password');
 
+    const credits = await findCreditByUserId(user.id);
+
+    const userHasCredits = credits ? hasCredits(credits) : false;
+
     const userPayload = {
       id: user.id,
       phone: user.phone,
       is_agent: user.is_agent,
       status: user.status,
+      userHasCredits,
     };
 
     const token = await signJwt(userPayload);
@@ -81,7 +88,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     await passwordSchema.validate(password, { abortEarly: false });
 
     const user = await findUserByPhone(phone);
-    if (user && user.status !== 'not_verified') throw new ErrorHandler(409, 'User already exists');
+    if (user && user.status !== 'not_verified') return res.status(200).json({ isRedirectToLogin: true });
 
     if (user && user.status === 'not_verified')
       return res.status(200).json({ nextOperation: 'verify mobile', userId: user.id });
@@ -165,7 +172,23 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
     }`;
     await alertOnSlack('imp', slackMsg);
     await sendSms(user.phone, 'Password reset successfully');
-    return res.status(200).json({ success: 'Password updated successfully' });
+
+    const credits = await findCreditByUserId(user.id);
+
+    const userHasCredits = credits ? hasCredits(credits) : false;
+
+    const userPayload = {
+      id: user.id,
+      phone: user.phone,
+      is_agent: user.is_agent,
+      status: user.status,
+      userHasCredits,
+    };
+
+    const token = await signJwt(userPayload);
+    // @ts-ignore
+    res.cookie('token', token, config.cookieOptions);
+    return res.status(200).json({ success: userPayload });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     logger.error(`Password reset attempt by user ${phone} failed`);

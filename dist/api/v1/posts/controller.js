@@ -105,7 +105,7 @@ const fetchManyArchive = (req, res, next) => __awaiter(void 0, void 0, void 0, f
 });
 exports.fetchManyArchive = fetchManyArchive;
 const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { postInfo } = req.body;
+    const { postInfo, isStickyOnly } = req.body;
     const userId = res.locals.user.payload.id;
     const media = [];
     postInfo.title = `${postInfo.propertyTitle} ل${postInfo.categoryTitle} في ${postInfo.cityTitle}`;
@@ -132,7 +132,7 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             logs.push({ post_id: tempPost.id, transaction: undefined, user: user.phone, activity: 'Saved as temp post' });
         }
         else {
-            const { typeOfCredit, credit } = yield (0, service_2.typeOfCreditToDeduct)(user.id, user.is_agent, postInfo.isStickyPost);
+            const { typeOfCredit, credit } = yield (0, service_2.typeOfCreditToDeduct)(user.id, user.is_agent, postInfo.isStickyPost, isStickyOnly);
             if (!typeOfCredit)
                 throw new ErrorHandler_1.default(402, 'You do not have enough credit');
             if ((postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia) && (postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia.length)) {
@@ -246,6 +246,7 @@ exports.update = update;
 const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _p;
     const userId = res.locals.user.payload.id;
+    const userPhone = res.locals.user.payload.phone;
     const { postId } = req.body;
     try {
         const user = (0, service_1.findUserById)(userId);
@@ -284,12 +285,12 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
-        logger_1.default.error(`Post ${postId} stick attempt by user ${user.phone} failed`);
+        logger_1.default.error(`Post ${postId} stick attempt by user ${userPhone} failed`);
         yield (0, service_4.saveUserLog)([
             {
                 post_id: parseInt(postId, 10),
                 transaction: undefined,
-                user: user.phone,
+                user: userPhone,
                 activity: 'Post stick attempt failed',
             },
         ]);

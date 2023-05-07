@@ -114,7 +114,7 @@ const fetchManyArchive = async (req: Request, res: Response, next: NextFunction)
 };
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
-  const { postInfo } = req.body;
+  const { postInfo, isStickyOnly } = req.body;
   const userId = res.locals.user.payload.id;
   const media: string[] = [];
 
@@ -146,7 +146,12 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
       logger.info(`User: ${user.phone} post: ${tempPost.id}, saved as temp`);
       logs.push({ post_id: tempPost.id, transaction: undefined, user: user.phone, activity: 'Saved as temp post' });
     } else {
-      const { typeOfCredit, credit } = await typeOfCreditToDeduct(user.id, user.is_agent, postInfo.isStickyPost);
+      const { typeOfCredit, credit } = await typeOfCreditToDeduct(
+        user.id,
+        user.is_agent,
+        postInfo.isStickyPost,
+        isStickyOnly,
+      );
       if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
 
       if (postInfo?.multimedia && postInfo?.multimedia.length) {
@@ -286,7 +291,9 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
     if (post.is_sticky) throw new ErrorHandler(304, 'Post is already sticky');
 
     await updatePostStickyVal(post, true);
-    const slackMsg = `Post titled ${post.title} is sticked by \nUser: <https://wa.me/965${post?.user.phone}|${post?.user.phone}>\nAdmin Comment: ${user.admin_comment || '-'}`;
+    const slackMsg = `Post titled ${post.title} is sticked by \nUser: <https://wa.me/965${post?.user.phone}|${
+      post?.user.phone
+    }>\nAdmin Comment: ${user.admin_comment || '-'}`;
     await alertOnSlack('imp', slackMsg);
     logger.info(`Post ${post.id} sticked by user ${user?.phone}`);
     await saveUserLog([

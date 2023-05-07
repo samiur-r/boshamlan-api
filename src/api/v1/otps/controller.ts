@@ -5,10 +5,13 @@ import ErrorHandler from '../../../utils/ErrorHandler';
 import { verifyToken } from '../../../utils/passwordUtils';
 import { findUserById, updateUserStatus } from '../users/service';
 import logger from '../../../utils/logger';
-import { initCredits } from '../credits/service';
+import { findCreditByUserId, initCredits } from '../credits/service';
 import { alertOnSlack } from '../../../utils/slackUtils';
 import { sendSms } from '../../../utils/smsUtils';
 import { saveUserLog } from '../user_logs/service';
+import { signJwt } from '../../../utils/jwtUtils';
+import config from '../../../config';
+import hasCredits from '../../../utils/doesUserHaveCredits';
 
 const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
   const { userId, otpCode, nextOperation } = req.body;
@@ -37,7 +40,7 @@ const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
     await updateOtpStatus(otpObj.id, true);
     if (!nextOperation) {
       await updateUserStatus(userId, 'verified');
-      const user = await findUserById(userId);
+      const user: any = await findUserById(userId);
       if (user) {
         await initCredits(user);
         await sendSms(user.phone, 'Congratulations! you have been registered successfully');
@@ -53,7 +56,22 @@ const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
         },
       ]);
 
-      return res.status(200).json({ success: 'Phone verified successfully' });
+      const credits = await findCreditByUserId(user.id);
+
+      const userHasCredits = credits ? hasCredits(credits) : false;
+
+      const userPayload = {
+        id: user.id,
+        phone: user.phone,
+        is_agent: user.is_agent,
+        status: user.status,
+        userHasCredits,
+      };
+
+      const token = await signJwt(userPayload);
+      // @ts-ignore
+      res.cookie('token', token, config.cookieOptions);
+      return res.status(200).json({ success: userPayload });
     }
     logger.info(`User ${otpObj.user?.phone} verified OTP`);
     await saveUserLog([

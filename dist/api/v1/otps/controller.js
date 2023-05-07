@@ -22,6 +22,9 @@ const service_3 = require("../credits/service");
 const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
 const service_4 = require("../user_logs/service");
+const jwtUtils_1 = require("../../../utils/jwtUtils");
+const config_1 = __importDefault(require("../../../config"));
+const doesUserHaveCredits_1 = __importDefault(require("../../../utils/doesUserHaveCredits"));
 const verifyOtp = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
     const { userId, otpCode, nextOperation } = req.body;
@@ -58,7 +61,19 @@ const verifyOtp = (req, res, next) => __awaiter(void 0, void 0, void 0, function
                     activity: `User ${user === null || user === void 0 ? void 0 : user.phone} has been verified`,
                 },
             ]);
-            return res.status(200).json({ success: 'Phone verified successfully' });
+            const credits = yield (0, service_3.findCreditByUserId)(user.id);
+            const userHasCredits = credits ? (0, doesUserHaveCredits_1.default)(credits) : false;
+            const userPayload = {
+                id: user.id,
+                phone: user.phone,
+                is_agent: user.is_agent,
+                status: user.status,
+                userHasCredits,
+            };
+            const token = yield (0, jwtUtils_1.signJwt)(userPayload);
+            // @ts-ignore
+            res.cookie('token', token, config_1.default.cookieOptions);
+            return res.status(200).json({ success: userPayload });
         }
         logger_1.default.info(`User ${(_a = otpObj.user) === null || _a === void 0 ? void 0 : _a.phone} verified OTP`);
         yield (0, service_4.saveUserLog)([
