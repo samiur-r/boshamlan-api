@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeUser = exports.resetPassword = exports.doesUserExists = exports.register = exports.logout = exports.login = void 0;
+exports.findAdminComment = exports.removeUser = exports.resetPassword = exports.doesUserExists = exports.register = exports.logout = exports.login = void 0;
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const passwordUtils_1 = require("../../../utils/passwordUtils");
 const config_1 = __importDefault(require("../../../config"));
@@ -63,6 +63,7 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }
     catch (error) {
+        const user = yield (0, service_1.findUserByPhone)(phone);
         logger_1.default.error(`${error.name}: ${error.message}`);
         logger_1.default.error(`User: ${phone} logged in attempt failed`);
         yield (0, service_3.saveUserLog)([
@@ -71,7 +72,7 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
         if (error.name === 'ValidationError') {
             error.message = 'Invalid payload passed';
         }
-        const slackMsg = `Failed login attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+        const slackMsg = `Failed login attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>\n` : ''}${user && user.admin_comment ? `Admin comment: ${user.admin_comment}\n` : 'Admin comment: -\n'}Error message: "${error.message}"`;
         yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
         return next(error);
     }
@@ -99,10 +100,10 @@ const register = (req, res, next) => __awaiter(void 0, void 0, void 0, function*
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
+        const slackMsg = `User registration failed\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}\nError message: "${error.message}"`;
+        yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
         if (error.name === 'ValidationError') {
             error.message = 'Invalid payload passed';
-            const slackMsg = `Invalid user payload\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
-            yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
             return next(error);
         }
         if (error.message === 'All SMS messages failed to send') {
@@ -184,6 +185,17 @@ const removeUser = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
             yield (0, service_4.saveDeletedPost)(post, post.user);
             yield (0, service_5.updateLocationCountValue)(post.city_id, 'decrement');
         }));
+        logger_1.default.info(`User ${user === null || user === void 0 ? void 0 : user.phone} deleted`);
+        yield (0, service_3.saveUserLog)([
+            {
+                post_id: undefined,
+                transaction: undefined,
+                user: user === null || user === void 0 ? void 0 : user.phone,
+                activity: `User ${user === null || user === void 0 ? void 0 : user.phone} deleted`,
+            },
+        ]);
+        const slackMsg = `User: <https://wa.me/965${user.phone}|${user.phone}> is deleted`;
+        yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         return res.status(200).json({ success: 'User deleted successfully' });
     }
     catch (error) {
@@ -192,4 +204,18 @@ const removeUser = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
     }
 });
 exports.removeUser = removeUser;
+const findAdminComment = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { phone } = req.body;
+    try {
+        const user = yield (0, service_1.findUserByPhone)(phone);
+        if (!user)
+            throw new ErrorHandler_1.default(404, 'User not found');
+        return res.status(200).json({ adminComment: user.admin_comment });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        return next(error);
+    }
+});
+exports.findAdminComment = findAdminComment;
 //# sourceMappingURL=controller.js.map

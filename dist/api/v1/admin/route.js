@@ -41,7 +41,7 @@ router.delete('/delete-post', AuthMiddleware_1.isAdminAuth, AdminController.dele
 router.delete('/delete-post-permanent', AuthMiddleware_1.isAdminAuth, AdminController.deletePostPermanently);
 router.post('/repost', AuthMiddleware_1.isAdminAuth, AdminController.rePost);
 router.post('/get-logs', AuthMiddleware_1.isAdminAuth, AdminController.fetchLogs);
-router.post('/update-credit', AuthMiddleware_1.isAdminAuth, AdminController.updateCredit);
+router.post('/update-credit', AuthMiddleware_1.isAdminAuth, AdminController.updateUserCredit);
 router.post('/get-user-info', AuthMiddleware_1.isAdminAuth, AdminController.fetchUserWithAgentInfo);
 router.put('/edit-user', AuthMiddleware_1.isAdminAuth, AdminController.editUser);
 router.put('/edit-agent', AuthMiddleware_1.isAdminAuth, AdminController.editAgent);
@@ -50,6 +50,7 @@ router.post('/get-transactions', AuthMiddleware_1.isAdminAuth, AdminController.f
 router.get('/dashboard', AuthMiddleware_1.isAdminAuth, AdminController.fetchDashboardInfo);
 router.put('/block-status', AuthMiddleware_1.isAdminAuth, AdminController.updateUserBlockStatus);
 router.put('/admin-comment', AuthMiddleware_1.isAdminAuth, AdminController.updateUserComment);
+router.put('/transaction-status', AuthMiddleware_1.isAdminAuth, AdminController.updateTransactionStatus);
 router.delete('/user-permanent', AuthMiddleware_1.isAdminAuth, AdminController.removeUserPermanently);
 router.post('/restore', AuthMiddleware_1.isAdminAuth, AdminController.restore);
 router.post('/test', AdminController.test);

@@ -109,7 +109,6 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
     const userId = res.locals.user.payload.id;
     const media = [];
     postInfo.title = `${postInfo.propertyTitle} ل${postInfo.categoryTitle} في ${postInfo.cityTitle}`;
-    postInfo.isStickyPost = postInfo.isStickyPost === 'true';
     const endpoint = req.originalUrl.substring(13, req.originalUrl.length);
     const isTempPost = endpoint === 'temp';
     const logs = [];
@@ -166,13 +165,14 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         return res.status(200).json({ success: 'Post created successfully' });
     }
     catch (error) {
+        const user = yield (0, service_1.findUserByPhone)(postInfo.phone);
         logger_1.default.error(`${error.name}: ${error.message}`);
         if (error.name === 'ValidationError') {
             error.message = 'Invalid payload passed';
         }
-        const slackMsg = `Failed to create post\n\n ${(postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone) ? `User: <https://wa.me/965${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}|${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}>` : ''}`;
-        logs.push({ post_id: undefined, transaction: undefined, user: `${userId}`, activity: 'Failed to create post' });
+        const slackMsg = `Failed to create post\n\n ${(postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone) ? `User: <https://wa.me/965${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}|${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}>\n` : ''}${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `Admin Comment: ${user.admin_comment}\n` : 'Admin Comment: -\n'}Error message: "${error.message}"`;
         yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
+        logs.push({ post_id: undefined, transaction: undefined, user: `${userId}`, activity: 'Failed to create post' });
         if (logs && logs.length)
             yield (0, service_4.saveUserLog)(logs);
         return next(error);
@@ -245,14 +245,15 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
 exports.update = update;
 const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _p;
-    const user = res.locals.user.payload;
+    const userId = res.locals.user.payload.id;
     const { postId } = req.body;
     try {
+        const user = (0, service_1.findUserById)(userId);
         if (!user)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (!postId)
             throw new ErrorHandler_1.default(404, 'Invalid payload passed');
-        const credit = yield (0, service_2.findCreditByUserId)(user.id);
+        const credit = yield (0, service_2.findCreditByUserId)(userId);
         if (!credit)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (credit.sticky < 1)
@@ -263,6 +264,8 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         if (post.is_sticky)
             throw new ErrorHandler_1.default(304, 'Post is already sticky');
         yield (0, service_3.updatePostStickyVal)(post, true);
+        const slackMsg = `Post titled ${post.title} is sticked by \nUser: <https://wa.me/965${post === null || post === void 0 ? void 0 : post.user.phone}|${post === null || post === void 0 ? void 0 : post.user.phone}>\nAdmin Comment: ${user.admin_comment || '-'}`;
+        yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         logger_1.default.info(`Post ${post.id} sticked by user ${user === null || user === void 0 ? void 0 : user.phone}`);
         yield (0, service_4.saveUserLog)([
             {

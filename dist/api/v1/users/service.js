@@ -8,9 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getLastActivity = exports.updateUser = exports.findUserWithAgentInfo = exports.filterUsersForAdmin = exports.findUnVerifiedUsers = exports.updateBulkIsUserAnAgent = exports.updateIsUserAnAgent = exports.updateUserPassword = exports.updateUserStatus = exports.saveUser = exports.findUserByPhone = exports.findUserById = void 0;
 const typeorm_1 = require("typeorm");
+const logger_1 = __importDefault(require("../../../utils/logger"));
 const passwordUtils_1 = require("../../../utils/passwordUtils");
 const timestampUtls_1 = require("../../../utils/timestampUtls");
 const model_1 = require("./model");
@@ -20,8 +24,14 @@ const findUserById = (id) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.findUserById = findUserById;
 const findUserByPhone = (phone) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield model_1.User.findOneBy({ phone });
-    return user;
+    try {
+        const user = yield model_1.User.findOneBy({ phone });
+        return user;
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        return null;
+    }
 });
 exports.findUserByPhone = findUserByPhone;
 const saveUser = (phone, hashedPassword, status) => __awaiter(void 0, void 0, void 0, function* () {
@@ -61,7 +71,7 @@ const getLastActivity = (user) => {
 };
 exports.getLastActivity = getLastActivity;
 const findUnVerifiedUsers = () => __awaiter(void 0, void 0, void 0, function* () {
-    const lessThanFiveMins = new Date(Date.now() - 1 * 60 * 1000); // 5 minutes ago
+    const lessThanFiveMins = new Date(Date.now() - 5 * 60 * 1000); // 5 minutes ago
     const users = yield model_1.User.find({ where: { status: 'not_verified', created_at: (0, typeorm_1.MoreThan)(lessThanFiveMins) } });
     return users;
 });
@@ -98,10 +108,10 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
                 where = `(credits.free < 1 OR user.status = 'not_verified')`;
                 break;
             case 'Active Today':
-                where = `post.created_at BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
+                where = `post.public_date BETWEEN '${today} 00:00:00' AND '${today} 23:59:59'`;
                 break;
             case 'Active Yesterday':
-                where = `post.created_at BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
+                where = `post.public_date BETWEEN '${yesterday} 00:00:00' AND '${yesterday} 23:59:59'`;
                 break;
             case 'Has Regular Credit History':
                 where = `transactions.status = 'completed' AND (transactions.package_title = 'regular1' OR transactions.package_title = 'regular2')`;
@@ -200,7 +210,7 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
         .orderBy(order, 'DESC')
         .where(where)
         .skip(offset)
-        .take(10)
+        .take(50)
         .getMany();
     return { users, count };
 });

@@ -27,14 +27,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const UserController = __importStar(require("./controller"));
+const CommonController = __importStar(require("./controller"));
 const router = express_1.default.Router();
-router.post('/login', UserController.login);
-router.get('/logout', UserController.logout);
-router.post('/register', UserController.register);
-router.post('/check-user', UserController.doesUserExists);
-router.post('/password-reset', UserController.resetPassword);
-router.delete('/', UserController.removeUser);
-router.post('/admin-comment', UserController.findAdminComment);
+router.post('/notify-slack', CommonController.notifySlack);
 exports.default = router;
 //# sourceMappingURL=route.js.map

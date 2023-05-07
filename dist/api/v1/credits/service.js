@@ -29,7 +29,6 @@ const initCredits = (user) => __awaiter(void 0, void 0, void 0, function* () {
 exports.initCredits = initCredits;
 const findCreditByUserId = (user_id) => __awaiter(void 0, void 0, void 0, function* () {
     const credit = yield model_1.Credit.findOne({ where: { user: { id: user_id } } });
-    credit === null || credit === void 0 ? true : delete credit.user;
     return credit;
 });
 exports.findCreditByUserId = findCreditByUserId;

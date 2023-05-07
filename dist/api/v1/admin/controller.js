@@ -12,8 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.restore = exports.removeUserPermanently = exports.updateUserComment = exports.rePost = exports.deletePostPermanently = exports.updateUserBlockStatus = exports.fetchTestItems = exports.fetchDashboardInfo = exports.fetchTransactions = exports.verifyUser = exports.editAgent = exports.editUser = exports.fetchUserWithAgentInfo = exports.fetchUser = exports.updateCredit = exports.filterUsers = exports.fetchLogs = exports.deletePost = exports.stickPost = exports.filterPosts = exports.logout = exports.login = exports.register = exports.test = void 0;
-const axios_1 = __importDefault(require("axios"));
+exports.updateTransactionStatus = exports.restore = exports.removeUserPermanently = exports.updateUserComment = exports.rePost = exports.deletePostPermanently = exports.updateUserBlockStatus = exports.fetchDashboardInfo = exports.fetchTransactions = exports.verifyUser = exports.editAgent = exports.editUser = exports.fetchUserWithAgentInfo = exports.fetchUser = exports.updateUserCredit = exports.filterUsers = exports.fetchLogs = exports.deletePost = exports.stickPost = exports.filterPosts = exports.logout = exports.login = exports.register = exports.test = void 0;
 const passwordUtils_1 = require("../../../utils/passwordUtils");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const service_1 = require("./service");
@@ -37,6 +36,7 @@ const service_8 = require("../locations/service");
 const timestampUtls_1 = require("../../../utils/timestampUtls");
 const model_4 = require("../transactions/model");
 const model_5 = require("../otps/model");
+const slackUtils_1 = require("../../../utils/slackUtils");
 const register = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { phone, password, name } = req.body;
     try {
@@ -106,6 +106,8 @@ const stickPost = (req, res, next) => __awaiter(void 0, void 0, void 0, function
         if (post.is_sticky)
             throw new ErrorHandler_1.default(304, 'Post is already sticky');
         yield (0, service_2.updatePostStickyVal)(post, true);
+        const slackMsg = `Post ${post.id} by user: <https://wa.me/965${post === null || post === void 0 ? void 0 : post.user.phone}|${post === null || post === void 0 ? void 0 : post.user.phone}> is sticked`;
+        yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         logger_1.default.info(`Post ${post.id} sticked by user ${user === null || user === void 0 ? void 0 : user.phone}`);
         return res.status(200).json({ success: 'Post is sticked successfully' });
     }
@@ -207,7 +209,15 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         const repostCount = post.repost_count + 1;
         yield (0, service_2.updatePostRepostVals)(newPost, true, repostCount);
         yield (0, service_8.updateLocationCountValue)(post.city_id, 'increment');
-        logger_1.default.info(`Post ${post.id} reposted by user ${user === null || user === void 0 ? void 0 : user.phone}`);
+        logger_1.default.info(`Post ${post.id} reposted by admin ${user === null || user === void 0 ? void 0 : user.phone}`);
+        yield (0, service_4.saveUserLog)([
+            {
+                post_id: post.id,
+                transaction: undefined,
+                user: post.user.id,
+                activity: `Post ${post.id} reposted by admin ${user === null || user === void 0 ? void 0 : user.phone}`,
+            },
+        ]);
         return res.status(200).json({ success: 'Post is reposted successfully' });
     }
     catch (error) {
@@ -244,7 +254,7 @@ const filterUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
     let totalPages = null;
     try {
         const { users, count } = yield (0, service_3.filterUsersForAdmin)(statusToFilter, phoneToFilter, adminCommentToFilter, fromCreationDateToFilter, toCreationDateToFilter, orderByToFilter, offset);
-        totalPages = Math.ceil(count / 10);
+        totalPages = Math.ceil(count / 50);
         const parsedUsers = users.map((user) => {
             var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
             return ({
@@ -367,13 +377,26 @@ const fetchUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.fetchUser = fetchUser;
-const updateCredit = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const updateUserCredit = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _s, _t, _u, _v, _w;
     const { creditAmount, creditType, userId } = req.body;
+    const admin = res.locals.user.payload;
     try {
         const credit = yield (0, service_5.findCreditByUserId)(userId);
         if (!credit)
             throw new ErrorHandler_1.default(401, 'Credit record not found');
-        yield model_1.Credit.save(Object.assign(Object.assign({}, credit), { [creditType]: creditAmount }));
+        const updatedCredit = yield model_1.Credit.save(Object.assign(Object.assign({}, credit), { [creditType]: creditAmount }));
+        logger_1.default.info(`User ${(_s = credit === null || credit === void 0 ? void 0 : credit.user) === null || _s === void 0 ? void 0 : _s.phone} credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`);
+        yield (0, service_4.saveUserLog)([
+            {
+                post_id: undefined,
+                transaction: undefined,
+                user: (_t = credit === null || credit === void 0 ? void 0 : credit.user) === null || _t === void 0 ? void 0 : _t.phone,
+                activity: `User ${(_u = credit === null || credit === void 0 ? void 0 : credit.user) === null || _u === void 0 ? void 0 : _u.phone} credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`,
+            },
+        ]);
+        const slackMsg = `User credits updated by admin ${admin.phone} \n\n <https://wa.me/965${(_v = credit === null || credit === void 0 ? void 0 : credit.user) === null || _v === void 0 ? void 0 : _v.phone}|${(_w = credit === null || credit === void 0 ? void 0 : credit.user) === null || _w === void 0 ? void 0 : _w.phone}> credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`;
+        yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         return res.status(200).json({ success: 'Credit updated successfully' });
     }
     catch (error) {
@@ -381,7 +404,7 @@ const updateCredit = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
         return next(error);
     }
 });
-exports.updateCredit = updateCredit;
+exports.updateUserCredit = updateUserCredit;
 const fetchUserWithAgentInfo = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req.body;
     try {
@@ -397,12 +420,39 @@ const fetchUserWithAgentInfo = (req, res, next) => __awaiter(void 0, void 0, voi
 });
 exports.fetchUserWithAgentInfo = fetchUserWithAgentInfo;
 const editUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _x, _y;
     const { id, phone, adminComment, password } = req.body;
+    const admin = (_y = (_x = res.locals) === null || _x === void 0 ? void 0 : _x.user) === null || _y === void 0 ? void 0 : _y.payload;
     try {
         const user = yield (0, service_3.findUserById)(id);
         if (!user)
             throw new ErrorHandler_1.default(401, 'User not found');
         yield (0, service_3.updateUser)(user, phone, adminComment, password);
+        if (phone !== user.phone) {
+            yield (0, service_4.updatePhoneOfLogs)(user.phone, phone);
+            logger_1.default.info(`User ${user === null || user === void 0 ? void 0 : user.phone} phone updated to ${phone} by the admin ${admin === null || admin === void 0 ? void 0 : admin.phone}`);
+            yield (0, service_4.saveUserLog)([
+                {
+                    post_id: undefined,
+                    transaction: undefined,
+                    user: phone !== user.phone ? phone : user === null || user === void 0 ? void 0 : user.phone,
+                    activity: `User ${user === null || user === void 0 ? void 0 : user.phone} phone updated to ${phone} by the admin ${admin === null || admin === void 0 ? void 0 : admin.phone}`,
+                },
+            ]);
+            const slackMsg = `User ${user === null || user === void 0 ? void 0 : user.phone} phone updated to <https://wa.me/965${phone}|${phone}> by the admin ${admin === null || admin === void 0 ? void 0 : admin.phone}`;
+            yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
+        }
+        if (password) {
+            logger_1.default.info(`User ${user === null || user === void 0 ? void 0 : user.phone} password updated`);
+            yield (0, service_4.saveUserLog)([
+                {
+                    post_id: undefined,
+                    transaction: undefined,
+                    user: user === null || user === void 0 ? void 0 : user.phone,
+                    activity: `User ${user === null || user === void 0 ? void 0 : user.phone} password updated`,
+                },
+            ]);
+        }
         return res.status(200).json({ success: 'User updated successfully' });
     }
     catch (error) {
@@ -498,23 +548,10 @@ const fetchDashboardInfo = (req, res, next) => __awaiter(void 0, void 0, void 0,
     }
 });
 exports.fetchDashboardInfo = fetchDashboardInfo;
-const fetchTestItems = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { offset } = req.body;
-    try {
-        let totalPages = null;
-        if (offset === 0)
-            totalPages = Math.ceil(100 / 10);
-        const { data } = yield axios_1.default.get(`https://jsonplaceholder.typicode.com/posts?_start=${offset}&_limit=10`);
-        return res.status(200).json({ totalPages, items: data });
-    }
-    catch (error) {
-        logger_1.default.error(`${error.name}: ${error.message}`);
-        return next(error);
-    }
-});
-exports.fetchTestItems = fetchTestItems;
 const updateUserBlockStatus = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _z, _0;
     const { userId, status } = req.body;
+    const admin = (_0 = (_z = res.locals) === null || _z === void 0 ? void 0 : _z.user) === null || _0 === void 0 ? void 0 : _0.payload;
     try {
         if (!userId)
             throw new ErrorHandler_1.default(404, 'Invalid user id');
@@ -533,6 +570,15 @@ const updateUserBlockStatus = (req, res, next) => __awaiter(void 0, void 0, void
             yield (0, service_2.removeAllPostsOfUser)(userId);
             yield (0, service_5.setCreditsToZeroByUserId)(userId);
         }
+        logger_1.default.info(`User ${user.phone} ${status ? 'blocked' : 'unblocked'} by admin ${admin.phone}`);
+        yield (0, service_4.saveUserLog)([
+            {
+                post_id: undefined,
+                transaction: undefined,
+                user: user.phone,
+                activity: `User ${user.phone} ${status ? 'blocked' : 'unblocked'} by admin ${admin.phone}`,
+            },
+        ]);
         return res.status(200).json({ success: `User ${status === true ? ' blocked' : ' unblocked'} successfully` });
     }
     catch (error) {
@@ -558,6 +604,31 @@ const updateUserComment = (req, res, next) => __awaiter(void 0, void 0, void 0, 
     }
 });
 exports.updateUserComment = updateUserComment;
+const updateTransactionStatus = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { transactionId, transactionStatus } = req.body;
+    try {
+        if (!transactionId)
+            throw new ErrorHandler_1.default(404, 'Invalid transaction id');
+        const transaction = yield (0, service_6.findTransactionById)(transactionId);
+        if (!transaction)
+            throw new ErrorHandler_1.default(401, 'transaction not found');
+        yield model_4.Transaction.save(Object.assign(Object.assign({}, transaction), { status: transactionStatus }));
+        if (transactionStatus === 'completed') {
+            const packageTitle = transaction.package_title.slice(0, -1);
+            yield (0, service_5.updateCredit)(transaction.user.id, packageTitle, transaction.package.numberOfCredits, 'ADD');
+            if (packageTitle === 'agent') {
+                yield (0, service_3.updateIsUserAnAgent)(transaction.user.id, true);
+                yield (0, service_7.initOrUpdateAgent)(transaction.user, transaction.package_title);
+            }
+        }
+        return res.status(200).json({ success: `Transaction updated successfully` });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        return next(error);
+    }
+});
+exports.updateTransactionStatus = updateTransactionStatus;
 const removeUserPermanently = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req.body;
     try {
@@ -590,7 +661,7 @@ const removeUserPermanently = (req, res, next) => __awaiter(void 0, void 0, void
 });
 exports.removeUserPermanently = removeUserPermanently;
 const restore = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _s;
+    var _1;
     const user = res.locals.user.payload;
     const { userId } = req.body;
     try {
@@ -613,8 +684,8 @@ const restore = (req, res, next) => __awaiter(void 0, void 0, void 0, function* 
             {
                 post_id: undefined,
                 transaction: undefined,
-                user: (_s = userObj === null || userObj === void 0 ? void 0 : userObj.phone) !== null && _s !== void 0 ? _s : undefined,
-                activity: 'User restored successfully',
+                user: (_1 = userObj === null || userObj === void 0 ? void 0 : userObj.phone) !== null && _1 !== void 0 ? _1 : undefined,
+                activity: `User ${userObj.phone} restored by admin ${user === null || user === void 0 ? void 0 : user.phone}`,
             },
         ]);
         return res.status(200).json({ success: 'User is restored successfully' });
@@ -622,7 +693,9 @@ const restore = (req, res, next) => __awaiter(void 0, void 0, void 0, function* 
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
         logger_1.default.error(`User ${userId} restore attempt by admin ${user.phone} failed`);
-        yield (0, service_4.saveUserLog)([{ post_id: undefined, transaction: undefined, user: userId, activity: 'User restore failed' }]);
+        yield (0, service_4.saveUserLog)([
+            { post_id: undefined, transaction: undefined, user: userId, activity: 'User restoration failed' },
+        ]);
         return next(error);
     }
 });

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.fetchLogsByUser = exports.fetchLogsByPostId = exports.saveUserLog = void 0;
+exports.updatePhoneOfLogs = exports.fetchLogsByUser = exports.fetchLogsByPostId = exports.saveUserLog = void 0;
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const timestampUtls_1 = require("../../../utils/timestampUtls");
 const service_1 = require("../users/service");
@@ -31,12 +31,12 @@ const fetchLogsByPostId = (postId, offset) => __awaiter(void 0, void 0, void 0, 
         where: { post_id: postId },
         order: { created_at: 'DESC' },
         skip: offset,
-        take: 10,
+        take: 50,
     });
     logs === null || logs === void 0 ? void 0 : logs.forEach((log) => {
         log.publish_date = (0, timestampUtls_1.getLocaleDate)(log.created_at);
     });
-    const totalPages = Math.ceil(count / 10);
+    const totalPages = Math.ceil(count / 50);
     const response = { logs, totalPages, totalResults: count };
     return response;
 });
@@ -55,14 +55,18 @@ const fetchLogsByUser = (user, offset) => __awaiter(void 0, void 0, void 0, func
         where: [{ user: userObj.phone }, { user: userObj.id.toString() }],
         order: { created_at: 'DESC' },
         skip: offset,
-        take: 10,
+        take: 50,
     });
     logs === null || logs === void 0 ? void 0 : logs.forEach((log) => {
         log.publish_date = (0, timestampUtls_1.getLocaleDate)(log.created_at);
     });
-    const totalPages = Math.ceil(count / 10);
+    const totalPages = Math.ceil(count / 50);
     const response = { logs, totalPages, totalResults: count };
     return response;
 });
 exports.fetchLogsByUser = fetchLogsByUser;
+const updatePhoneOfLogs = (prevPhone, newPhone) => __awaiter(void 0, void 0, void 0, function* () {
+    yield model_1.UserLog.update({ user: prevPhone }, { user: newPhone });
+});
+exports.updatePhoneOfLogs = updatePhoneOfLogs;
 //# sourceMappingURL=service.js.map

@@ -239,15 +239,15 @@ const unstickPost = () => __awaiter(void 0, void 0, void 0, function* () {
         return post;
     });
     yield Post_1.Post.save(updatedPosts);
-    const affectedPostIds = affectedPosts.map((post) => post.id);
-    if (affectedPostIds && affectedPostIds.length) {
-        for (const id of affectedPostIds) {
+    if (affectedPosts && affectedPosts.length) {
+        for (const post of affectedPosts) {
+            logger_1.default.info(`Post ${post.id} un sticked`);
             yield (0, service_3.saveUserLog)([
                 {
-                    post_id: id,
+                    post_id: post.id,
                     transaction: undefined,
-                    user: undefined,
-                    activity: 'Post un sticked',
+                    user: post.user.phone,
+                    activity: `Post ${post.id} un sticked`,
                 },
             ]);
         }
@@ -260,6 +260,15 @@ const moveExpiredPosts = () => __awaiter(void 0, void 0, void 0, function* () {
         yield removePost(post.id, post);
         yield saveArchivedPost(post, post.user);
         yield (0, service_1.updateLocationCountValue)(post.city_id, 'decrement');
+        logger_1.default.info(`Post ${post.id} by user ${post.user.phone} has archived`);
+        yield (0, service_3.saveUserLog)([
+            {
+                post_id: post.id,
+                transaction: undefined,
+                user: post.user.phone,
+                activity: `Post ${post.id} by user ${post.user.phone} has archived`,
+            },
+        ]);
     }));
     return expiredPosts;
 });
@@ -319,6 +328,7 @@ exports.findPostByUserId = findPostByUserId;
 const findArchivedPostByUserId = (limit, offset, userId) => __awaiter(void 0, void 0, void 0, function* () {
     const archivePosts = yield ArchivePost_1.ArchivePost.find({
         where: { user: { id: userId } },
+        order: { public_date: 'DESC' },
         take: limit,
         skip: offset,
     });
@@ -432,7 +442,7 @@ const findPosts = (limit, offset, userId) => __awaiter(void 0, void 0, void 0, f
     const queryOptions = {
         order: {
             is_sticky: 'DESC',
-            created_at: 'DESC',
+            public_date: 'DESC',
         },
         take: limit,
         skip: offset,
@@ -478,7 +488,7 @@ const searchPosts = (limit, offset, city, stateId, propertyId, categoryId, price
         where: searchCriteria,
         order: {
             is_sticky: 'DESC',
-            created_at: 'DESC',
+            public_date: 'DESC',
         },
         take: limit,
         skip: offset,
@@ -593,6 +603,9 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
         case 'Repost Date':
             order.repost_date = 'DESC';
             break;
+        case 'Repost Count':
+            order.repost_count = 'DESC';
+            break;
         case 'City':
             order.city_id = 'DESC';
             break;
@@ -603,7 +616,7 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
             order.category_id = 'DESC';
             break;
         default:
-            order.posted_date = 'DESC';
+            order.public_date = 'DESC';
             break;
     }
     try {
@@ -670,27 +683,14 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
             .leftJoin(model_1.User, 'u', 'post.user_id = u.id')
             .getQuery();
         const unionQuery = `(${postsQuery}) UNION (${archivedPostsQuery}) UNION (${deletedPostsQuery})`;
-        const temp = yield db_1.default.query(`
-      SELECT *
-      FROM (${unionQuery}) AS latest_posts
-      ${whereClause ? `WHERE ${whereClause}` : ''}
-      ORDER BY latest_posts.${Object.keys(order)[0]} DESC
-    `);
         const result = yield db_1.default.query(`
       SELECT *
       FROM (${unionQuery}) AS latest_posts
       ${whereClause ? `WHERE ${whereClause}` : ''}
       ORDER BY latest_posts.${Object.keys(order)[0]} DESC
-      LIMIT 10
+      LIMIT 50
       OFFSET ${offset}
     `);
-        const allPosts = [];
-        const filteredPosts = [];
-        temp.forEach((post) => allPosts.push(post.id));
-        result.forEach((post) => filteredPosts.push(post.id));
-        console.log(allPosts);
-        console.log('-----');
-        console.log(filteredPosts);
         const countResult = yield db_1.default.query(`
       SELECT COUNT(*) AS count
       FROM (${unionQuery}) AS latest_posts
@@ -722,7 +722,7 @@ const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToF
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
     }
-    const totalPages = totalPosts ? Math.ceil(totalPosts / 10) : null;
+    const totalPages = totalPosts ? Math.ceil(totalPosts / 50) : null;
     return { posts, totalPages, totalResults: totalPosts };
 });
 exports.filterPostsForAdmin = filterPostsForAdmin;

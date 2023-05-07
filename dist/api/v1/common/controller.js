@@ -12,36 +12,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.alertOnSlack = void 0;
-const axios_1 = __importDefault(require("axios"));
-const config_1 = __importDefault(require("../config"));
-const logger_1 = __importDefault(require("./logger"));
-const alertOnSlack = (channel, msg) => __awaiter(void 0, void 0, void 0, function* () {
-    logger_1.default.info(`Alerting on slack: ${msg}`);
-    const slackMsg = JSON.stringify({
-        blocks: [
-            {
-                type: 'section',
-                text: {
-                    type: 'mrkdwn',
-                    text: `>${msg.replace(/\n/g, '\n>')}`,
-                },
-            },
-            {
-                type: 'divider',
-            },
-        ],
-    });
+exports.notifySlack = void 0;
+const logger_1 = __importDefault(require("../../../utils/logger"));
+const slackUtils_1 = require("../../../utils/slackUtils");
+const notifySlack = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { message, channel } = req.body;
     try {
-        yield (0, axios_1.default)({
-            method: 'POST',
-            url: channel === 'imp' ? config_1.default.slackWebHookImpUrl : config_1.default.slackWebHookNonImpUrl,
-            data: slackMsg,
-        });
+        yield (0, slackUtils_1.alertOnSlack)(channel, message);
+        return res.status(200);
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
+        return next(error);
     }
 });
-exports.alertOnSlack = alertOnSlack;
-//# sourceMappingURL=slackUtils.js.map
+exports.notifySlack = notifySlack;
+//# sourceMappingURL=controller.js.map

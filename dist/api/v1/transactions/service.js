@@ -9,12 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.filterTransactionsForAdmin = exports.findTransactionsByUserId = exports.editTransactionStatus = exports.editTransaction = exports.saveTransaction = void 0;
+exports.findTransactionById = exports.filterTransactionsForAdmin = exports.findTransactionsByUserId = exports.editTransactionStatus = exports.editTransaction = exports.saveTransaction = void 0;
 /* eslint-disable no-param-reassign */
 const typeorm_1 = require("typeorm");
 const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
 const timestampUtls_1 = require("../../../utils/timestampUtls");
+const service_1 = require("../users/service");
 const model_1 = require("./model");
 const saveTransaction = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { trackId, amount, packageTitle, status, user, packageObj, } = payload;
@@ -28,7 +29,7 @@ const saveTransaction = (payload) => __awaiter(void 0, void 0, void 0, function*
     });
     const transaction = yield model_1.Transaction.save(newTransaction);
     if (status === 'created') {
-        const slackMsg = `Payment created\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+        const slackMsg = `Payment created - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}\n${packageTitle} - ${amount}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
     }
     return transaction;
@@ -44,53 +45,48 @@ const findTransactionsByUserId = (userId) => __awaiter(void 0, void 0, void 0, f
 });
 exports.findTransactionsByUserId = findTransactionsByUserId;
 const editTransaction = (trackId, reference_id, tran_id, status) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     const transaction = yield findTransactionByTrackId(trackId.toString());
     if (!transaction)
+        return { status: 404 };
+    const user = yield (0, service_1.findUserById)(transaction.user.id);
+    if (!user)
         return { status: 404 };
     const transactionObj = yield model_1.Transaction.save(Object.assign(Object.assign({}, transaction), { reference_id,
         tran_id,
         status }));
-    let slackMsg = '';
     let smsMsg = '';
     if (transactionObj) {
         let packageTitle = transactionObj.package_title || '';
         packageTitle = packageTitle.slice(0, -1);
         switch (packageTitle) {
             case 'agent':
-                slackMsg = `Payment ${status === 'completed' ? 'successful. Subscription started.' : 'failed.'}\n\n ${((_a = transactionObj === null || transactionObj === void 0 ? void 0 : transactionObj.user) === null || _a === void 0 ? void 0 : _a.phone)
-                    ? `User: <https://wa.me/965${(_b = transactionObj === null || transactionObj === void 0 ? void 0 : transactionObj.user) === null || _b === void 0 ? void 0 : _b.phone}|${(_c = transactionObj === null || transactionObj === void 0 ? void 0 : transactionObj.user) === null || _c === void 0 ? void 0 : _c.phone}>`
-                    : ''}`;
                 smsMsg = `Payment ${status === 'completed' ? 'successful. Subscription started.' : 'failed.'}`;
                 break;
             case 'stickyDirec':
-                slackMsg = `Payment ${status === 'completed' ? 'successful. Post sticked.' : 'failed.'}\n\n ${((_d = transactionObj === null || transactionObj === void 0 ? void 0 : transactionObj.user) === null || _d === void 0 ? void 0 : _d.phone)
-                    ? `User: <https://wa.me/965${(_e = transactionObj === null || transactionObj === void 0 ? void 0 : transactionObj.user) === null || _e === void 0 ? void 0 : _e.phone}|${(_f = transactionObj === null || transactionObj === void 0 ? void 0 : transactionObj.user) === null || _f === void 0 ? void 0 : _f.phone}>`
-                    : ''}`;
                 smsMsg = `Payment ${status === 'completed' ? 'successful. Post sticked.' : 'failed.'}`;
                 break;
             default:
-                slackMsg = `Payment ${status === 'completed' ? 'successful.' : 'failed.'}\n\n ${((_g = transactionObj === null || transactionObj === void 0 ? void 0 : transactionObj.user) === null || _g === void 0 ? void 0 : _g.phone)
-                    ? `User: <https://wa.me/965${(_h = transactionObj === null || transactionObj === void 0 ? void 0 : transactionObj.user) === null || _h === void 0 ? void 0 : _h.phone}|${(_j = transactionObj === null || transactionObj === void 0 ? void 0 : transactionObj.user) === null || _j === void 0 ? void 0 : _j.phone}>`
-                    : ''}`;
                 smsMsg = `Payment ${status === 'completed' ? 'successful.' : 'failed.'}`;
                 break;
         }
     }
+    const slackMsg = `Payment ${status} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}\n${transactionObj.package_title} - ${transactionObj.amount}`;
     yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
     yield (0, smsUtils_1.sendSms)(transactionObj.user.phone, smsMsg);
     return { status: 200, data: transactionObj };
 });
 exports.editTransaction = editTransaction;
 const editTransactionStatus = (trackId, status) => __awaiter(void 0, void 0, void 0, function* () {
-    var _k, _l, _m;
     if (trackId === null)
         return { status: 404 };
     const transaction = yield findTransactionByTrackId(trackId);
     if (!transaction)
         return { status: 404 };
+    const user = (0, service_1.findUserById)(transaction.user.id);
+    if (!user)
+        return { status: 404 };
     yield model_1.Transaction.save(Object.assign(Object.assign({}, transaction), { status }));
-    const slackMsg = `Payment canceled.\n\n${((_k = transaction === null || transaction === void 0 ? void 0 : transaction.user) === null || _k === void 0 ? void 0 : _k.phone) ? `User: <https://wa.me/965${(_l = transaction === null || transaction === void 0 ? void 0 : transaction.user) === null || _l === void 0 ? void 0 : _l.phone}|${(_m = transaction === null || transaction === void 0 ? void 0 : transaction.user) === null || _m === void 0 ? void 0 : _m.phone}>` : ''}`;
+    const slackMsg = `Payment canceled - ${user.admin_comment || ''}\n${transaction.package_title} - ${transaction.amount}`;
     const smsMsg = `Payment canceled`;
     yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
     yield (0, smsUtils_1.sendSms)(transaction.user.phone, smsMsg);
@@ -132,7 +128,7 @@ const filterTransactionsForAdmin = (statusToFilter, typeToFilter, fromCreationDa
         where,
         order: { created_at: 'desc' },
         skip: offset,
-        take: 10,
+        take: 50,
     });
     transactions.forEach((transactionItem) => {
         transactionItem.createdDate = (0, timestampUtls_1.parseTimestamp)(transactionItem.created_at).parsedDate;
@@ -140,8 +136,13 @@ const filterTransactionsForAdmin = (statusToFilter, typeToFilter, fromCreationDa
         transactionItem.updatedDate = (0, timestampUtls_1.parseTimestamp)(transactionItem.updated_at).parsedDate;
         transactionItem.updatedTime = (0, timestampUtls_1.parseTimestamp)(transactionItem.updated_at).parsedTime;
     });
-    const totalPages = Math.ceil(count / 10);
+    const totalPages = Math.ceil(count / 50);
     return { transactions, totalPages, totalResults: count };
 });
 exports.filterTransactionsForAdmin = filterTransactionsForAdmin;
+const findTransactionById = (transactionId) => __awaiter(void 0, void 0, void 0, function* () {
+    const transaction = yield model_1.Transaction.findOne({ where: { id: transactionId } });
+    return transaction;
+});
+exports.findTransactionById = findTransactionById;
 //# sourceMappingURL=service.js.map

@@ -21,6 +21,7 @@ const logger_1 = __importDefault(require("../../../utils/logger"));
 const slackUtils_1 = require("../../../utils/slackUtils");
 const smsUtils_1 = require("../../../utils/smsUtils");
 const model_1 = require("../users/model");
+const service_1 = require("../user_logs/service");
 const model_2 = require("./model");
 const findManyAgents = (limit, offset) => __awaiter(void 0, void 0, void 0, function* () {
     let totalRows;
@@ -86,7 +87,7 @@ const updateAgent = (agentInfo, userId) => __awaiter(void 0, void 0, void 0, fun
     yield model_2.Agent.save(agentData);
 });
 exports.updateAgent = updateAgent;
-const initOrUpdateAgent = (user) => __awaiter(void 0, void 0, void 0, function* () {
+const initOrUpdateAgent = (user, packageTitle) => __awaiter(void 0, void 0, void 0, function* () {
     const agent = yield findAgentByUserId(user.id);
     const today = new Date();
     // const twoMonthsFromToday = new Date(
@@ -97,22 +98,26 @@ const initOrUpdateAgent = (user) => __awaiter(void 0, void 0, void 0, function* 
     //   today.getMinutes(),
     //   today.getSeconds(),
     // );
+    const oneDayFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, today.getHours(), today.getMinutes(), today.getSeconds());
     const twoDaysFromToday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 2, today.getHours(), today.getMinutes(), today.getSeconds());
     today.setMinutes(Math.ceil(today.getMinutes() / 30) * 30);
     today.setSeconds(0);
     today.setMilliseconds(0);
+    oneDayFromToday.setMinutes(Math.ceil(oneDayFromToday.getMinutes() / 30) * 30);
+    oneDayFromToday.setSeconds(0);
+    oneDayFromToday.setMilliseconds(0);
     twoDaysFromToday.setMinutes(Math.ceil(twoDaysFromToday.getMinutes() / 30) * 30);
     twoDaysFromToday.setSeconds(0);
     twoDaysFromToday.setMilliseconds(0);
     let agentData;
     if (agent) {
-        agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { subscription_start_date: today, subscription_ends_date: twoDaysFromToday }));
+        agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { subscription_start_date: today, subscription_ends_date: packageTitle === 'agent1' ? oneDayFromToday : twoDaysFromToday }));
     }
     else {
         agentData = model_2.Agent.create({
             name: 'agent',
             subscription_start_date: today,
-            subscription_ends_date: twoDaysFromToday,
+            subscription_ends_date: packageTitle === 'agent1' ? oneDayFromToday : twoDaysFromToday,
             user,
         });
     }
@@ -140,6 +145,16 @@ const fireAgentExpirationAlert = (userIds) => __awaiter(void 0, void 0, void 0, 
             yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
             // eslint-disable-next-line no-await-in-loop
             yield (0, smsUtils_1.sendSms)(user.phone, 'Your subscription ended');
+            logger_1.default.info(`Agent ${user.phone} subscription has ended`);
+            // eslint-disable-next-line no-await-in-loop
+            yield (0, service_1.saveUserLog)([
+                {
+                    post_id: undefined,
+                    transaction: undefined,
+                    user: user === null || user === void 0 ? void 0 : user.phone,
+                    activity: `Agent ${user.phone} subscription has ended`,
+                },
+            ]);
         }
         catch (error) {
             logger_1.default.error(`${error.name}: ${error.message}`);

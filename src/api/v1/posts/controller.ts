@@ -268,6 +268,7 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
 
 const updatePostToStick = async (req: Request, res: Response, next: NextFunction) => {
   const userId = res.locals.user.payload.id;
+  const userPhone = res.locals.user.payload.phone;
   const { postId } = req.body;
 
   try {
@@ -305,12 +306,12 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
     return res.status(200).json({ success: 'Post is sticked successfully' });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
-    logger.error(`Post ${postId} stick attempt by user ${user.phone} failed`);
+    logger.error(`Post ${postId} stick attempt by user ${userPhone} failed`);
     await saveUserLog([
       {
         post_id: parseInt(postId, 10),
         transaction: undefined,
-        user: user.phone,
+        user: userPhone,
         activity: 'Post stick attempt failed',
       },
     ]);
