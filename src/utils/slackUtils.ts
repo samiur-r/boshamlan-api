@@ -10,8 +10,11 @@ const alertOnSlack = async (channel: string, msg: string) => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: msg,
+          text: `>${msg.replace(/\n/g, '\n>')}`,
         },
+      },
+      {
+        type: 'divider',
       },
     ],
   });

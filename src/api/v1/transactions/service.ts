@@ -44,9 +44,9 @@ const saveTransaction = async (payload: {
   const transaction = await Transaction.save(newTransaction);
 
   if (status === 'created') {
-    const slackMsg = `Payment created\n\n ${
-      user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
-    }\n\nAdmin Comment: ${user.admin_comment || '-'} \n\nPackage Title: ${packageTitle}\n\nCost: ${amount}`;
+    const slackMsg = `Payment created - ${
+      user?.admin_comment ? `${user.admin_comment}` : ''
+    }\n${packageTitle} - ${amount}`;
     await alertOnSlack('imp', slackMsg);
   }
   return transaction;
@@ -66,14 +66,15 @@ const editTransaction = async (trackId: number, reference_id: string, tran_id: s
   const transaction = await findTransactionByTrackId(trackId.toString());
   if (!transaction) return { status: 404 };
 
+  const user = await findUserById(transaction.user.id);
+  if (!user) return { status: 404 };
+
   const transactionObj = await Transaction.save({
     ...transaction,
     reference_id,
     tran_id,
     status,
   });
-
-  let slackMsg = '';
   let smsMsg = '';
 
   if (transactionObj) {
@@ -82,37 +83,20 @@ const editTransaction = async (trackId: number, reference_id: string, tran_id: s
 
     switch (packageTitle) {
       case 'agent':
-        slackMsg = `Payment ${status} ${status === 'completed' ? '. Subscription started.' : ''}\n\n ${
-          transactionObj?.user?.phone
-            ? `User: <https://wa.me/965${transactionObj?.user?.phone}|${transactionObj?.user?.phone}>`
-            : ''
-        }\n\nAdmin Comment: ${transactionObj.user.admin_comment || '-'}\n\nPackage Title: ${
-          transactionObj.package_title
-        }\n\nCost: ${transactionObj.amount}`;
         smsMsg = `Payment ${status === 'completed' ? 'successful. Subscription started.' : 'failed.'}`;
         break;
       case 'stickyDirec':
-        slackMsg = `Payment ${status} ${status === 'completed' ? '. Post sticked.' : 'failed.'}\n\n${
-          transactionObj?.user?.phone
-            ? `User: <https://wa.me/965${transactionObj?.user?.phone}|${transactionObj?.user?.phone}>`
-            : ''
-        }\n\nAdmin Comment: ${transactionObj.user.admin_comment || '-'}\n\nPackage Title: ${
-          transactionObj.package_title
-        }\n\nCost: ${transactionObj.amount}`;
         smsMsg = `Payment ${status === 'completed' ? 'successful. Post sticked.' : 'failed.'}`;
         break;
       default:
-        slackMsg = `Payment ${status}\n\n ${
-          transactionObj?.user?.phone
-            ? `User: <https://wa.me/965${transactionObj?.user?.phone}|${transactionObj?.user?.phone}>`
-            : ''
-        }\n\nAdmin Comment: ${transactionObj.user.admin_comment || '-'}\n\nPackage Title: ${
-          transactionObj.package_title
-        }\n\nCost: ${transactionObj.amount}`;
         smsMsg = `Payment ${status === 'completed' ? 'successful.' : 'failed.'}`;
         break;
     }
   }
+
+  const slackMsg = `Payment ${status} - ${user?.admin_comment ? `${user.admin_comment}` : ''}\n${
+    transactionObj.package_title
+  } - ${transactionObj.amount}`;
 
   await alertOnSlack('imp', slackMsg);
   await sendSms(transactionObj.user.phone, smsMsg);
@@ -124,16 +108,17 @@ const editTransactionStatus = async (trackId: string | null, status: string) => 
   const transaction = await findTransactionByTrackId(trackId);
   if (!transaction) return { status: 404 };
 
+  const user: any = findUserById(transaction.user.id);
+  if (!user) return { status: 404 };
+
   await Transaction.save({
     ...transaction,
     status,
   });
 
-  const slackMsg = `Payment canceled.\n\nUser:${
-    transaction?.user?.phone ? `User: <https://wa.me/965${transaction?.user?.phone}|${transaction?.user?.phone}>` : ''
-  }\n\nAdmin Commnet: ${transaction.user.admin_comment || '-'}\n\nPackage Title: ${
-    transaction.package_title
-  }\n\nCost: ${transaction.amount}`;
+  const slackMsg = `Payment canceled - ${user.admin_comment || ''}\n${transaction.package_title} - ${
+    transaction.amount
+  }`;
   const smsMsg = `Payment canceled`;
 
   await alertOnSlack('imp', slackMsg);

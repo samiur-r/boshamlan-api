@@ -10,5 +10,6 @@ router.post('/register', UserController.register);
 router.post('/check-user', UserController.doesUserExists);
 router.post('/password-reset', UserController.resetPassword);
 router.delete('/', UserController.removeUser);
+router.post('/admin-comment', UserController.findAdminComment);
 
 export default router;

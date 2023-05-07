@@ -1,5 +1,6 @@
 import { Between, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual } from 'typeorm';
 import AppDataSource from '../../../db';
+import logger from '../../../utils/logger';
 import { hashPassword } from '../../../utils/passwordUtils';
 import { getLocaleDate } from '../../../utils/timestampUtls';
 import { Post } from '../posts/models/Post';
@@ -12,8 +13,13 @@ const findUserById = async (id: number) => {
 };
 
 const findUserByPhone = async (phone: string) => {
-  const user = await User.findOneBy({ phone });
-  return user;
+  try {
+    const user = await User.findOneBy({ phone });
+    return user;
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return null;
+  }
 };
 
 const saveUser = async (phone: string, hashedPassword: string, status: string) => {

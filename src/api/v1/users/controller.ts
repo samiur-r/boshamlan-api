@@ -56,6 +56,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     return res.status(200).json({ success: userPayload }); // Logged in successfully
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error) {
+    const user = await findUserByPhone(phone);
     logger.error(`${error.name}: ${error.message}`);
     logger.error(`User: ${phone} logged in attempt failed`);
     await saveUserLog([
@@ -64,7 +65,9 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     if (error.name === 'ValidationError') {
       error.message = 'Invalid payload passed';
     }
-    const slackMsg = `Failed login attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+    const slackMsg = `Failed login attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>\n` : ''}${
+      user && user.admin_comment ? `Admin comment: ${user.admin_comment}\n` : 'Admin comment: -\n'
+    }Error message: "${error.message}"`;
     await alertOnSlack('non-imp', slackMsg);
     return next(error);
   }
@@ -97,10 +100,12 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     logger.error(`${error.name}: ${error.message}`);
+    const slackMsg = `User registration failed\n\n ${
+      phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''
+    }\nError message: "${error.message}"`;
+    await alertOnSlack('non-imp', slackMsg);
     if (error.name === 'ValidationError') {
       error.message = 'Invalid payload passed';
-      const slackMsg = `Invalid user payload\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
-      await alertOnSlack('non-imp', slackMsg);
       return next(error);
     }
     if (error.message === 'All SMS messages failed to send') {
@@ -217,4 +222,17 @@ const removeUser = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { login, logout, register, doesUserExists, resetPassword, removeUser };
+const findAdminComment = async (req: Request, res: Response, next: NextFunction) => {
+  const { phone } = req.body;
+
+  try {
+    const user = await findUserByPhone(phone);
+    if (!user) throw new ErrorHandler(404, 'User not found');
+    return res.status(200).json({ adminComment: user.admin_comment });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export { login, logout, register, doesUserExists, resetPassword, removeUser, findAdminComment };
