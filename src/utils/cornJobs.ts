@@ -28,7 +28,7 @@ async function scheduledTaskPerFiveMins() {
     let slackMsg = `Unverified users: `;
 
     users.forEach((user) => {
-      slackMsg = `${slackMsg} \n\n ${user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''}`;
+      slackMsg = `${slackMsg}\n ${user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''}`;
     });
     if (users && users.length) await alertOnSlack('imp', slackMsg);
   } catch (error) {

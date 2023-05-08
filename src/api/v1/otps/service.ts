@@ -43,7 +43,9 @@ const sendOtpVerificationSms = async (phone: string, type: string, user: IUser) 
   await sendSmsOtp(phone, otp);
 
   if (type === 'password-reset') {
-    const slackMsg = `Password reset attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+    const slackMsg = `Password reset attempt\n\n ${phone ? `<https://wa.me/965${phone}|${phone}>` : ''} - ${
+      user.admin_comment ? user.admin_comment : ''
+    }`;
     await alertOnSlack('imp', slackMsg);
   }
 

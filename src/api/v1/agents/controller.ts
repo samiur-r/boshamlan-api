@@ -59,9 +59,9 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
       agentInfo.logo_url = url;
     }
     await updateAgent(agentInfo, user.id);
-    const slackMsg = `Agent details edited\n\n ${
-      user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
-    }`;
+    const slackMsg = `Agent details edited\n${
+      user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+    } - ${user?.admin_comment || ''}`;
     await alertOnSlack('imp', slackMsg);
     return res.status(200).json({ success: 'Your info is updated successfully' });
   } catch (error) {

@@ -168,8 +168,8 @@ const fireAgentExpirationAlert = async (userIds: number[]) => {
   // eslint-disable-next-line no-restricted-syntax
   for (const user of users) {
     const slackMsg = `Subscription ended.\n\n${
-      user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
-    }`;
+      user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+    } - ${user?.admin_comment || ''}`;
 
     try {
       // eslint-disable-next-line no-await-in-loop

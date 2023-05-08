@@ -72,9 +72,9 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
     if (error.name === 'ValidationError') {
       error.message = 'Invalid payload passed';
     }
-    const slackMsg = `Failed login attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>\n` : ''}${
-      user && user.admin_comment ? `Admin comment: ${user.admin_comment}\n` : 'Admin comment: -\n'
-    }Error message: "${error.message}"`;
+    const slackMsg = `Failed login attempt\n${phone ? `<https://wa.me/965${phone}|${phone}>` : ''} - ${
+      user && user.admin_comment ? `${user.admin_comment}\n` : ''
+    }\nError message: "${error.message}"`;
     await alertOnSlack('non-imp', slackMsg);
     return next(error);
   }
@@ -107,8 +107,8 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     logger.error(`${error.name}: ${error.message}`);
-    const slackMsg = `User registration failed\n\n ${
-      phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''
+    const slackMsg = `User registration failed\n${
+      phone ? `<https://wa.me/965${phone}|${phone}>` : ''
     }\nError message: "${error.message}"`;
     await alertOnSlack('non-imp', slackMsg);
     if (error.name === 'ValidationError') {
@@ -151,12 +151,13 @@ const doesUserExists = async (req: Request, res: Response, next: NextFunction) =
 
 const resetPassword = async (req: Request, res: Response, next: NextFunction) => {
   const { phone, password } = req.body;
+  let user;
 
   try {
     await phoneSchema.validate(phone, { abortEarly: false });
     await passwordSchema.validate(password, { abortEarly: false });
 
-    const user = await findUserByPhone(phone);
+    user = await findUserByPhone(phone);
 
     if (!user) throw new ErrorHandler(404, 'No user with this phone is found. Please register');
 
@@ -168,8 +169,8 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
     ]);
 
     const slackMsg = `Password reset successfully\n\n ${
-      user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
-    }`;
+      user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+    } - ${user.admin_comment ? user.admin_comment : ''}`;
     await alertOnSlack('imp', slackMsg);
     await sendSms(user.phone, 'Password reset successfully');
 
@@ -191,7 +192,11 @@ const resetPassword = async (req: Request, res: Response, next: NextFunction) =>
     return res.status(200).json({ success: userPayload });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
-    logger.error(`Password reset attempt by user ${phone} failed`);
+    logger.error(
+      `Password reset attempt failed.\n${user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''} - ${
+        user?.admin_comment ? user.admin_comment : ''
+      }`,
+    );
     await saveUserLog([
       { post_id: undefined, transaction: undefined, user: phone, activity: 'Password reset attempt failed' },
     ]);
@@ -235,7 +240,7 @@ const removeUser = async (req: Request, res: Response, next: NextFunction) => {
       },
     ]);
 
-    const slackMsg = `User: <https://wa.me/965${user.phone}|${user.phone}> is deleted`;
+    const slackMsg = `User <https://wa.me/965${user.phone}|${user.phone}> - ${user?.admin_comment || ''} is deleted`;
     await alertOnSlack('imp', slackMsg);
 
     return res.status(200).json({ success: 'User deleted successfully' });

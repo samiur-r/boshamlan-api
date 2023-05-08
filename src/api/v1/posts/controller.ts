@@ -172,16 +172,16 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
       logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
 
       if (typeOfCredit === 'free' && credit.free === 1) {
-        const slackMsg = `User consumed their free credits\n\n ${
-          user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
-        }`;
+        const slackMsg = `User consumed their free credits\n ${
+          user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+        } - ${user?.admin_comment || ''}`;
         await alertOnSlack('imp', slackMsg);
         await sendSms(user.phone, 'You have consumed all of your free credits');
       }
       if (typeOfCredit === 'agent' && credit.agent === 1) {
-        const slackMsg = `Agent credit is now 0\n\n ${
-          user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
-        }`;
+        const slackMsg = `Agent credit is now 0\n ${
+          user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+        } - ${user?.admin_comment || ''}`;
         await alertOnSlack('imp', slackMsg);
         await sendSms(user.phone, 'Your agent credit is now 0');
       }
@@ -194,11 +194,9 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
     if (error.name === 'ValidationError') {
       error.message = 'Invalid payload passed';
     }
-    const slackMsg = `Failed to create post\n\n ${
-      postInfo?.phone ? `User: <https://wa.me/965${postInfo?.phone}|${postInfo?.phone}>\n` : ''
-    }${user?.admin_comment ? `Admin Comment: ${user.admin_comment}\n` : 'Admin Comment: -\n'}Error message: "${
-      error.message
-    }"`;
+    const slackMsg = `Failed to create post\n${
+      postInfo?.phone ? `<https://wa.me/965${postInfo?.phone}|${postInfo?.phone}>` : ''
+    } - ${user?.admin_comment ? `${user.admin_comment}` : ''}\nError message: "${error.message}"`;
     await alertOnSlack('non-imp', slackMsg);
     logs.push({ post_id: undefined, transaction: undefined, user: `${userId}`, activity: 'Failed to create post' });
     if (logs && logs.length) await saveUserLog(logs);
@@ -277,7 +275,7 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
   const { postId } = req.body;
 
   try {
-    const user: any = findUserById(userId);
+    const user: any = await findUserById(userId);
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
     if (!postId) throw new ErrorHandler(404, 'Invalid payload passed');
 
@@ -291,9 +289,9 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
     if (post.is_sticky) throw new ErrorHandler(304, 'Post is already sticky');
 
     await updatePostStickyVal(post, true);
-    const slackMsg = `Post titled ${post.title} is sticked by \nUser: <https://wa.me/965${post?.user.phone}|${
+    const slackMsg = `Post titled ${post.title} is sticked by \n<https://wa.me/965${post?.user.phone}|${
       post?.user.phone
-    }>\nAdmin Comment: ${user.admin_comment || '-'}`;
+    }> - ${user.admin_comment || ''}`;
     await alertOnSlack('imp', slackMsg);
     logger.info(`Post ${post.id} sticked by user ${user?.phone}`);
     await saveUserLog([

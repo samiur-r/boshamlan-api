@@ -4,7 +4,7 @@ import logger from '../../../utils/logger';
 import { initOrUpdateAgent } from '../agents/service';
 import { updateCredit } from '../credits/service';
 import { findPackageById } from '../packages/service';
-import { updateIsUserAnAgent } from '../users/service';
+import { findUserById, updateIsUserAnAgent } from '../users/service';
 import { editTransaction, editTransactionStatus, saveTransaction } from './service';
 import { transactionSchema, transactionUpdateStatusSchema } from './validation';
 import config from '../../../config';
@@ -15,12 +15,16 @@ import { saveUserLog } from '../user_logs/service';
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
   const { payload } = req.body;
-  payload.user = res.locals.user.payload;
+  const userId = res.locals.user.payload.id;
 
   try {
     await transactionSchema.validate(payload);
     const packageObj = await findPackageById(payload.packageId);
     payload.packageObj = packageObj;
+
+    const user = await findUserById(userId);
+    payload.user = user;
+
     await saveTransaction(payload);
     logger.info(`Transaction created by user ${payload.user?.phone}`);
     await saveUserLog([

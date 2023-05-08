@@ -20,8 +20,8 @@ const verifyOtp = async (req: Request, res: Response, next: NextFunction) => {
     if (nextOperation) {
       const user = await findUserById(userId);
       const slackMsg = `Entered reset password OTP\n\n ${
-        user?.phone ? `User: <https://wa.me/965${user?.phone}|${user?.phone}>` : ''
-      }`;
+        user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+      } - ${user?.admin_comment ? user.admin_comment : ''}`;
       await alertOnSlack('imp', slackMsg);
     }
 

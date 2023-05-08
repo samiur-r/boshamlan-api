@@ -108,7 +108,7 @@ const editTransactionStatus = async (trackId: string | null, status: string) => 
   const transaction = await findTransactionByTrackId(trackId);
   if (!transaction) return { status: 404 };
 
-  const user: any = findUserById(transaction.user.id);
+  const user: any = await findUserById(transaction.user.id);
   if (!user) return { status: 404 };
 
   await Transaction.save({

@@ -158,15 +158,19 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
 
 const stickPost = async (req: Request, res: Response, next: NextFunction) => {
   const { postId } = req.body;
-  const user = res.locals.user.payload;
+  const userId = res.locals.user.payload.id;
 
   try {
     const post = await findPostById(parseInt(postId, 10));
     if (!post) throw new ErrorHandler(401, 'Post not found');
     if (post.is_sticky) throw new ErrorHandler(304, 'Post is already sticky');
 
+    const user: any = await findUserById(userId);
+
     await updatePostStickyVal(post, true);
-    const slackMsg = `Post ${post.id} by user: <https://wa.me/965${post?.user.phone}|${post?.user.phone}> is sticked`;
+    const slackMsg = `Post titled ${post.title} is sticked by\n<https://wa.me/965${user.phone}|${user.phone}> - ${
+      user.admin_comment || ''
+    }`;
     await alertOnSlack('imp', slackMsg);
     logger.info(`Post ${post.id} sticked by user ${user?.phone}`);
     return res.status(200).json({ success: 'Post is sticked successfully' });
@@ -509,7 +513,12 @@ const updateUserCredit = async (req: Request, res: Response, next: NextFunction)
         activity: `User ${credit?.user?.phone} credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`,
       },
     ]);
-    const slackMsg = `User credits updated by admin ${admin.phone} \n\n <https://wa.me/965${credit?.user?.phone}|${credit?.user?.phone}> credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`;
+    const user = await findUserById(userId);
+    const slackMsg = `User credits updated by admin ${admin.phone}\n<https://wa.me/965${credit?.user?.phone}|${
+      credit?.user?.phone
+    }> - ${user?.admin_comment || ''}\ncredits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${
+      credit.agent
+    } to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`;
     await alertOnSlack('imp', slackMsg);
     return res.status(200).json({ success: 'Credit updated successfully' });
   } catch (error) {
@@ -552,7 +561,9 @@ const editUser = async (req: Request, res: Response, next: NextFunction) => {
           activity: `User ${user?.phone} phone updated to ${phone} by the admin ${admin?.phone}`,
         },
       ]);
-      const slackMsg = `User ${user?.phone} phone updated to <https://wa.me/965${phone}|${phone}> by the admin ${admin?.phone}`;
+      const slackMsg = `User ${user?.phone} - ${
+        user.admin_comment || ''
+      } phone updated to <https://wa.me/965${phone}|${phone}> by the admin ${admin?.phone}`;
       await alertOnSlack('imp', slackMsg);
     }
 
