@@ -98,15 +98,17 @@ const filterPosts = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
 exports.filterPosts = filterPosts;
 const stickPost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { postId } = req.body;
-    const user = res.locals.user.payload;
+    const userId = res.locals.user.payload.id;
+    let user;
     try {
         const post = yield (0, service_2.findPostById)(parseInt(postId, 10));
         if (!post)
             throw new ErrorHandler_1.default(401, 'Post not found');
         if (post.is_sticky)
             throw new ErrorHandler_1.default(304, 'Post is already sticky');
+        user = yield (0, service_3.findUserById)(userId);
         yield (0, service_2.updatePostStickyVal)(post, true);
-        const slackMsg = `Post ${post.id} by user: <https://wa.me/965${post === null || post === void 0 ? void 0 : post.user.phone}|${post === null || post === void 0 ? void 0 : post.user.phone}> is sticked`;
+        const slackMsg = `Post titled ${post.title} is sticked by\n<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}> - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         logger_1.default.info(`Post ${post.id} sticked by user ${user === null || user === void 0 ? void 0 : user.phone}`);
         return res.status(200).json({ success: 'Post is sticked successfully' });
@@ -395,7 +397,8 @@ const updateUserCredit = (req, res, next) => __awaiter(void 0, void 0, void 0, f
                 activity: `User ${(_u = credit === null || credit === void 0 ? void 0 : credit.user) === null || _u === void 0 ? void 0 : _u.phone} credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`,
             },
         ]);
-        const slackMsg = `User credits updated by admin ${admin.phone} \n\n <https://wa.me/965${(_v = credit === null || credit === void 0 ? void 0 : credit.user) === null || _v === void 0 ? void 0 : _v.phone}|${(_w = credit === null || credit === void 0 ? void 0 : credit.user) === null || _w === void 0 ? void 0 : _w.phone}> credits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`;
+        const user = yield (0, service_3.findUserById)(userId);
+        const slackMsg = `User credits updated by admin ${admin.phone}\n<https://wa.me/965${(_v = credit === null || credit === void 0 ? void 0 : credit.user) === null || _v === void 0 ? void 0 : _v.phone}|${(_w = credit === null || credit === void 0 ? void 0 : credit.user) === null || _w === void 0 ? void 0 : _w.phone}> - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''}\ncredits updated from ${credit.free}/${credit.regular}/${credit.sticky}/${credit.agent} to ${updatedCredit.free}/${updatedCredit.regular}/${updatedCredit.sticky}/${updatedCredit.agent}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         return res.status(200).json({ success: 'Credit updated successfully' });
     }
@@ -439,7 +442,7 @@ const editUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function*
                     activity: `User ${user === null || user === void 0 ? void 0 : user.phone} phone updated to ${phone} by the admin ${admin === null || admin === void 0 ? void 0 : admin.phone}`,
                 },
             ]);
-            const slackMsg = `User ${user === null || user === void 0 ? void 0 : user.phone} phone updated to <https://wa.me/965${phone}|${phone}> by the admin ${admin === null || admin === void 0 ? void 0 : admin.phone}`;
+            const slackMsg = `User ${user === null || user === void 0 ? void 0 : user.phone} - ${user.admin_comment || ''} phone updated to <https://wa.me/965${phone}|${phone}> by the admin ${admin === null || admin === void 0 ? void 0 : admin.phone}`;
             yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         }
         if (password) {

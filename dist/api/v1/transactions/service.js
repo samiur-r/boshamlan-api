@@ -82,7 +82,7 @@ const editTransactionStatus = (trackId, status) => __awaiter(void 0, void 0, voi
     const transaction = yield findTransactionByTrackId(trackId);
     if (!transaction)
         return { status: 404 };
-    const user = (0, service_1.findUserById)(transaction.user.id);
+    const user = yield (0, service_1.findUserById)(transaction.user.id);
     if (!user)
         return { status: 404 };
     yield model_1.Transaction.save(Object.assign(Object.assign({}, transaction), { status }));

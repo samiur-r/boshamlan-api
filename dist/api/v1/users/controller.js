@@ -77,7 +77,7 @@ const login = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
         if (error.name === 'ValidationError') {
             error.message = 'Invalid payload passed';
         }
-        const slackMsg = `Failed login attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>\n` : ''}${user && user.admin_comment ? `Admin comment: ${user.admin_comment}\n` : 'Admin comment: -\n'}Error message: "${error.message}"`;
+        const slackMsg = `Failed login attempt\n${phone ? `<https://wa.me/965${phone}|${phone}>` : ''} - ${user && user.admin_comment ? `${user.admin_comment}\n` : ''}\nError message: "${error.message}"`;
         yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
         return next(error);
     }
@@ -105,7 +105,7 @@ const register = (req, res, next) => __awaiter(void 0, void 0, void 0, function*
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
-        const slackMsg = `User registration failed\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}\nError message: "${error.message}"`;
+        const slackMsg = `User registration failed\n${phone ? `<https://wa.me/965${phone}|${phone}>` : ''}\nError message: "${error.message}"`;
         yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
         if (error.name === 'ValidationError') {
             error.message = 'Invalid payload passed';
@@ -144,10 +144,11 @@ const doesUserExists = (req, res, next) => __awaiter(void 0, void 0, void 0, fun
 exports.doesUserExists = doesUserExists;
 const resetPassword = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { phone, password } = req.body;
+    let user;
     try {
         yield validation_1.phoneSchema.validate(phone, { abortEarly: false });
         yield validation_1.passwordSchema.validate(password, { abortEarly: false });
-        const user = yield (0, service_1.findUserByPhone)(phone);
+        user = yield (0, service_1.findUserByPhone)(phone);
         if (!user)
             throw new ErrorHandler_1.default(404, 'No user with this phone is found. Please register');
         yield (0, service_1.updateUserPassword)(user, password);
@@ -155,7 +156,7 @@ const resetPassword = (req, res, next) => __awaiter(void 0, void 0, void 0, func
         yield (0, service_3.saveUserLog)([
             { post_id: undefined, transaction: undefined, user: phone, activity: 'Password reset attempt successful' },
         ]);
-        const slackMsg = `Password reset successfully\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+        const slackMsg = `Password reset successfully\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${user.admin_comment ? user.admin_comment : ''}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         yield (0, smsUtils_1.sendSms)(user.phone, 'Password reset successfully');
         const credits = yield (0, service_6.findCreditByUserId)(user.id);
@@ -174,7 +175,7 @@ const resetPassword = (req, res, next) => __awaiter(void 0, void 0, void 0, func
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
-        logger_1.default.error(`Password reset attempt by user ${phone} failed`);
+        logger_1.default.error(`Password reset attempt failed.\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? user.admin_comment : ''}`);
         yield (0, service_3.saveUserLog)([
             { post_id: undefined, transaction: undefined, user: phone, activity: 'Password reset attempt failed' },
         ]);
@@ -211,7 +212,7 @@ const removeUser = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
                 activity: `User ${user === null || user === void 0 ? void 0 : user.phone} deleted`,
             },
         ]);
-        const slackMsg = `User: <https://wa.me/965${user.phone}|${user.phone}> is deleted`;
+        const slackMsg = `User <https://wa.me/965${user.phone}|${user.phone}> - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''} is deleted`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         return res.status(200).json({ success: 'User deleted successfully' });
     }

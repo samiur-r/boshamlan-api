@@ -46,7 +46,7 @@ const sendOtpVerificationSms = (phone, type, user) => __awaiter(void 0, void 0, 
     const { otp, token, expirationTime } = yield (0, otpUtils_1.generateOtp)();
     yield (0, otpUtils_1.sendSmsOtp)(phone, otp);
     if (type === 'password-reset') {
-        const slackMsg = `Password reset attempt\n\n ${phone ? `User: <https://wa.me/965${phone}|${phone}>` : ''}`;
+        const slackMsg = `Password reset attempt\n\n ${phone ? `<https://wa.me/965${phone}|${phone}>` : ''} - ${user.admin_comment ? user.admin_comment : ''}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
     }
     const otpObj = yield findOtpByUserId(user.id);

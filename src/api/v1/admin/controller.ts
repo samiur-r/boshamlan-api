@@ -159,17 +159,18 @@ const filterPosts = async (req: Request, res: Response, next: NextFunction) => {
 const stickPost = async (req: Request, res: Response, next: NextFunction) => {
   const { postId } = req.body;
   const userId = res.locals.user.payload.id;
+  let user;
 
   try {
     const post = await findPostById(parseInt(postId, 10));
     if (!post) throw new ErrorHandler(401, 'Post not found');
     if (post.is_sticky) throw new ErrorHandler(304, 'Post is already sticky');
 
-    const user: any = await findUserById(userId);
+    user = await findUserById(userId);
 
     await updatePostStickyVal(post, true);
-    const slackMsg = `Post titled ${post.title} is sticked by\n<https://wa.me/965${user.phone}|${user.phone}> - ${
-      user.admin_comment || ''
+    const slackMsg = `Post titled ${post.title} is sticked by\n<https://wa.me/965${user?.phone}|${user?.phone}> - ${
+      user?.admin_comment || ''
     }`;
     await alertOnSlack('imp', slackMsg);
     logger.info(`Post ${post.id} sticked by user ${user?.phone}`);

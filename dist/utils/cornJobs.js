@@ -43,7 +43,7 @@ function scheduledTaskPerFiveMins() {
             const users = yield (0, service_4.findUnVerifiedUsers)();
             let slackMsg = `Unverified users: `;
             users.forEach((user) => {
-                slackMsg = `${slackMsg} \n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+                slackMsg = `${slackMsg}\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
             });
             if (users && users.length)
                 yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);

@@ -29,11 +29,13 @@ const service_7 = require("../user_logs/service");
 const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f;
     const { payload } = req.body;
-    payload.user = res.locals.user.payload;
+    const userId = res.locals.user.payload.id;
     try {
         yield validation_1.transactionSchema.validate(payload);
         const packageObj = yield (0, service_3.findPackageById)(payload.packageId);
         payload.packageObj = packageObj;
+        const user = yield (0, service_4.findUserById)(userId);
+        payload.user = user;
         yield (0, service_5.saveTransaction)(payload);
         logger_1.default.info(`Transaction created by user ${(_a = payload.user) === null || _a === void 0 ? void 0 : _a.phone}`);
         yield (0, service_7.saveUserLog)([

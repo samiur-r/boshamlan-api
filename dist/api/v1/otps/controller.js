@@ -31,7 +31,7 @@ const verifyOtp = (req, res, next) => __awaiter(void 0, void 0, void 0, function
     try {
         if (nextOperation) {
             const user = yield (0, service_2.findUserById)(userId);
-            const slackMsg = `Entered reset password OTP\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+            const slackMsg = `Entered reset password OTP\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? user.admin_comment : ''}`;
             yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         }
         const otpObj = yield (0, service_1.findOtpByUserId)(userId);

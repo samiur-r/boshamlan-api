@@ -139,7 +139,7 @@ const fireAgentExpirationAlert = (userIds) => __awaiter(void 0, void 0, void 0, 
     });
     // eslint-disable-next-line no-restricted-syntax
     for (const user of users) {
-        const slackMsg = `Subscription ended.\n\n${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+        const slackMsg = `Subscription ended.\n\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''}`;
         try {
             // eslint-disable-next-line no-await-in-loop
             yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);

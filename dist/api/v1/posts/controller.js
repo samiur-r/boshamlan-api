@@ -150,12 +150,12 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             logger_1.default.info(`User: ${user.phone} created new post: ${newPost.id}`);
             logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
             if (typeOfCredit === 'free' && credit.free === 1) {
-                const slackMsg = `User consumed their free credits\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+                const slackMsg = `User consumed their free credits\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''}`;
                 yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
                 yield (0, smsUtils_1.sendSms)(user.phone, 'You have consumed all of your free credits');
             }
             if (typeOfCredit === 'agent' && credit.agent === 1) {
-                const slackMsg = `Agent credit is now 0\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+                const slackMsg = `Agent credit is now 0\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''}`;
                 yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
                 yield (0, smsUtils_1.sendSms)(user.phone, 'Your agent credit is now 0');
             }
@@ -170,7 +170,7 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         if (error.name === 'ValidationError') {
             error.message = 'Invalid payload passed';
         }
-        const slackMsg = `Failed to create post\n\n ${(postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone) ? `User: <https://wa.me/965${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}|${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}>\n` : ''}${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `Admin Comment: ${user.admin_comment}\n` : 'Admin Comment: -\n'}Error message: "${error.message}"`;
+        const slackMsg = `Failed to create post\n${(postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone) ? `<https://wa.me/965${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}|${postInfo === null || postInfo === void 0 ? void 0 : postInfo.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}\nError message: "${error.message}"`;
         yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
         logs.push({ post_id: undefined, transaction: undefined, user: `${userId}`, activity: 'Failed to create post' });
         if (logs && logs.length)
@@ -249,7 +249,7 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
     const userPhone = res.locals.user.payload.phone;
     const { postId } = req.body;
     try {
-        const user = (0, service_1.findUserById)(userId);
+        const user = yield (0, service_1.findUserById)(userId);
         if (!user)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (!postId)
@@ -265,7 +265,7 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         if (post.is_sticky)
             throw new ErrorHandler_1.default(304, 'Post is already sticky');
         yield (0, service_3.updatePostStickyVal)(post, true);
-        const slackMsg = `Post titled ${post.title} is sticked by \nUser: <https://wa.me/965${post === null || post === void 0 ? void 0 : post.user.phone}|${post === null || post === void 0 ? void 0 : post.user.phone}>\nAdmin Comment: ${user.admin_comment || '-'}`;
+        const slackMsg = `Post titled ${post.title} is sticked by \n<https://wa.me/965${post === null || post === void 0 ? void 0 : post.user.phone}|${post === null || post === void 0 ? void 0 : post.user.phone}> - ${user.admin_comment || ''}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         logger_1.default.info(`Post ${post.id} sticked by user ${user === null || user === void 0 ? void 0 : user.phone}`);
         yield (0, service_4.saveUserLog)([

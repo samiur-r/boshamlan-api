@@ -73,7 +73,7 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             agentInfo.logo_url = url;
         }
         yield (0, service_3.updateAgent)(agentInfo, user.id);
-        const slackMsg = `Agent details edited\n\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `User: <https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''}`;
+        const slackMsg = `Agent details edited\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
         return res.status(200).json({ success: 'Your info is updated successfully' });
     }
