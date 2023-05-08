@@ -41,4 +41,18 @@ const checkIfUserHasOnlySticky = async (req: Request, res: Response, next: NextF
   }
 };
 
-export { fetchStickyCredits, fetchFreeCredits, checkIfUserHasOnlySticky };
+const checkIfUserHasNoCredits = async (req: Request, res: Response, next: NextFunction) => {
+  const user = res.locals.user.payload;
+
+  try {
+    const credits = await findCreditByUserId(user.id);
+    if (!credits) throw new ErrorHandler(404, 'User credits not found');
+    const hasNoCredits = credits.sticky === 0 && credits.free === 0 && credits.regular === 0 && credits.agent === 0;
+    return res.status(200).json({ hasNoCredits });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
+    return next(error);
+  }
+};
+
+export { fetchStickyCredits, fetchFreeCredits, checkIfUserHasOnlySticky, checkIfUserHasNoCredits };
