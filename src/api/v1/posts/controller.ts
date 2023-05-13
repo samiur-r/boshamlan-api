@@ -167,6 +167,7 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
       const publicDate = new Date();
 
       const newPost = await savePost(postInfo, user, typeOfCredit, postedDate, publicDate);
+      res.status(200).json({ success: 'Post created successfully' });
       await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
       logger.info(`User: ${user.phone} created new post: ${newPost.id}`);
       logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
