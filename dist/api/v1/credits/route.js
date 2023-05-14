@@ -33,5 +33,6 @@ const router = express_1.default.Router();
 router.get('/sticky-credit', AuthMiddleware_1.isUserAuth, CreditController.fetchStickyCredits);
 router.get('/free-credit', AuthMiddleware_1.isUserAuth, CreditController.fetchFreeCredits);
 router.get('/user-has-only-sticky', AuthMiddleware_1.isUserAuth, CreditController.checkIfUserHasOnlySticky);
+router.get('/user-has-no-credits', AuthMiddleware_1.isUserAuth, CreditController.checkIfUserHasNoCredits);
 exports.default = router;
 //# sourceMappingURL=route.js.map

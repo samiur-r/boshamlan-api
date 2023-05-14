@@ -64,14 +64,17 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
     const { agentInfo } = req.body;
     const userId = res.locals.user.payload.id;
     try {
+        const { files } = req;
         const user = yield (0, service_2.findUserById)(userId);
         if (!user || !user.is_agent)
             throw new ErrorHandler_1.default(403, 'You are not an agent');
         yield validation_1.agentSchema.validate(agentInfo);
-        if (agentInfo.logo) {
-            const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(agentInfo.logo, 'agents');
+        if (files && files.length) {
+            const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(files[0], 'agents');
             agentInfo.logo_url = url;
         }
+        else
+            agentInfo.logo_url = null;
         yield (0, service_3.updateAgent)(agentInfo, user.id);
         const slackMsg = `Agent details edited\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);

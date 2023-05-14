@@ -84,6 +84,7 @@ const updateAgent = (agentInfo, userId) => __awaiter(void 0, void 0, void 0, fun
         yield (0, cloudinaryUtils_1.deleteMediaFromCloudinary)(agent.logo_url, 'agents');
     }
     const agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), agentInfo));
+    console.log(agentInfo);
     yield model_2.Agent.save(agentData);
 });
 exports.updateAgent = updateAgent;

@@ -113,17 +113,17 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
     const isTempPost = endpoint === 'temp';
     const logs = [];
     try {
+        const { files } = req;
         yield validation_1.postSchema.validate(postInfo);
         const user = yield (0, service_1.findUserById)(userId);
         if (!user)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (isTempPost) {
-            if ((postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia) && (postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia.length)) {
-                for (const multimedia of postInfo.multimedia) {
-                    const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(multimedia, 'posts');
-                    if (url)
-                        media.push(url);
-                }
+            if (files && files.length) {
+                const promises = files.map((file) => (0, cloudinaryUtils_1.uploadMediaToCloudinary)(file, 'posts'));
+                const results = yield Promise.all(promises);
+                if (results && results.length)
+                    media.push(...results);
             }
             postInfo.media = media;
             const typeOfCredit = 'sticky';
@@ -135,12 +135,11 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             const { typeOfCredit, credit } = yield (0, service_2.typeOfCreditToDeduct)(user.id, user.is_agent, postInfo.isStickyPost, isStickyOnly);
             if (!typeOfCredit)
                 throw new ErrorHandler_1.default(402, 'You do not have enough credit');
-            if ((postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia) && (postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia.length)) {
-                for (const multimedia of postInfo.multimedia) {
-                    const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(multimedia, 'posts');
-                    if (url)
-                        media.push(url);
-                }
+            if (files && files.length) {
+                const promises = files.map((file) => (0, cloudinaryUtils_1.uploadMediaToCloudinary)(file, 'posts'));
+                const results = yield Promise.all(promises);
+                if (results && results.length)
+                    media.push(...results);
             }
             postInfo.media = media;
             const postedDate = new Date();
@@ -186,6 +185,7 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
     const media = [];
     let post;
     try {
+        const { files } = req;
         post = yield (0, service_3.findPostById)(postId);
         if (!post) {
             post = yield (0, service_3.findArchivedPostById)(postId);
@@ -198,12 +198,11 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         (0, checkAuthorization_1.checkAuthorization)(user, post.user.id);
         yield validation_1.postSchema.validate(postInfo);
         yield (0, service_3.removePostMedia)(postId);
-        if ((postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia) && (postInfo === null || postInfo === void 0 ? void 0 : postInfo.multimedia.length)) {
-            for (const multimedia of postInfo.multimedia) {
-                const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(multimedia, 'posts');
-                if (url)
-                    media.push(url);
-            }
+        if (files && files.length) {
+            const promises = files.map((file) => (0, cloudinaryUtils_1.uploadMediaToCloudinary)(file, 'posts'));
+            const results = yield Promise.all(promises);
+            if (results && results.length)
+                media.push(...results);
         }
         postInfo.media = media;
         let updatedPost;

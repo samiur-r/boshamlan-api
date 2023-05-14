@@ -203,15 +203,12 @@ const removePostMedia = (id, post) => __awaiter(void 0, void 0, void 0, function
     if (!post) {
         const postObj = yield Post_1.Post.find({ where: { id }, select: { media: true }, relations: [] });
         // eslint-disable-next-line prefer-destructuring
-        result = postObj && postObj.length ? postObj[0].media : undefined;
+        result = postObj && postObj.length ? postObj[0].media : [];
     }
     else
         result = post === null || post === void 0 ? void 0 : post.media;
-    if (result && result.length) {
-        for (const multimedia of result) {
-            yield (0, cloudinaryUtils_1.deleteMediaFromCloudinary)(multimedia, 'posts');
-        }
-    }
+    const promises = result.map((multimedia) => (0, cloudinaryUtils_1.deleteMediaFromCloudinary)(multimedia, 'posts'));
+    return Promise.all(promises);
 });
 exports.removePostMedia = removePostMedia;
 const removeDeletedPost = (id) => __awaiter(void 0, void 0, void 0, function* () {

@@ -13,12 +13,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteMediaFromCloudinary = exports.getAssetInfoFromCloudinary = exports.uploadMediaToCloudinary = void 0;
+const streamifier_1 = __importDefault(require("streamifier"));
 const cloudinary_1 = __importDefault(require("../config/cloudinary"));
 const ErrorHandler_1 = __importDefault(require("./ErrorHandler"));
 const logger_1 = __importDefault(require("./logger"));
-const uploadMediaToCloudinary = (mediaBase64str, preset) => __awaiter(void 0, void 0, void 0, function* () {
-    const resourceType = mediaBase64str.split('/')[0].split(':')[1];
+const uploadMediaToCloudinary = (file, preset) => __awaiter(void 0, void 0, void 0, function* () {
+    const resourceType = 'auto';
     const options = {
+        public_id: `${Date.now()}`,
         resource_type: resourceType,
         upload_preset: preset,
         use_filename: true,
@@ -26,21 +28,23 @@ const uploadMediaToCloudinary = (mediaBase64str, preset) => __awaiter(void 0, vo
         overwrite: true,
         transformation: [
             {
-                if: resourceType === 'image' ? 'w_gt_720' : 'w_gt_500',
-                width: resourceType === 'image' ? 720 : 500,
+                width: 500,
                 crop: 'scale',
             },
             { quality: 'auto' },
         ],
     };
-    try {
-        const result = yield cloudinary_1.default.uploader.upload(mediaBase64str, options);
-        return result.secure_url;
-    }
-    catch (error) {
-        logger_1.default.error(error);
-        return false;
-    }
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary_1.default.uploader.upload_stream(options, (error, result) => {
+            if (error) {
+                reject(error);
+            }
+            else {
+                resolve(result === null || result === void 0 ? void 0 : result.secure_url);
+            }
+        });
+        streamifier_1.default.createReadStream(file.buffer).pipe(stream);
+    });
 });
 exports.uploadMediaToCloudinary = uploadMediaToCloudinary;
 const getAssetInfoFromCloudinary = (publicId) => __awaiter(void 0, void 0, void 0, function* () {

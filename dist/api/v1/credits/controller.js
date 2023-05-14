@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkIfUserHasOnlySticky = exports.fetchFreeCredits = exports.fetchStickyCredits = void 0;
+exports.checkIfUserHasNoCredits = exports.checkIfUserHasOnlySticky = exports.fetchFreeCredits = exports.fetchStickyCredits = void 0;
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const service_1 = require("./service");
@@ -55,4 +55,19 @@ const checkIfUserHasOnlySticky = (req, res, next) => __awaiter(void 0, void 0, v
     }
 });
 exports.checkIfUserHasOnlySticky = checkIfUserHasOnlySticky;
+const checkIfUserHasNoCredits = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = res.locals.user.payload;
+    try {
+        const credits = yield (0, service_1.findCreditByUserId)(user.id);
+        if (!credits)
+            throw new ErrorHandler_1.default(404, 'User credits not found');
+        const hasNoCredits = credits.sticky === 0 && credits.free === 0 && credits.regular === 0 && credits.agent === 0;
+        return res.status(200).json({ hasNoCredits });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        return next(error);
+    }
+});
+exports.checkIfUserHasNoCredits = checkIfUserHasNoCredits;
 //# sourceMappingURL=controller.js.map

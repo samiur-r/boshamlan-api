@@ -53,11 +53,11 @@ const typeOfCreditToDeduct = (userId, is_agent, isStickyPost, isStickyOnly) => _
     if (!credit)
         throw new ErrorHandler_1.default(500, 'Something went wrong');
     let typeOfCredit;
-    if (isStickyOnly) {
+    if (isStickyOnly === 'true') {
         if (credit.sticky > 0)
             typeOfCredit = 'sticky';
     }
-    else if (isStickyPost) {
+    else if (isStickyPost === 'true') {
         if (credit.sticky > 0)
             typeOfCredit = 'sticky';
     }
