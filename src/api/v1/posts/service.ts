@@ -272,14 +272,11 @@ const removePostMedia = async (id?: number, post?: IPost) => {
   if (!post) {
     const postObj = await Post.find({ where: { id }, select: { media: true }, relations: [] });
     // eslint-disable-next-line prefer-destructuring
-    result = postObj && postObj.length ? postObj[0].media : undefined;
+    result = postObj && postObj.length ? postObj[0].media : [];
   } else result = post?.media;
 
-  if (result && result.length) {
-    for (const multimedia of result) {
-      await deleteMediaFromCloudinary(multimedia, 'posts');
-    }
-  }
+  const promises = result.map((multimedia) => deleteMediaFromCloudinary(multimedia, 'posts'));
+  return Promise.all(promises);
 };
 
 const removeDeletedPost = async (id: number) => {

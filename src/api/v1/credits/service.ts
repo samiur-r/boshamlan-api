@@ -49,17 +49,17 @@ const updateCredit = async (
 const typeOfCreditToDeduct = async (
   userId: number,
   is_agent: boolean,
-  isStickyPost: boolean,
-  isStickyOnly: boolean | undefined,
+  isStickyPost: string,
+  isStickyOnly: string | undefined,
 ) => {
   const credit = await findCreditByUserId(userId);
   if (!credit) throw new ErrorHandler(500, 'Something went wrong');
 
   let typeOfCredit;
 
-  if (isStickyOnly) {
+  if (isStickyOnly === 'true') {
     if (credit.sticky > 0) typeOfCredit = 'sticky';
-  } else if (isStickyPost) {
+  } else if (isStickyPost === 'true') {
     if (credit.sticky > 0) typeOfCredit = 'sticky';
   } else if (credit.free > 0) typeOfCredit = 'free';
   else if (credit.agent > 0 && is_agent) typeOfCredit = 'agent';

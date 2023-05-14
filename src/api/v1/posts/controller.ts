@@ -129,16 +129,18 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
   }> = [];
 
   try {
+    const { files }: any = req;
+
     await postSchema.validate(postInfo);
     const user = await findUserById(userId);
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
 
     if (isTempPost) {
-      if (postInfo?.multimedia && postInfo?.multimedia.length) {
-        for (const multimedia of postInfo.multimedia) {
-          const url = await uploadMediaToCloudinary(multimedia, 'posts');
-          if (url) media.push(url);
-        }
+      if (files && files.length) {
+        const promises = files.map((file: any) => uploadMediaToCloudinary(file, 'posts'));
+        const results = await Promise.all(promises);
+
+        if (results && results.length) media.push(...results);
       }
       postInfo.media = media;
       const typeOfCredit = 'sticky';
@@ -154,11 +156,11 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
       );
       if (!typeOfCredit) throw new ErrorHandler(402, 'You do not have enough credit');
 
-      if (postInfo?.multimedia && postInfo?.multimedia.length) {
-        for (const multimedia of postInfo.multimedia) {
-          const url = await uploadMediaToCloudinary(multimedia, 'posts');
-          if (url) media.push(url);
-        }
+      if (files && files.length) {
+        const promises = files.map((file: any) => uploadMediaToCloudinary(file, 'posts'));
+        const results = await Promise.all(promises);
+
+        if (results && results.length) media.push(...results);
       }
 
       postInfo.media = media;
@@ -167,7 +169,6 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
       const publicDate = new Date();
 
       const newPost = await savePost(postInfo, user, typeOfCredit, postedDate, publicDate);
-      res.status(200).json({ success: 'Post created successfully' });
       await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
       logger.info(`User: ${user.phone} created new post: ${newPost.id}`);
       logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
@@ -212,6 +213,8 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
   let post;
 
   try {
+    const { files }: any = req;
+
     post = await findPostById(postId);
     if (!post) {
       post = await findArchivedPostById(postId);
@@ -226,12 +229,13 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
     await postSchema.validate(postInfo);
     await removePostMedia(postId);
 
-    if (postInfo?.multimedia && postInfo?.multimedia.length) {
-      for (const multimedia of postInfo.multimedia) {
-        const url = await uploadMediaToCloudinary(multimedia, 'posts');
-        if (url) media.push(url);
-      }
+    if (files && files.length) {
+      const promises = files.map((file: any) => uploadMediaToCloudinary(file, 'posts'));
+      const results = await Promise.all(promises);
+
+      if (results && results.length) media.push(...results);
     }
+
     postInfo.media = media;
     let updatedPost;
 

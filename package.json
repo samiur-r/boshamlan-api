@@ -37,6 +37,7 @@
     "reflect-metadata": "^0.1.13",
     "sharp": "^0.31.3",
     "socket.io": "^4.6.1",
+    "streamifier": "^0.1.1",
     "typeorm": "^0.3.10",
     "winston": "^3.8.2",
     "yup": "^0.32.11"
@@ -54,6 +55,7 @@
     "@types/node": "^18.8.3",
     "@types/node-cron": "^3.0.7",
     "@types/sharp": "^0.31.1",
+    "@types/streamifier": "^0.1.0",
     "@typescript-eslint/eslint-plugin": "^5.39.0",
     "@typescript-eslint/parser": "^5.39.0",
     "eslint": "^8.25.0",

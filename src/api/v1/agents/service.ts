@@ -84,6 +84,8 @@ const updateAgent = async (agentInfo: any, userId: number) => {
     ...agentInfo,
   });
 
+  console.log(agentInfo);
+
   await Agent.save(agentData);
 };
 

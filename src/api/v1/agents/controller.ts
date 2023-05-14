@@ -50,14 +50,18 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
   const userId = res.locals.user.payload.id;
 
   try {
+    const { files }: any = req;
+
     const user = await findUserById(userId);
     if (!user || !user.is_agent) throw new ErrorHandler(403, 'You are not an agent');
 
     await agentSchema.validate(agentInfo);
-    if (agentInfo.logo) {
-      const url = await uploadMediaToCloudinary(agentInfo.logo, 'agents');
+
+    if (files && files.length) {
+      const url = await uploadMediaToCloudinary(files[0], 'agents');
       agentInfo.logo_url = url;
-    }
+    } else agentInfo.logo_url = null;
+
     await updateAgent(agentInfo, user.id);
     const slackMsg = `Agent details edited\n${
       user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
