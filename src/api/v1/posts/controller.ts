@@ -128,6 +128,7 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
     activity: string;
   }> = [];
 
+
   try {
     const { files }: any = req;
 

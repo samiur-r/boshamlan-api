@@ -6,6 +6,7 @@ import logger from './logger';
 
 const uploadMediaToCloudinary = async (file: any, preset: string) => {
   type ResourceType = 'image' | 'video' | 'raw' | 'auto';
+  const fileType = file?.mimetype.split('/')[0];
 
   const resourceType = 'auto';
 
@@ -18,10 +19,11 @@ const uploadMediaToCloudinary = async (file: any, preset: string) => {
     overwrite: true,
     transformation: [
       {
-        width: 500,
+        if: fileType === 'image' ? 'w_gt_620' : 'w_gt_500',
+        width: fileType === 'image' ? 620 : 500,
         crop: 'scale',
       },
-      { quality: 'auto' },
+      { quality: 60 },
     ],
   };
 

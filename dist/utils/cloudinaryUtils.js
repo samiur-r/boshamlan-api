@@ -18,6 +18,7 @@ const cloudinary_1 = __importDefault(require("../config/cloudinary"));
 const ErrorHandler_1 = __importDefault(require("./ErrorHandler"));
 const logger_1 = __importDefault(require("./logger"));
 const uploadMediaToCloudinary = (file, preset) => __awaiter(void 0, void 0, void 0, function* () {
+    const fileType = file === null || file === void 0 ? void 0 : file.mimetype.split('/')[0];
     const resourceType = 'auto';
     const options = {
         public_id: `${Date.now()}`,
@@ -28,10 +29,11 @@ const uploadMediaToCloudinary = (file, preset) => __awaiter(void 0, void 0, void
         overwrite: true,
         transformation: [
             {
-                width: 500,
+                if: fileType === 'image' ? 'w_gt_620' : 'w_gt_500',
+                width: fileType === 'image' ? 620 : 500,
                 crop: 'scale',
             },
-            { quality: 'auto' },
+            { quality: 60 },
         ],
     };
     return new Promise((resolve, reject) => {
