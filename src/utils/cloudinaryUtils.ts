@@ -17,14 +17,18 @@ const uploadMediaToCloudinary = async (file: any, preset: string) => {
     use_filename: true,
     unique_filename: false,
     overwrite: true,
-    transformation: [
-      {
-        if: fileType === 'image' ? 'w_gt_620' : 'w_gt_500',
-        width: fileType === 'image' ? 620 : 500,
-        crop: 'scale',
-      },
-      { quality: 60 },
-    ],
+    // transformation: [
+    //   {
+    //     if: fileType === 'image' ? 'w_gt_620' : 'w_gt_500',
+    //     width: fileType === 'image' ? 620 : 500,
+    //     crop: 'scale',
+    //   },
+    //   { quality: 60 },
+    // ],
+    // eager: [
+    //   { width: 400, height: 300, crop: 'pad' },
+    //   { width: 260, height: 200, crop: 'crop', gravity: 'north' },
+    // ],
   };
 
   return new Promise((resolve, reject) => {
@@ -32,6 +36,7 @@ const uploadMediaToCloudinary = async (file: any, preset: string) => {
       if (error) {
         reject(error);
       } else {
+        console.log(result);
         resolve(result?.secure_url);
       }
     });
