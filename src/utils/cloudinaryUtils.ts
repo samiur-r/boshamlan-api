@@ -25,10 +25,6 @@ const uploadMediaToCloudinary = async (file: any, preset: string) => {
     //   },
     //   { quality: 60 },
     // ],
-    // eager: [
-    //   { width: 400, height: 300, crop: 'pad' },
-    //   { width: 260, height: 200, crop: 'crop', gravity: 'north' },
-    // ],
   };
 
   return new Promise((resolve, reject) => {
@@ -36,8 +32,7 @@ const uploadMediaToCloudinary = async (file: any, preset: string) => {
       if (error) {
         reject(error);
       } else {
-        console.log(result);
-        resolve(result?.secure_url);
+        resolve(result?.eager[0]?.secure_url);
       }
     });
     streamifier.createReadStream(file.buffer).pipe(stream);
