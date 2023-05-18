@@ -27,22 +27,23 @@ const uploadMediaToCloudinary = (file, preset) => __awaiter(void 0, void 0, void
         use_filename: true,
         unique_filename: false,
         overwrite: true,
-        transformation: [
-            {
-                if: fileType === 'image' ? 'w_gt_620' : 'w_gt_500',
-                width: fileType === 'image' ? 620 : 500,
-                crop: 'scale',
-            },
-            { quality: 60 },
-        ],
+        // transformation: [
+        //   {
+        //     if: fileType === 'image' ? 'w_gt_620' : 'w_gt_500',
+        //     width: fileType === 'image' ? 620 : 500,
+        //     crop: 'scale',
+        //   },
+        //   { quality: 60 },
+        // ],
     };
     return new Promise((resolve, reject) => {
         const stream = cloudinary_1.default.uploader.upload_stream(options, (error, result) => {
+            var _a;
             if (error) {
                 reject(error);
             }
             else {
-                resolve(result === null || result === void 0 ? void 0 : result.secure_url);
+                resolve((_a = result === null || result === void 0 ? void 0 : result.eager[0]) === null || _a === void 0 ? void 0 : _a.secure_url);
             }
         });
         streamifier_1.default.createReadStream(file.buffer).pipe(stream);

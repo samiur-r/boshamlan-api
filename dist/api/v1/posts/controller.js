@@ -129,7 +129,7 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             const typeOfCredit = 'sticky';
             const tempPost = yield (0, service_3.saveTempPost)(postInfo, user, typeOfCredit);
             logger_1.default.info(`User: ${user.phone} post: ${tempPost.id}, saved as temp`);
-            logs.push({ post_id: tempPost.id, transaction: undefined, user: user.phone, activity: 'Saved as temp post' });
+            // logs.push({ post_id: tempPost.id, transaction: undefined, user: user.phone, activity: 'Saved as temp post' });
         }
         else {
             const { typeOfCredit, credit } = yield (0, service_2.typeOfCreditToDeduct)(user.id, user.is_agent, postInfo.isStickyPost, isStickyOnly);

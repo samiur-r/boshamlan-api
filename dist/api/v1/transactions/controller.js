@@ -26,6 +26,7 @@ const aesDecrypt_1 = __importDefault(require("../../../utils/aesDecrypt"));
 const jwtUtils_1 = require("../../../utils/jwtUtils");
 const service_6 = require("../posts/service");
 const service_7 = require("../user_logs/service");
+const slackUtils_1 = require("../../../utils/slackUtils");
 const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f;
     const { payload } = req.body;
@@ -86,7 +87,7 @@ const updateStatus = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
 });
 exports.updateStatus = updateStatus;
 const handleKpayResponse = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _g, _h, _j, _k, _l, _m, _o, _p, _q;
+    var _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
     let isOperationSucceeded = false;
     let redirectUrl = `${config_1.default.origin}/topup?`;
     let nextOperation = false;
@@ -122,9 +123,21 @@ const handleKpayResponse = (req, res) => __awaiter(void 0, void 0, void 0, funct
                 if (status === 'completed' && response.data) {
                     let { package_title: packageTitle } = response.data;
                     packageTitle = packageTitle.slice(0, -1);
+                    redirectUrl = `${config_1.default.origin}/redirect?`;
                     if (packageTitle === 'stickyDirec') {
-                        yield (0, service_6.moveTempPost)(trackId);
-                        redirectUrl = `${config_1.default.origin}/redirect?`;
+                        const post = yield (0, service_6.moveTempPost)(trackId);
+                        const user = yield (0, service_4.findUserById)((_p = post === null || post === void 0 ? void 0 : post.user) === null || _p === void 0 ? void 0 : _p.id);
+                        logger_1.default.info(`Post ${post === null || post === void 0 ? void 0 : post.id} is sticked by user ${user === null || user === void 0 ? void 0 : user.phone}`);
+                        yield (0, service_7.saveUserLog)([
+                            {
+                                post_id: post === null || post === void 0 ? void 0 : post.id,
+                                transaction: (_q = response.data) === null || _q === void 0 ? void 0 : _q.track_id,
+                                user: user === null || user === void 0 ? void 0 : user.phone,
+                                activity: 'Post sticked successfully',
+                            },
+                        ]);
+                        const slackMsg = `Post sticked successfully\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}`;
+                        yield (0, slackUtils_1.alertOnSlack)('non-imp', slackMsg);
                     }
                     else {
                         yield (0, service_2.updateCredit)(response.data.user.id, packageTitle, parseInt(numOfCredits, 10), 'ADD');
@@ -136,8 +149,8 @@ const handleKpayResponse = (req, res) => __awaiter(void 0, void 0, void 0, funct
                             yield (0, service_7.saveUserLog)([
                                 {
                                     post_id: undefined,
-                                    transaction: (_p = response.data) === null || _p === void 0 ? void 0 : _p.track_id,
-                                    user: (_q = user === null || user === void 0 ? void 0 : user.phone) !== null && _q !== void 0 ? _q : undefined,
+                                    transaction: (_r = response.data) === null || _r === void 0 ? void 0 : _r.track_id,
+                                    user: (_s = user === null || user === void 0 ? void 0 : user.phone) !== null && _s !== void 0 ? _s : undefined,
                                     activity: `Agent subscription initiated for user ${user.phone}`,
                                 },
                             ]);

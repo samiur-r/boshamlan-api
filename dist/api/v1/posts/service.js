@@ -311,8 +311,9 @@ const moveTempPost = (track_id) => __awaiter(void 0, void 0, void 0, function* (
     };
     const postedDate = new Date();
     const publicDate = new Date();
-    yield savePost(postInfo, user, 'sticky', postedDate, publicDate);
+    const newPost = yield savePost(postInfo, user, 'sticky', postedDate, publicDate);
     yield removeTempPost(post.id);
+    return newPost;
 });
 exports.moveTempPost = moveTempPost;
 const findPostByUserId = (userId) => __awaiter(void 0, void 0, void 0, function* () {
