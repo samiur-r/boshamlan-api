@@ -146,7 +146,7 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
       const typeOfCredit = 'sticky';
       const tempPost = await saveTempPost(postInfo, user, typeOfCredit);
       logger.info(`User: ${user.phone} post: ${tempPost.id}, saved as temp`);
-      logs.push({ post_id: tempPost.id, transaction: undefined, user: user.phone, activity: 'Saved as temp post' });
+      // logs.push({ post_id: tempPost.id, transaction: undefined, user: user.phone, activity: 'Saved as temp post' });
     } else {
       const { typeOfCredit, credit } = await typeOfCreditToDeduct(
         user.id,

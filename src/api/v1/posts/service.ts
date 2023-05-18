@@ -389,8 +389,9 @@ const moveTempPost = async (track_id: string) => {
   const postedDate = new Date();
   const publicDate = new Date();
 
-  await savePost(postInfo, user as IUser, 'sticky', postedDate, publicDate);
+  const newPost = await savePost(postInfo, user as IUser, 'sticky', postedDate, publicDate);
   await removeTempPost(post.id);
+  return newPost;
 };
 
 const findPostByUserId = async (userId: number) => {

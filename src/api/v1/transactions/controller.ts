@@ -12,6 +12,7 @@ import aesDecrypt from '../../../utils/aesDecrypt';
 import { signJwt } from '../../../utils/jwtUtils';
 import { moveTempPost, removeTempPostByTrackId } from '../posts/service';
 import { saveUserLog } from '../user_logs/service';
+import { alertOnSlack } from '../../../utils/slackUtils';
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
   const { payload } = req.body;
@@ -119,9 +120,24 @@ const handleKpayResponse = async (req: Request, res: Response) => {
           let { package_title: packageTitle } = response.data;
           packageTitle = packageTitle.slice(0, -1);
 
+          redirectUrl = `${config.origin}/redirect?`;
+
           if (packageTitle === 'stickyDirec') {
-            await moveTempPost(trackId as string);
-            redirectUrl = `${config.origin}/redirect?`;
+            const post = await moveTempPost(trackId as string);
+            const user = await findUserById(post?.user?.id);
+            logger.info(`Post ${post?.id} is sticked by user ${user?.phone}`);
+            await saveUserLog([
+              {
+                post_id: post?.id,
+                transaction: response.data?.track_id,
+                user: user?.phone,
+                activity: 'Post sticked successfully',
+              },
+            ]);
+            const slackMsg = `Post sticked successfully\n${
+              user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+            } - ${user?.admin_comment ? `${user.admin_comment}` : ''}`;
+            await alertOnSlack('non-imp', slackMsg);
           } else {
             await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits as string, 10), 'ADD');
             if (packageTitle === 'agent') {
