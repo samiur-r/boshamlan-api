@@ -137,7 +137,7 @@ const handleKpayResponse = async (req: Request, res: Response) => {
             const slackMsg = `Post sticked successfully\n${
               user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
             } - ${user?.admin_comment ? `${user.admin_comment}` : ''}`;
-            await alertOnSlack('non-imp', slackMsg);
+            await alertOnSlack('imp', slackMsg);
           } else {
             await updateCredit(response.data.user.id, packageTitle, parseInt(numOfCredits as string, 10), 'ADD');
             if (packageTitle === 'agent') {
