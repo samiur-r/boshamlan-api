@@ -614,6 +614,7 @@ const updatePostStickyVal = async (post: IPost, isSticky: boolean) => {
 
   const newPost = Post.create({
     ...post,
+    views: 0,
     sticked_date: isSticky ? today : undefined,
     sticky_expires: isSticky ? oneDayFromToday : undefined,
     expiry_date: isSticky ? twoDaysFromToday : oneDayFromToday,

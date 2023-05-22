@@ -270,7 +270,7 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
       media: post.media,
       sticked_date: post.sticked_date,
       repost_count: post.repost_count + 1,
-      views: post.views,
+      views: 0,
     };
 
     const newPost = await savePost(postInfo, post.user, 'regular', postedDate, publicDate);
