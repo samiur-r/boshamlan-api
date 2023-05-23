@@ -36,21 +36,36 @@ import { saveUserLog } from '../user_logs/service';
 import { checkAuthorization } from '../../../utils/checkAuthorization';
 import { updateLocationCountValue } from '../locations/service';
 import { Post } from './models/Post';
+import hidePhoneNumber from '../../../utils/hidePhoneNumber';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   let post;
+  let isActive = true;
+  let inactivePostText = '';
 
   try {
     post = await findPostById(parseInt(req.params.id, 10));
     if (!post) {
       post = await findArchivedPostById(parseInt(req.params.id, 10));
+      if (post) {
+        post.phone = '';
+        post.description = hidePhoneNumber(post.description);
+        inactivePostText = 'This post have been archived and you can not contact the owner';
+      }
+      isActive = false;
     }
     if (!post) {
       post = await findDeletedPostById(parseInt(req.params.id, 10));
+      if (post) {
+        post.phone = '';
+        post.description = hidePhoneNumber(post.description);
+        inactivePostText = 'This post have been deleted and you can not contact the owner';
+      }
+      isActive = false;
     }
     if (!post) throw new ErrorHandler(404, 'Post not found');
 
-    return res.status(200).json({ success: post });
+    return res.status(200).json({ success: post, isActive, inactivePostText });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
