@@ -42,6 +42,7 @@ const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   let post;
   let isActive = true;
   let inactivePostText = '';
+  let relevantSearch = '';
 
   try {
     post = await findPostById(parseInt(req.params.id, 10));
@@ -51,6 +52,7 @@ const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
         post.phone = '';
         post.description = hidePhoneNumber(post.description);
         inactivePostText = 'This post have been archived and you can not contact the owner';
+        relevantSearch = `/${post.category_title}/${post.property_title}/${post.city_title.replace(/\s+/g, '-')}`;
       }
       isActive = false;
     }
@@ -60,12 +62,13 @@ const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
         post.phone = '';
         post.description = hidePhoneNumber(post.description);
         inactivePostText = 'This post have been deleted and you can not contact the owner';
+        relevantSearch = `/${post.category_title}/${post.property_title}/${post.city_title.replace(/\s+/g, '-')}`;
       }
       isActive = false;
     }
     if (!post) throw new ErrorHandler(404, 'Post not found');
 
-    return res.status(200).json({ success: post, isActive, inactivePostText });
+    return res.status(200).json({ success: post, isActive, inactivePostText, relevantSearch });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);
