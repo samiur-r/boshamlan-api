@@ -746,6 +746,8 @@ const searchPosts = async (
     skip: offset,
   });
 
+  console.log(count)
+
   let postIds: number[] = [];
 
   posts.forEach((post) => {
@@ -753,6 +755,54 @@ const searchPosts = async (
   });
 
   if (postIds.length) await Post.update({ id: In(postIds) }, { views: () => 'views + .5' });
+
+  return { posts, count };
+};
+
+const searchArchivedPosts = async (
+  limit: number,
+  offset: number | undefined,
+  city?: Array<{ id: number; title: string; state_id: number | null }>,
+  stateId?: number,
+  propertyId?: number,
+  categoryId?: number,
+  priceRange?: { min: number; max: number },
+  keyword?: string,
+) => {
+  const searchCriteria: any = {};
+
+  if (categoryId) {
+    searchCriteria.category_id = categoryId;
+  }
+  if (propertyId) {
+    searchCriteria.property_id = propertyId;
+  }
+  if (city?.length) {
+    searchCriteria.city_id = In(city.map((l) => l.id));
+  }
+  if (stateId) {
+    searchCriteria.state_id = stateId;
+  }
+  if (priceRange) {
+    searchCriteria.price = IsNull() || Between(priceRange.min, priceRange.max);
+  }
+
+  if (keyword) {
+    searchCriteria.city_title = Like(`%${keyword}%`);
+    searchCriteria.state_title = Like(`%${keyword}%`);
+    searchCriteria.category_title = Like(`%${keyword}%`);
+    searchCriteria.property_title = Like(`%${keyword}%`);
+  }
+
+  const [posts, count] = await ArchivePost.findAndCount({
+    where: searchCriteria,
+    order: {
+      is_sticky: 'DESC',
+      public_date: 'DESC',
+    },
+    take: limit,
+    skip: offset,
+  });
 
   return { posts, count };
 };
@@ -1065,4 +1115,5 @@ export {
   findDeletedPostById,
   unstickPost,
   removeArchivedPostsMedia,
+  searchArchivedPosts,
 };
