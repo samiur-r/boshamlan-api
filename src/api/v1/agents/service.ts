@@ -9,7 +9,7 @@ import { sendSms } from '../../../utils/smsUtils';
 import { IUser } from '../users/interfaces';
 import { User } from '../users/model';
 import { saveUserLog } from '../user_logs/service';
-import { AgentInfoType, IAgent } from './interfaces';
+import { IAgent } from './interfaces';
 import { Agent } from './model';
 
 const findManyAgents = async (limit: number, offset: number | undefined) => {
@@ -21,7 +21,7 @@ const findManyAgents = async (limit: number, offset: number | undefined) => {
     skip: offset,
   });
 
-  if (offset === 0) totalRows = await Agent.count();
+  if (offset === 0) totalRows = agents.length;
 
   agents?.forEach((agent) => {
     agent.phone = agent.user?.phone;
