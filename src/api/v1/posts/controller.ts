@@ -37,6 +37,7 @@ import { checkAuthorization } from '../../../utils/checkAuthorization';
 import { updateLocationCountValue } from '../locations/service';
 import { Post } from './models/Post';
 import hidePhoneNumber from '../../../utils/hidePhoneNumber';
+import { ArchivePost } from './models/ArchivePost';
 
 const fetchOne = async (req: Request, res: Response, next: NextFunction) => {
   let post;
@@ -296,6 +297,8 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
   const userId = res.locals.user.payload.id;
   const userPhone = res.locals.user.payload.phone;
   const { postId } = req.body;
+  let post;
+  let isArchive = false;
 
   try {
     const user: any = await findUserById(userId);
@@ -307,9 +310,19 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
 
     if (credit.sticky < 1) throw new ErrorHandler(402, 'You do not have enough credit');
 
-    const post = await findPostById(parseInt(postId, 10));
+    post = await findPostById(parseInt(postId, 10));
+    if (!post) {
+      post = await findArchivedPostById(postId);
+      isArchive = true;
+    }
+
     if (!post) throw new ErrorHandler(500, 'Something went wrong');
     if (post.is_sticky) throw new ErrorHandler(304, 'Post is already sticky');
+
+    if (isArchive) {
+      post.post_type = 'active';
+      await ArchivePost.delete(post.id);
+    }
 
     await updatePostStickyVal(post, true);
     const slackMsg = `Post titled ${post.title} is sticked by \n<https://wa.me/965${post?.user.phone}|${
@@ -394,7 +407,7 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     const publicDate = new Date();
 
     const newPost = await savePost(postInfo, user as IUser, typeOfCredit, postedDate, publicDate);
-    await removeArchivedPost(post.id);
+    await ArchivePost.delete(post.id);
     await updateCredit(user.id, typeOfCredit, 1, 'SUB', credit);
     const repostCount = post.repost_count + 1;
     await updatePostRepostVals(newPost, true, repostCount);
