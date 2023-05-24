@@ -2,12 +2,13 @@ import app from './app';
 import config from './config';
 import logger from './utils/logger';
 import AppDataSource from './db';
-import { cronJobPerHour, cronJobPerFiveMins } from './utils/cornJobs';
+import { cronJobPerMonth, cronJobPerHour, cronJobPerFiveMins } from './utils/cornJobs';
 import { initializeSocketIO } from './utils/socketIO';
 
 AppDataSource.initialize()
   .then(() => {
     logger.info('Connected to database');
+    cronJobPerMonth.start();
     cronJobPerHour.start();
     cronJobPerFiveMins.start();
     const server = app.listen(config.port, () => {

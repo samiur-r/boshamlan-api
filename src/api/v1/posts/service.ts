@@ -1,7 +1,7 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
-import { Between, In, IsNull, LessThan, Like } from 'typeorm';
+import { Between, In, IsNull, LessThan, LessThanOrEqual, Like } from 'typeorm';
 import cloudinary from '../../../config/cloudinary';
 import AppDataSource from '../../../db';
 import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
@@ -288,6 +288,10 @@ const removePost = async (id: number, post?: IPost) => {
   await removePostMedia(id, post);
 };
 
+const removePostRow = async (id: number) => {
+  await Post.delete(id);
+};
+
 const removeArchivedPost = async (id: number, post?: IPost) => {
   await ArchivePost.delete(id);
   await removePostMedia(id, post);
@@ -326,7 +330,7 @@ const moveExpiredPosts = async () => {
   const expiredPosts = await Post.find({ where: { expiry_date: LessThan(new Date()) } });
 
   expiredPosts.forEach(async (post) => {
-    await removePost(post.id, post);
+    await removePostRow(post.id);
     await saveArchivedPost(post, post.user);
     await updateLocationCountValue(post.city_id, 'decrement');
     logger.info(`Post ${post.id} by user ${post.user.phone} has archived`);
@@ -341,6 +345,28 @@ const moveExpiredPosts = async () => {
   });
 
   return expiredPosts;
+};
+
+const removeArchivedPostsMedia = async () => {
+  const currentDate = new Date();
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+
+  const posts = await ArchivePost.find({ where: { created_at: LessThanOrEqual(threeMonthsAgo) } });
+
+  posts.forEach(async (post) => {
+    await removePostMedia(post.id, post);
+    post.media = [];
+    logger.info(`The media assets of archived Post ${post.id} by user ${post.user.phone} has been deleted`);
+    await saveUserLog([
+      {
+        post_id: post.id,
+        transaction: undefined,
+        user: post.user.phone,
+        activity: `The media assets of archived Post ${post.id} by user ${post.user.phone} has been deleted`,
+      },
+    ]);
+  });
 };
 
 const removeTempPost = async (id: number) => {
@@ -1038,4 +1064,5 @@ export {
   removeAllPostsOfUser,
   findDeletedPostById,
   unstickPost,
+  removeArchivedPostsMedia,
 };

@@ -1,10 +1,19 @@
 import cron from 'node-cron';
 import { fireAgentExpirationAlert, getExpiredAgentUserIds } from '../api/v1/agents/service';
 import { updateAgentCredit } from '../api/v1/credits/service';
-import { moveExpiredPosts, unstickPost } from '../api/v1/posts/service';
+import { moveExpiredPosts, removeArchivedPostsMedia, unstickPost } from '../api/v1/posts/service';
 import { findUnVerifiedUsers, updateBulkIsUserAnAgent } from '../api/v1/users/service';
 import logger from './logger';
 import { alertOnSlack } from './slackUtils';
+
+async function scheduledTaskPerMonth() {
+  try {
+    logger.info('Running monthly cron job');
+    await removeArchivedPostsMedia();
+  } catch (error) {
+    logger.error(error.message);
+  }
+}
 
 async function scheduledTaskPerHour() {
   try {
@@ -36,8 +45,13 @@ async function scheduledTaskPerFiveMins() {
   }
 }
 
+const cronJobPerMonth = cron.schedule('0 0 1 * *', scheduledTaskPerMonth);
 const cronJobPerHour = cron.schedule('*/30 * * * *', scheduledTaskPerHour);
 const cronJobPerFiveMins = cron.schedule('*/5 * * * *', scheduledTaskPerFiveMins);
+
+cronJobPerMonth.on('error', (err) => {
+  logger.info('Cron job error:', err.message);
+});
 
 cronJobPerHour.on('error', (err) => {
   logger.info('Cron job error:', err.message);
@@ -54,4 +68,4 @@ cronJobPerFiveMins.on('error', (err) => {
 //   process.exit();
 // });
 
-export { cronJobPerHour, cronJobPerFiveMins };
+export { cronJobPerMonth, cronJobPerHour, cronJobPerFiveMins };
