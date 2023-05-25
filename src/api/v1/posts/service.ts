@@ -1,6 +1,7 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
+import { Agent } from 'http';
 import { Between, In, IsNull, LessThan, LessThanOrEqual, Like } from 'typeorm';
 import cloudinary from '../../../config/cloudinary';
 import AppDataSource from '../../../db';
@@ -8,6 +9,7 @@ import { deleteMediaFromCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
 import { parseTimestamp } from '../../../utils/timestampUtls';
+import { findAgentByUserId } from '../agents/service';
 import { updateLocationCountValue } from '../locations/service';
 import { IUser } from '../users/interfaces';
 import { User } from '../users/model';
@@ -688,15 +690,20 @@ const findPosts = async (limit: number, offset: number | undefined, userId: numb
     queryOptions.where = { user: { id: userId } };
   }
 
-  const posts: IPost[] | null = await Post.find(queryOptions);
+  const posts: any = await Post.find(queryOptions);
 
   let count;
 
   if (offset === 0 && userId) count = await Post.count({ where: { user: { id: userId } } });
   else if (offset === 0 && !userId) count = await Post.count();
 
-  // eslint-disable-next-line no-param-reassign
-  posts.forEach((post) => delete post.user);
+  for (const post of posts) {
+    if (post.user?.is_agent) {
+      const agent = await findAgentByUserId(post.user.id);
+      if (agent && agent.logo_url) post.agent_logo = agent.logo_url;
+    }
+    delete post.user?.password;
+  }
 
   return { posts, count };
 };
@@ -746,7 +753,7 @@ const searchPosts = async (
     skip: offset,
   });
 
-  console.log(count)
+  console.log(count);
 
   let postIds: number[] = [];
 

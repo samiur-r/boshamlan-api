@@ -13,9 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.searchArchivedPosts = exports.removeArchivedPostsMedia = exports.unstickPost = exports.findDeletedPostById = exports.removeAllPostsOfUser = exports.filterPostsForAdmin = exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updateDeletedPost = exports.updateArchivePost = exports.updatePost = exports.removePost = exports.removeDeletedPost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = exports.generatePostId = void 0;
-/* eslint-disable no-param-reassign */
-/* eslint-disable no-await-in-loop */
-/* eslint-disable no-restricted-syntax */
 const typeorm_1 = require("typeorm");
 const cloudinary_1 = __importDefault(require("../../../config/cloudinary"));
 const db_1 = __importDefault(require("../../../db"));
@@ -23,10 +20,11 @@ const cloudinaryUtils_1 = require("../../../utils/cloudinaryUtils");
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const timestampUtls_1 = require("../../../utils/timestampUtls");
-const service_1 = require("../locations/service");
+const service_1 = require("../agents/service");
+const service_2 = require("../locations/service");
 const model_1 = require("../users/model");
-const service_2 = require("../users/service");
-const service_3 = require("../user_logs/service");
+const service_3 = require("../users/service");
+const service_4 = require("../user_logs/service");
 const ArchivePost_1 = require("./models/ArchivePost");
 const DeletedPost_1 = require("./models/DeletedPost");
 const Post_1 = require("./models/Post");
@@ -91,7 +89,7 @@ const savePost = (postInfo, user, typeOfCredit, postedDate, publicDate) => __awa
         newPost.id = yield generatePostId();
     }
     const post = yield Post_1.Post.save(newPost);
-    yield (0, service_1.updateLocationCountValue)(postInfo.cityId, 'increment');
+    yield (0, service_2.updateLocationCountValue)(postInfo.cityId, 'increment');
     return post;
 });
 exports.savePost = savePost;
@@ -161,7 +159,7 @@ const saveDeletedPost = (postInfo, user) => __awaiter(void 0, void 0, void 0, fu
         user,
     });
     yield DeletedPost_1.DeletedPost.save(newPost);
-    yield (0, service_1.updateLocationCountValue)(postInfo.city_id, 'decrement');
+    yield (0, service_2.updateLocationCountValue)(postInfo.city_id, 'decrement');
 });
 exports.saveDeletedPost = saveDeletedPost;
 const saveTempPost = (postInfo, user, typeOfCredit) => __awaiter(void 0, void 0, void 0, function* () {
@@ -242,7 +240,7 @@ const unstickPost = () => __awaiter(void 0, void 0, void 0, function* () {
     if (affectedPosts && affectedPosts.length) {
         for (const post of affectedPosts) {
             logger_1.default.info(`Post ${post.id} un sticked`);
-            yield (0, service_3.saveUserLog)([
+            yield (0, service_4.saveUserLog)([
                 {
                     post_id: post.id,
                     transaction: undefined,
@@ -259,9 +257,9 @@ const moveExpiredPosts = () => __awaiter(void 0, void 0, void 0, function* () {
     expiredPosts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
         yield removePostRow(post.id);
         yield saveArchivedPost(post, post.user);
-        yield (0, service_1.updateLocationCountValue)(post.city_id, 'decrement');
+        yield (0, service_2.updateLocationCountValue)(post.city_id, 'decrement');
         logger_1.default.info(`Post ${post.id} by user ${post.user.phone} has archived`);
-        yield (0, service_3.saveUserLog)([
+        yield (0, service_4.saveUserLog)([
             {
                 post_id: post.id,
                 transaction: undefined,
@@ -282,7 +280,7 @@ const removeArchivedPostsMedia = () => __awaiter(void 0, void 0, void 0, functio
         yield removePostMedia(post.id, post);
         post.media = [];
         logger_1.default.info(`The media assets of archived Post ${post.id} by user ${post.user.phone} has been deleted`);
-        yield (0, service_3.saveUserLog)([
+        yield (0, service_4.saveUserLog)([
             {
                 post_id: post.id,
                 transaction: undefined,
@@ -317,7 +315,7 @@ const moveTempPost = (track_id) => __awaiter(void 0, void 0, void 0, function* (
     const post = yield TempPost_1.TempPost.findOne({ where: { track_id } });
     if (!post)
         throw new ErrorHandler_1.default(500, 'Something went wrong');
-    const user = yield (0, service_2.findUserById)(post === null || post === void 0 ? void 0 : post.user.id);
+    const user = yield (0, service_3.findUserById)(post === null || post === void 0 ? void 0 : post.user.id);
     const postInfo = {
         title: post.title,
         cityId: post.city_id,
@@ -393,7 +391,7 @@ const findDeletedPostById = (id) => __awaiter(void 0, void 0, void 0, function* 
 exports.findDeletedPostById = findDeletedPostById;
 const updatePost = (postInfo, post) => __awaiter(void 0, void 0, void 0, function* () {
     yield Post_1.Post.save(Object.assign(Object.assign({}, post), { city_id: postInfo.cityId, city_title: postInfo.cityTitle, state_id: postInfo.stateId, state_title: postInfo.stateTitle, property_id: postInfo.propertyId, property_title: postInfo.propertyTitle, category_id: postInfo.categoryId, category_title: postInfo.categoryTitle, price: postInfo.price, description: postInfo.description, media: postInfo.media }));
-    yield (0, service_1.updateLocationCountValue)(postInfo.cityId, 'increment');
+    yield (0, service_2.updateLocationCountValue)(postInfo.cityId, 'increment');
     return post;
 });
 exports.updatePost = updatePost;
@@ -460,6 +458,7 @@ const updatePostRepostVals = (post, isReposted, repostCount) => __awaiter(void 0
 });
 exports.updatePostRepostVals = updatePostRepostVals;
 const findPosts = (limit, offset, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    var _j, _k;
     const queryOptions = {
         order: {
             is_sticky: 'DESC',
@@ -477,8 +476,14 @@ const findPosts = (limit, offset, userId) => __awaiter(void 0, void 0, void 0, f
         count = yield Post_1.Post.count({ where: { user: { id: userId } } });
     else if (offset === 0 && !userId)
         count = yield Post_1.Post.count();
-    // eslint-disable-next-line no-param-reassign
-    posts.forEach((post) => delete post.user);
+    for (const post of posts) {
+        if ((_j = post.user) === null || _j === void 0 ? void 0 : _j.is_agent) {
+            const agent = yield (0, service_1.findAgentByUserId)(post.user.id);
+            if (agent && agent.logo_url)
+                post.agent_logo = agent.logo_url;
+        }
+        (_k = post.user) === null || _k === void 0 ? true : delete _k.password;
+    }
     return { posts, count };
 });
 exports.findPosts = findPosts;
@@ -786,7 +791,7 @@ exports.filterPostsForAdmin = filterPostsForAdmin;
 const removeAllPostsOfUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const activePosts = yield findPostByUserId(userId);
     const archivedPosts = yield ArchivePost_1.ArchivePost.find({ where: { user: { id: userId } } });
-    const user = yield (0, service_2.findUserById)(userId);
+    const user = yield (0, service_3.findUserById)(userId);
     if (!user)
         throw new ErrorHandler_1.default(500, 'Something went wrong');
     const allPosts = [...activePosts, ...archivedPosts];
@@ -796,8 +801,8 @@ const removeAllPostsOfUser = (userId) => __awaiter(void 0, void 0, void 0, funct
         yield saveDeletedPost(post, user);
     }));
     yield Promise.allSettled(mediaUrls.map((url) => __awaiter(void 0, void 0, void 0, function* () {
-        var _j;
-        const publicId = (_j = url.split('/').pop()) === null || _j === void 0 ? void 0 : _j.split('.')[0];
+        var _l;
+        const publicId = (_l = url.split('/').pop()) === null || _l === void 0 ? void 0 : _l.split('.')[0];
         if (publicId)
             yield cloudinary_1.default.uploader.destroy(`posts/${publicId}`);
     })));

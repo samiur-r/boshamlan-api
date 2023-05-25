@@ -88,6 +88,7 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         yield validation_1.agentSchema.validate(agentInfo);
         if (files && files.length) {
             const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(files[0], 'agents');
+            console.log(url);
             agentInfo.logo_url = url;
         }
         else

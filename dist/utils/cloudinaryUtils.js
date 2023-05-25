@@ -18,7 +18,6 @@ const cloudinary_1 = __importDefault(require("../config/cloudinary"));
 const ErrorHandler_1 = __importDefault(require("./ErrorHandler"));
 const logger_1 = __importDefault(require("./logger"));
 const uploadMediaToCloudinary = (file, preset) => __awaiter(void 0, void 0, void 0, function* () {
-    const fileType = file === null || file === void 0 ? void 0 : file.mimetype.split('/')[0];
     const resourceType = 'auto';
     const options = {
         public_id: `${Date.now()}`,

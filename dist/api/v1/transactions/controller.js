@@ -142,6 +142,7 @@ const handleKpayResponse = (req, res) => __awaiter(void 0, void 0, void 0, funct
                     else {
                         yield (0, service_2.updateCredit)(response.data.user.id, packageTitle, parseInt(numOfCredits, 10), 'ADD');
                         if (packageTitle === 'agent') {
+                            // eslint-disable-next-line @typescript-eslint/naming-convention
                             const { package_title } = response.data;
                             const user = yield (0, service_4.updateIsUserAnAgent)(response.data.user.id, true);
                             yield (0, service_1.initOrUpdateAgent)(response.data.user, package_title);
