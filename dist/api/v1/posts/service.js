@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.unstickPost = exports.findDeletedPostById = exports.removeAllPostsOfUser = exports.filterPostsForAdmin = exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updateDeletedPost = exports.updateArchivePost = exports.updatePost = exports.removePost = exports.removeDeletedPost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = exports.generatePostId = void 0;
+exports.searchArchivedPosts = exports.removeArchivedPostsMedia = exports.unstickPost = exports.findDeletedPostById = exports.removeAllPostsOfUser = exports.filterPostsForAdmin = exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updateDeletedPost = exports.updateArchivePost = exports.updatePost = exports.removePost = exports.removeDeletedPost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = exports.generatePostId = void 0;
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
@@ -220,6 +220,9 @@ const removePost = (id, post) => __awaiter(void 0, void 0, void 0, function* () 
     yield removePostMedia(id, post);
 });
 exports.removePost = removePost;
+const removePostRow = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    yield Post_1.Post.delete(id);
+});
 const removeArchivedPost = (id, post) => __awaiter(void 0, void 0, void 0, function* () {
     yield ArchivePost_1.ArchivePost.delete(id);
     yield removePostMedia(id, post);
@@ -254,7 +257,7 @@ exports.unstickPost = unstickPost;
 const moveExpiredPosts = () => __awaiter(void 0, void 0, void 0, function* () {
     const expiredPosts = yield Post_1.Post.find({ where: { expiry_date: (0, typeorm_1.LessThan)(new Date()) } });
     expiredPosts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
-        yield removePost(post.id, post);
+        yield removePostRow(post.id);
         yield saveArchivedPost(post, post.user);
         yield (0, service_1.updateLocationCountValue)(post.city_id, 'decrement');
         logger_1.default.info(`Post ${post.id} by user ${post.user.phone} has archived`);
@@ -270,6 +273,26 @@ const moveExpiredPosts = () => __awaiter(void 0, void 0, void 0, function* () {
     return expiredPosts;
 });
 exports.moveExpiredPosts = moveExpiredPosts;
+const removeArchivedPostsMedia = () => __awaiter(void 0, void 0, void 0, function* () {
+    const currentDate = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+    const posts = yield ArchivePost_1.ArchivePost.find({ where: { created_at: (0, typeorm_1.LessThanOrEqual)(threeMonthsAgo) } });
+    posts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
+        yield removePostMedia(post.id, post);
+        post.media = [];
+        logger_1.default.info(`The media assets of archived Post ${post.id} by user ${post.user.phone} has been deleted`);
+        yield (0, service_3.saveUserLog)([
+            {
+                post_id: post.id,
+                transaction: undefined,
+                user: post.user.phone,
+                activity: `The media assets of archived Post ${post.id} by user ${post.user.phone} has been deleted`,
+            },
+        ]);
+    }));
+});
+exports.removeArchivedPostsMedia = removeArchivedPostsMedia;
 const removeTempPost = (id) => __awaiter(void 0, void 0, void 0, function* () {
     yield TempPost_1.TempPost.delete(id);
 });
@@ -418,7 +441,7 @@ const updatePostStickyVal = (post, isSticky) => __awaiter(void 0, void 0, void 0
     oneDayFromToday.setMinutes(Math.ceil(oneDayFromToday.getMinutes() / 30) * 30);
     oneDayFromToday.setSeconds(0);
     oneDayFromToday.setMilliseconds(0);
-    const newPost = Post_1.Post.create(Object.assign(Object.assign({}, post), { sticked_date: isSticky ? today : undefined, sticky_expires: isSticky ? oneDayFromToday : undefined, expiry_date: isSticky ? twoDaysFromToday : oneDayFromToday, is_sticky: isSticky, public_date: isSticky ? today : post.public_date }));
+    const newPost = Post_1.Post.create(Object.assign(Object.assign({}, post), { views: 0, sticked_date: isSticky ? today : undefined, sticky_expires: isSticky ? oneDayFromToday : undefined, expiry_date: isSticky ? twoDaysFromToday : oneDayFromToday, is_sticky: isSticky, public_date: isSticky ? today : post.public_date }));
     yield Post_1.Post.save(newPost);
 });
 exports.updatePostStickyVal = updatePostStickyVal;
@@ -491,6 +514,7 @@ const searchPosts = (limit, offset, city, stateId, propertyId, categoryId, price
         take: limit,
         skip: offset,
     });
+    console.log(count);
     let postIds = [];
     posts.forEach((post) => {
         postIds = [...postIds, post.id];
@@ -500,6 +524,41 @@ const searchPosts = (limit, offset, city, stateId, propertyId, categoryId, price
     return { posts, count };
 });
 exports.searchPosts = searchPosts;
+const searchArchivedPosts = (limit, offset, city, stateId, propertyId, categoryId, priceRange, keyword) => __awaiter(void 0, void 0, void 0, function* () {
+    const searchCriteria = {};
+    if (categoryId) {
+        searchCriteria.category_id = categoryId;
+    }
+    if (propertyId) {
+        searchCriteria.property_id = propertyId;
+    }
+    if (city === null || city === void 0 ? void 0 : city.length) {
+        searchCriteria.city_id = (0, typeorm_1.In)(city.map((l) => l.id));
+    }
+    if (stateId) {
+        searchCriteria.state_id = stateId;
+    }
+    if (priceRange) {
+        searchCriteria.price = (0, typeorm_1.IsNull)() || (0, typeorm_1.Between)(priceRange.min, priceRange.max);
+    }
+    if (keyword) {
+        searchCriteria.city_title = (0, typeorm_1.Like)(`%${keyword}%`);
+        searchCriteria.state_title = (0, typeorm_1.Like)(`%${keyword}%`);
+        searchCriteria.category_title = (0, typeorm_1.Like)(`%${keyword}%`);
+        searchCriteria.property_title = (0, typeorm_1.Like)(`%${keyword}%`);
+    }
+    const [posts, count] = yield ArchivePost_1.ArchivePost.findAndCount({
+        where: searchCriteria,
+        order: {
+            is_sticky: 'DESC',
+            public_date: 'DESC',
+        },
+        take: limit,
+        skip: offset,
+    });
+    return { posts, count };
+});
+exports.searchArchivedPosts = searchArchivedPosts;
 const filterPostsForAdmin = (locationToFilter, categoryToFilter, propertyTypeToFilter, fromPriceToFilter, toPriceToFilter, fromCreationDateToFilter, toCreationDateToFilter, fromPublicDateToFilter, toPublicDateToFilter, stickyStatusToFilter, userTypeToFilter, orderByToFilter, postStatusToFilter, userId, offset) => __awaiter(void 0, void 0, void 0, function* () {
     let posts;
     let totalPosts;

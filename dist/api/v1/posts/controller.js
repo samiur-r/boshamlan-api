@@ -26,19 +26,38 @@ const service_4 = require("../user_logs/service");
 const checkAuthorization_1 = require("../../../utils/checkAuthorization");
 const service_5 = require("../locations/service");
 const Post_1 = require("./models/Post");
+const hidePhoneNumber_1 = __importDefault(require("../../../utils/hidePhoneNumber"));
+const ArchivePost_1 = require("./models/ArchivePost");
 const fetchOne = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     let post;
+    let isActive = true;
+    let inactivePostText = '';
+    let relevantSearch = '';
     try {
         post = yield (0, service_3.findPostById)(parseInt(req.params.id, 10));
         if (!post) {
             post = yield (0, service_3.findArchivedPostById)(parseInt(req.params.id, 10));
+            if (post) {
+                post.phone = '';
+                post.description = (0, hidePhoneNumber_1.default)(post.description);
+                inactivePostText = 'This post have been archived and you can not contact the owner';
+                relevantSearch = `/${post.category_title}/${post.property_title}/${post.city_title.replace(/\s+/g, '-')}`;
+            }
+            isActive = false;
         }
         if (!post) {
             post = yield (0, service_3.findDeletedPostById)(parseInt(req.params.id, 10));
+            if (post) {
+                post.phone = '';
+                post.description = (0, hidePhoneNumber_1.default)(post.description);
+                inactivePostText = 'This post have been deleted and you can not contact the owner';
+                relevantSearch = `/${post.category_title}/${post.property_title}/${post.city_title.replace(/\s+/g, '-')}`;
+            }
+            isActive = false;
         }
         if (!post)
             throw new ErrorHandler_1.default(404, 'Post not found');
-        return res.status(200).json({ success: post });
+        return res.status(200).json({ success: post, isActive, inactivePostText, relevantSearch });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
@@ -247,6 +266,8 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
     const userId = res.locals.user.payload.id;
     const userPhone = res.locals.user.payload.phone;
     const { postId } = req.body;
+    let post;
+    let isArchive = false;
     try {
         const user = yield (0, service_1.findUserById)(userId);
         if (!user)
@@ -258,11 +279,19 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (credit.sticky < 1)
             throw new ErrorHandler_1.default(402, 'You do not have enough credit');
-        const post = yield (0, service_3.findPostById)(parseInt(postId, 10));
+        post = yield (0, service_3.findPostById)(parseInt(postId, 10));
+        if (!post) {
+            post = yield (0, service_3.findArchivedPostById)(postId);
+            isArchive = true;
+        }
         if (!post)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (post.is_sticky)
             throw new ErrorHandler_1.default(304, 'Post is already sticky');
+        if (isArchive) {
+            post.post_type = 'active';
+            yield ArchivePost_1.ArchivePost.delete(post.id);
+        }
         yield (0, service_3.updatePostStickyVal)(post, true);
         const slackMsg = `Post titled ${post.title} is sticked by \n<https://wa.me/965${post === null || post === void 0 ? void 0 : post.user.phone}|${post === null || post === void 0 ? void 0 : post.user.phone}> - ${user.admin_comment || ''}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
@@ -340,12 +369,12 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             media: post.media,
             sticked_date: post.sticked_date,
             repost_count: post.repost_count,
-            views: post.views,
+            views: 0,
         };
         const postedDate = post.posted_date;
         const publicDate = new Date();
         const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit, postedDate, publicDate);
-        yield (0, service_3.removeArchivedPost)(post.id);
+        yield ArchivePost_1.ArchivePost.delete(post.id);
         yield (0, service_2.updateCredit)(user.id, typeOfCredit, 1, 'SUB', credit);
         const repostCount = post.repost_count + 1;
         yield (0, service_3.updatePostRepostVals)(newPost, true, repostCount);

@@ -34,12 +34,6 @@ export class Agent extends BaseEntity implements IAgent {
   twitter: string;
 
   @Column({ nullable: true })
-  facebook: string;
-
-  @Column({ nullable: true })
-  website: string;
-
-  @Column({ nullable: true })
   logo_url: string;
 
   @Column({ nullable: true })

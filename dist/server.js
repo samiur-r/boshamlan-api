@@ -11,6 +11,7 @@ const cornJobs_1 = require("./utils/cornJobs");
 db_1.default.initialize()
     .then(() => {
     logger_1.default.info('Connected to database');
+    cornJobs_1.cronJobPerMonth.start();
     cornJobs_1.cronJobPerHour.start();
     cornJobs_1.cronJobPerFiveMins.start();
     const server = app_1.default.listen(config_1.default.port, () => {

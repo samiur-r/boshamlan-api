@@ -15,35 +15,37 @@ import { Agent } from './model';
 const findManyAgents = async (limit: number, offset: number | undefined) => {
   let totalRows;
   const currentDate = new Date();
-  const agents: IAgent[] | null = await Agent.find({
+  const agents: any = await Agent.find({
     where: { subscription_ends_date: MoreThanOrEqual(currentDate) },
+    order: { subscription_start_date: 'DESC' },
     take: limit,
     skip: offset,
   });
 
   if (offset === 0) totalRows = agents.length;
 
-  agents?.forEach((agent) => {
+  agents?.forEach((agent: any) => {
     agent.phone = agent.user?.phone;
 
-    agent.socialLinks = [
-      {
-        image: '/images/facebook-filled.svg',
-        href: `https://www.facebook.com/${agent.facebook}`,
-      },
-      {
-        image: '/images/twitter-filled.svg',
-        href: `https://www.twitter.com/${agent.twitter}`,
-      },
-      {
+    const socialLinks = [];
+
+    if (agent.instagram)
+      socialLinks.push({
         image: '/images/instagram-filled.svg',
         href: `https://www.instagram.com/${agent.instagram}`,
-      },
-      {
+      });
+    if (agent.twitter)
+      socialLinks.push({
+        image: '/images/twitter-filled.svg',
+        href: `https://www.twitter.com/${agent.twitter}`,
+      });
+    if (agent.email)
+      socialLinks.push({
         image: '/images/email-filled.svg',
         href: `mailto:${agent.email}`,
-      },
-    ];
+      });
+
+    agent.socialLinks = socialLinks;
     delete agent?.user;
   });
 
@@ -83,8 +85,6 @@ const updateAgent = async (agentInfo: any, userId: number) => {
     ...agent,
     ...agentInfo,
   });
-
-  console.log(agentInfo);
 
   await Agent.save(agentData);
 };

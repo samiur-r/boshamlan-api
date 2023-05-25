@@ -5,8 +5,6 @@ export const agentSchema = object({
   description: string().nullable(),
   instagram: string().nullable(),
   twitter: string().nullable(),
-  facebook: string().nullable(),
   email: string().email().nullable(),
   logo: mixed().nullable(),
-  website: string().nullable(),
 });

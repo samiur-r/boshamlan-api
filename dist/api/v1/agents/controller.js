@@ -39,6 +39,23 @@ const fetchById = (req, res, next) => __awaiter(void 0, void 0, void 0, function
         const agent = yield (0, service_3.findAgentById)(parseInt(req.params.id, 10));
         if (!agent || !agent.user_id)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
+        const socialLinks = [];
+        if (agent.instagram)
+            socialLinks.push({
+                image: '/images/instagram-white.svg',
+                href: `https://www.instagram.com/${agent.instagram}`,
+            });
+        if (agent.twitter)
+            socialLinks.push({
+                image: '/images/twitter-white.svg',
+                href: `https://www.twitter.com/${agent.twitter}`,
+            });
+        if (agent.email)
+            socialLinks.push({
+                image: '/images/email-white.svg',
+                href: `mailto:${agent.email}`,
+            });
+        agent.socialLinks = socialLinks;
         const { posts, count } = yield (0, service_1.findPosts)(10, 0, agent.user_id);
         return res.status(200).json({ agent, posts, totalPosts: count });
     }

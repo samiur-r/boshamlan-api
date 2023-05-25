@@ -8,7 +8,6 @@ export interface IAgent {
   email: string;
   instagram: string;
   twitter: string;
-  facebook: string;
   logo_url: string;
   subscription_start_date: Date | any;
   subscription_ends_date: Date | any;
@@ -25,6 +24,5 @@ export interface AgentInfoType {
   email: string;
   instagram: string;
   twitter: string;
-  facebook: string;
   logo_url: string;
 }

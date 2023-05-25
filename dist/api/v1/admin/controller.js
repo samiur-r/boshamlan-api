@@ -204,7 +204,7 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             media: post.media,
             sticked_date: post.sticked_date,
             repost_count: post.repost_count + 1,
-            views: post.views,
+            views: 0,
         };
         const newPost = yield (0, service_2.savePost)(postInfo, post.user, 'regular', postedDate, publicDate);
         yield (0, service_2.removeArchivedPost)(post.id);
@@ -465,7 +465,7 @@ const editUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function*
 });
 exports.editUser = editUser;
 const editAgent = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const { userId, agentId, name, email, instagram, facebook, twitter, website, description } = req.body;
+    const { userId, agentId, name, email, instagram, twitter, description } = req.body;
     try {
         if (!name)
             throw new ErrorHandler_1.default(404, 'Invalid agent id or name');
@@ -476,9 +476,7 @@ const editAgent = (req, res, next) => __awaiter(void 0, void 0, void 0, function
             const agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), { name,
                 email,
                 instagram,
-                facebook,
                 twitter,
-                website,
                 description }));
             yield model_2.Agent.save(agentData);
         }
@@ -490,9 +488,7 @@ const editAgent = (req, res, next) => __awaiter(void 0, void 0, void 0, function
                 name,
                 email,
                 instagram,
-                facebook,
                 twitter,
-                website,
                 description,
                 user,
             });

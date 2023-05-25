@@ -28,32 +28,32 @@ const findManyAgents = (limit, offset) => __awaiter(void 0, void 0, void 0, func
     const currentDate = new Date();
     const agents = yield model_2.Agent.find({
         where: { subscription_ends_date: (0, typeorm_1.MoreThanOrEqual)(currentDate) },
+        order: { subscription_start_date: 'DESC' },
         take: limit,
         skip: offset,
     });
     if (offset === 0)
-        totalRows = yield model_2.Agent.count();
+        totalRows = agents.length;
     agents === null || agents === void 0 ? void 0 : agents.forEach((agent) => {
         var _a;
         agent.phone = (_a = agent.user) === null || _a === void 0 ? void 0 : _a.phone;
-        agent.socialLinks = [
-            {
-                image: '/images/facebook-filled.svg',
-                href: `https://www.facebook.com/${agent.facebook}`,
-            },
-            {
-                image: '/images/twitter-filled.svg',
-                href: `https://www.twitter.com/${agent.twitter}`,
-            },
-            {
+        const socialLinks = [];
+        if (agent.instagram)
+            socialLinks.push({
                 image: '/images/instagram-filled.svg',
                 href: `https://www.instagram.com/${agent.instagram}`,
-            },
-            {
+            });
+        if (agent.twitter)
+            socialLinks.push({
+                image: '/images/twitter-filled.svg',
+                href: `https://www.twitter.com/${agent.twitter}`,
+            });
+        if (agent.email)
+            socialLinks.push({
                 image: '/images/email-filled.svg',
                 href: `mailto:${agent.email}`,
-            },
-        ];
+            });
+        agent.socialLinks = socialLinks;
         agent === null || agent === void 0 ? true : delete agent.user;
     });
     return { agents, totalRows };
@@ -84,7 +84,6 @@ const updateAgent = (agentInfo, userId) => __awaiter(void 0, void 0, void 0, fun
         yield (0, cloudinaryUtils_1.deleteMediaFromCloudinary)(agent.logo_url, 'agents');
     }
     const agentData = model_2.Agent.create(Object.assign(Object.assign({}, agent), agentInfo));
-    console.log(agentInfo);
     yield model_2.Agent.save(agentData);
 });
 exports.updateAgent = updateAgent;

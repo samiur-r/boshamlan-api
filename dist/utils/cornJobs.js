@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cronJobPerFiveMins = exports.cronJobPerHour = void 0;
+exports.cronJobPerFiveMins = exports.cronJobPerHour = exports.cronJobPerMonth = void 0;
 const node_cron_1 = __importDefault(require("node-cron"));
 const service_1 = require("../api/v1/agents/service");
 const service_2 = require("../api/v1/credits/service");
@@ -20,6 +20,17 @@ const service_3 = require("../api/v1/posts/service");
 const service_4 = require("../api/v1/users/service");
 const logger_1 = __importDefault(require("./logger"));
 const slackUtils_1 = require("./slackUtils");
+function scheduledTaskPerMonth() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            logger_1.default.info('Running monthly cron job');
+            yield (0, service_3.removeArchivedPostsMedia)();
+        }
+        catch (error) {
+            logger_1.default.error(error.message);
+        }
+    });
+}
 function scheduledTaskPerHour() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -53,10 +64,15 @@ function scheduledTaskPerFiveMins() {
         }
     });
 }
+const cronJobPerMonth = node_cron_1.default.schedule('0 0 1 * *', scheduledTaskPerMonth);
+exports.cronJobPerMonth = cronJobPerMonth;
 const cronJobPerHour = node_cron_1.default.schedule('*/30 * * * *', scheduledTaskPerHour);
 exports.cronJobPerHour = cronJobPerHour;
 const cronJobPerFiveMins = node_cron_1.default.schedule('*/5 * * * *', scheduledTaskPerFiveMins);
 exports.cronJobPerFiveMins = cronJobPerFiveMins;
+cronJobPerMonth.on('error', (err) => {
+    logger_1.default.info('Cron job error:', err.message);
+});
 cronJobPerHour.on('error', (err) => {
     logger_1.default.info('Cron job error:', err.message);
 });

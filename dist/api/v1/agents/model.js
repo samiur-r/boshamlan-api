@@ -41,14 +41,6 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),
     __metadata("design:type", String)
-], Agent.prototype, "facebook", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
-], Agent.prototype, "website", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ nullable: true }),
-    __metadata("design:type", String)
 ], Agent.prototype, "logo_url", void 0);
 __decorate([
     (0, typeorm_1.Column)({ nullable: true }),

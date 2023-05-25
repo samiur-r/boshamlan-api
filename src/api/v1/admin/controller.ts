@@ -588,7 +588,7 @@ const editUser = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const editAgent = async (req: Request, res: Response, next: NextFunction) => {
-  const { userId, agentId, name, email, instagram, facebook, twitter, website, description } = req.body;
+  const { userId, agentId, name, email, instagram, twitter, description } = req.body;
 
   try {
     if (!name) throw new ErrorHandler(404, 'Invalid agent id or name');
@@ -602,9 +602,7 @@ const editAgent = async (req: Request, res: Response, next: NextFunction) => {
         name,
         email,
         instagram,
-        facebook,
         twitter,
-        website,
         description,
       });
 
@@ -617,9 +615,7 @@ const editAgent = async (req: Request, res: Response, next: NextFunction) => {
         name,
         email,
         instagram,
-        facebook,
         twitter,
-        website,
         description,
         user,
       });

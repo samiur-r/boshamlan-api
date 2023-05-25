@@ -25,6 +25,26 @@ const fetchById = async (req: Request, res: Response, next: NextFunction) => {
     const agent = await findAgentById(parseInt(req.params.id, 10));
     if (!agent || !agent.user_id) throw new ErrorHandler(500, 'Something went wrong');
 
+    const socialLinks = [];
+
+    if (agent.instagram)
+      socialLinks.push({
+        image: '/images/instagram-white.svg',
+        href: `https://www.instagram.com/${agent.instagram}`,
+      });
+    if (agent.twitter)
+      socialLinks.push({
+        image: '/images/twitter-white.svg',
+        href: `https://www.twitter.com/${agent.twitter}`,
+      });
+    if (agent.email)
+      socialLinks.push({
+        image: '/images/email-white.svg',
+        href: `mailto:${agent.email}`,
+      });
+
+    agent.socialLinks = socialLinks;
+
     const { posts, count } = await findPosts(10, 0, agent.user_id);
     return res.status(200).json({ agent, posts, totalPosts: count });
   } catch (error) {
@@ -59,6 +79,7 @@ const update = async (req: Request, res: Response, next: NextFunction) => {
 
     if (files && files.length) {
       const url = await uploadMediaToCloudinary(files[0], 'agents');
+      console.log(url)
       agentInfo.logo_url = url;
     } else agentInfo.logo_url = null;
 

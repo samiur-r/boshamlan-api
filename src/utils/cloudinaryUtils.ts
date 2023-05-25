@@ -6,7 +6,6 @@ import logger from './logger';
 
 const uploadMediaToCloudinary = async (file: any, preset: string) => {
   type ResourceType = 'image' | 'video' | 'raw' | 'auto';
-  const fileType = file?.mimetype.split('/')[0];
 
   const resourceType = 'auto';
 
