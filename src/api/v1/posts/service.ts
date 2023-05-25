@@ -743,7 +743,7 @@ const searchPosts = async (
     searchCriteria.property_title = Like(`%${keyword}%`);
   }
 
-  const [posts, count] = await Post.findAndCount({
+  const [posts, count]: any = await Post.findAndCount({
     where: searchCriteria,
     order: {
       is_sticky: 'DESC',
@@ -753,13 +753,22 @@ const searchPosts = async (
     skip: offset,
   });
 
-  console.log(count);
-
   let postIds: number[] = [];
 
-  posts.forEach((post) => {
+  for (const post of posts) {
+    if (post.user?.is_agent) {
+      const agent = await findAgentByUserId(post.user.id);
+      if (agent && agent.logo_url) post.agent_logo = agent.logo_url;
+    }
     postIds = [...postIds, post.id];
-  });
+    delete post.user?.password;
+  }
+
+  // let postIds: number[] = [];
+
+  // posts.forEach((post: any) => {
+  //   postIds = [...postIds, post.id];
+  // });
 
   if (postIds.length) await Post.update({ id: In(postIds) }, { views: () => 'views + .5' });
 
