@@ -185,16 +185,34 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
     }
     let count = 0;
     let users = [];
-    count = yield model_1.User.createQueryBuilder('user')
-        .leftJoinAndSelect('user.posts', 'post')
-        .leftJoinAndSelect('user.archive_posts', 'archive_post')
-        .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-        .leftJoinAndSelect('user.credits', 'credits')
-        .leftJoinAndSelect('user.transactions', 'transactions')
-        .leftJoinAndSelect('user.agent', 'agent')
-        .where(where)
-        .getCount();
-    users = yield model_1.User.createQueryBuilder('user')
+    // count = await User.createQueryBuilder('user')
+    //   .leftJoinAndSelect('user.posts', 'post')
+    //   .leftJoinAndSelect('user.archive_posts', 'archive_post')
+    //   .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
+    //   .leftJoinAndSelect('user.credits', 'credits')
+    //   .leftJoinAndSelect('user.transactions', 'transactions')
+    //   .leftJoinAndSelect('user.agent', 'agent')
+    //   .where(where)
+    //   .getCount();
+    // users = await User.createQueryBuilder('user')
+    //   .leftJoinAndSelect('user.posts', 'post')
+    //   .leftJoinAndSelect('user.archive_posts', 'archive_post')
+    //   .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
+    //   .leftJoinAndSelect('user.credits', 'credits')
+    //   .leftJoinAndSelect('user.transactions', 'transactions')
+    //   .leftJoinAndSelect('transactions.package', 'package')
+    //   .leftJoinAndSelect('user.agent', 'agent')
+    //   .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
+    //   .addSelect('COUNT(post.id)', 'total_active_posts')
+    //   .addSelect('COUNT(archive_post.id)', 'total_archive_post')
+    //   .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
+    //   .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
+    //   .orderBy(order, 'DESC')
+    //   .where(where)
+    //   .skip(offset)
+    //   .take(50)
+    //   .getMany();
+    const queryBuilder = model_1.User.createQueryBuilder('user')
         .leftJoinAndSelect('user.posts', 'post')
         .leftJoinAndSelect('user.archive_posts', 'archive_post')
         .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
@@ -206,12 +224,13 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
         .addSelect('COUNT(post.id)', 'total_active_posts')
         .addSelect('COUNT(archive_post.id)', 'total_archive_post')
         .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
+        .where(where)
         .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
         .orderBy(order, 'DESC')
-        .where(where)
         .skip(offset)
-        .take(50)
-        .getMany();
+        .take(50);
+    count = yield queryBuilder.getCount();
+    users = yield queryBuilder.getMany();
     return { users, count };
 });
 exports.filterUsersForAdmin = filterUsersForAdmin;

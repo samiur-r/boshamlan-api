@@ -488,6 +488,7 @@ const findPosts = (limit, offset, userId) => __awaiter(void 0, void 0, void 0, f
 });
 exports.findPosts = findPosts;
 const searchPosts = (limit, offset, city, stateId, propertyId, categoryId, priceRange, keyword) => __awaiter(void 0, void 0, void 0, function* () {
+    var _l, _m;
     const searchCriteria = {};
     if (categoryId) {
         searchCriteria.category_id = categoryId;
@@ -519,11 +520,20 @@ const searchPosts = (limit, offset, city, stateId, propertyId, categoryId, price
         take: limit,
         skip: offset,
     });
-    console.log(count);
     let postIds = [];
-    posts.forEach((post) => {
+    for (const post of posts) {
+        if ((_l = post.user) === null || _l === void 0 ? void 0 : _l.is_agent) {
+            const agent = yield (0, service_1.findAgentByUserId)(post.user.id);
+            if (agent && agent.logo_url)
+                post.agent_logo = agent.logo_url;
+        }
         postIds = [...postIds, post.id];
-    });
+        (_m = post.user) === null || _m === void 0 ? true : delete _m.password;
+    }
+    // let postIds: number[] = [];
+    // posts.forEach((post: any) => {
+    //   postIds = [...postIds, post.id];
+    // });
     if (postIds.length)
         yield Post_1.Post.update({ id: (0, typeorm_1.In)(postIds) }, { views: () => 'views + .5' });
     return { posts, count };
@@ -801,8 +811,8 @@ const removeAllPostsOfUser = (userId) => __awaiter(void 0, void 0, void 0, funct
         yield saveDeletedPost(post, user);
     }));
     yield Promise.allSettled(mediaUrls.map((url) => __awaiter(void 0, void 0, void 0, function* () {
-        var _l;
-        const publicId = (_l = url.split('/').pop()) === null || _l === void 0 ? void 0 : _l.split('.')[0];
+        var _o;
+        const publicId = (_o = url.split('/').pop()) === null || _o === void 0 ? void 0 : _o.split('.')[0];
         if (publicId)
             yield cloudinary_1.default.uploader.destroy(`posts/${publicId}`);
     })));
