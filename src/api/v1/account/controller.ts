@@ -1,6 +1,4 @@
-import axios from 'axios';
 import { NextFunction, Request, Response } from 'express';
-import config from '../../../config';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
 import { findAgentByUserId } from '../agents/service';
@@ -21,7 +19,7 @@ const fetch = async (req: Request, res: Response, next: NextFunction) => {
     const { posts, count } = await findPosts(10, 0, userInfo.id);
     const { archivePosts, archiveCount } = await findArchivedPostByUserId(10, 0, userInfo.id);
 
-    if (user.is_agent) agent = await findAgentByUserId(userInfo.id);
+    if (userInfo.is_agent) agent = await findAgentByUserId(userInfo.id);
 
     return res
       .status(200)
@@ -43,7 +41,7 @@ const fetchCreditAndAgentInfo = async (req: Request, res: Response, next: NextFu
 
     const credits = await findCreditByUserId(userInfo.id);
 
-    if (user.is_agent) agent = await findAgentByUserId(userInfo.id);
+    if (userInfo.is_agent) agent = await findAgentByUserId(userInfo.id);
 
     return res.status(200).json({ success: { agent, credits } });
   } catch (error) {

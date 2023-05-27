@@ -152,7 +152,8 @@ const initOrUpdateAgent = async (user: IUser, packageTitle: string) => {
 };
 
 const getExpiredAgentUserIds = async () => {
-  const currentDate = new Date();
+  // const currentDate = new Date();
+  const currentDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kuwait' }));
   const agents = await Agent.find({
     where: { subscription_ends_date: LessThan(currentDate) },
   });
