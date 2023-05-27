@@ -274,11 +274,12 @@ exports.moveExpiredPosts = moveExpiredPosts;
 const removeArchivedPostsMedia = () => __awaiter(void 0, void 0, void 0, function* () {
     const currentDate = new Date();
     const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
-    const posts = yield ArchivePost_1.ArchivePost.find({ where: { created_at: (0, typeorm_1.LessThanOrEqual)(threeMonthsAgo) } });
+    // threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+    threeMonthsAgo.setDate(currentDate.getDate() - 3);
+    const posts = yield ArchivePost_1.ArchivePost.find({ where: { expiry_date: (0, typeorm_1.LessThanOrEqual)(threeMonthsAgo) } });
     posts.forEach((post) => __awaiter(void 0, void 0, void 0, function* () {
         yield removePostMedia(post.id, post);
-        post.media = [];
+        yield ArchivePost_1.ArchivePost.save(Object.assign(Object.assign({}, post), { media: [] }));
         logger_1.default.info(`The media assets of archived Post ${post.id} by user ${post.user.phone} has been deleted`);
         yield (0, service_4.saveUserLog)([
             {

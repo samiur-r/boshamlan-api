@@ -133,10 +133,10 @@ const handleKpayResponse = (req, res) => __awaiter(void 0, void 0, void 0, funct
                                 post_id: post === null || post === void 0 ? void 0 : post.id,
                                 transaction: (_q = response.data) === null || _q === void 0 ? void 0 : _q.track_id,
                                 user: user === null || user === void 0 ? void 0 : user.phone,
-                                activity: 'Post sticked successfully',
+                                activity: `Post ${post === null || post === void 0 ? void 0 : post.title} is sticked successfully`,
                             },
                         ]);
-                        const slackMsg = `Post sticked successfully\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}`;
+                        const slackMsg = `Post ${post === null || post === void 0 ? void 0 : post.title} is sticked successfully\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}`;
                         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
                     }
                     else {

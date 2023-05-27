@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.update = exports.fetchMany = exports.fetchById = exports.fetch = void 0;
+exports.update = exports.fetchMany = exports.fetchByPhone = exports.fetchById = exports.fetch = void 0;
 const cloudinaryUtils_1 = require("../../../utils/cloudinaryUtils");
 const ErrorHandler_1 = __importDefault(require("../../../utils/ErrorHandler"));
 const logger_1 = __importDefault(require("../../../utils/logger"));
@@ -65,6 +65,37 @@ const fetchById = (req, res, next) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.fetchById = fetchById;
+const fetchByPhone = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const agent = yield (0, service_3.findAgentByUserPhone)(req.params.phone);
+        if (!agent || !agent.user_id)
+            throw new ErrorHandler_1.default(500, 'Something went wrong');
+        const socialLinks = [];
+        if (agent.instagram)
+            socialLinks.push({
+                image: '/images/instagram-white.svg',
+                href: `https://www.instagram.com/${agent.instagram}`,
+            });
+        if (agent.twitter)
+            socialLinks.push({
+                image: '/images/twitter-white.svg',
+                href: `https://www.twitter.com/${agent.twitter}`,
+            });
+        if (agent.email)
+            socialLinks.push({
+                image: '/images/email-white.svg',
+                href: `mailto:${agent.email}`,
+            });
+        agent.socialLinks = socialLinks;
+        const { posts, count } = yield (0, service_1.findPosts)(10, 0, agent.user_id);
+        return res.status(200).json({ agent, posts, totalPosts: count });
+    }
+    catch (error) {
+        logger_1.default.error(`${error.name}: ${error.message}`);
+        return next(error);
+    }
+});
+exports.fetchByPhone = fetchByPhone;
 const fetch = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = res.locals.user.payload;
     try {
@@ -88,7 +119,6 @@ const update = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         yield validation_1.agentSchema.validate(agentInfo);
         if (files && files.length) {
             const url = yield (0, cloudinaryUtils_1.uploadMediaToCloudinary)(files[0], 'agents');
-            console.log(url);
             agentInfo.logo_url = url;
         }
         else

@@ -166,7 +166,6 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
             const newPost = yield (0, service_3.savePost)(postInfo, user, typeOfCredit, postedDate, publicDate);
             yield (0, service_2.updateCredit)(userId, typeOfCredit, 1, 'SUB', credit);
             logger_1.default.info(`User: ${user.phone} created new post: ${newPost.id}`);
-            logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
             if (typeOfCredit === 'free' && credit.free === 1) {
                 const slackMsg = `User consumed their free credits\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''}`;
                 yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
@@ -177,6 +176,18 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
                 yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
                 yield (0, smsUtils_1.sendSms)(user.phone, 'Your agent credit is now 0');
             }
+            if (typeOfCredit === 'sticky') {
+                const slackMsg = `Post ${newPost === null || newPost === void 0 ? void 0 : newPost.title} is sticked successfully\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}`;
+                yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
+                logs.push({
+                    post_id: newPost.id,
+                    transaction: undefined,
+                    user: user.phone,
+                    activity: `Post ${newPost === null || newPost === void 0 ? void 0 : newPost.title} is sticked successfully`,
+                });
+            }
+            else
+                logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
         }
         if (logs && logs.length)
             yield (0, service_4.saveUserLog)(logs);
@@ -301,7 +312,7 @@ const updatePostToStick = (req, res, next) => __awaiter(void 0, void 0, void 0, 
                 post_id: post.id,
                 transaction: undefined,
                 user: (_p = user === null || user === void 0 ? void 0 : user.phone) !== null && _p !== void 0 ? _p : undefined,
-                activity: 'Post sticked successfully',
+                activity: `Post ${post.title} is sticked successfully`,
             },
         ]);
         let creditType = post.credit_type;

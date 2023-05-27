@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setSubscriptionNull = exports.fireAgentExpirationAlert = exports.findAgentById = exports.findManyAgents = exports.getExpiredAgentUserIds = exports.updateAgent = exports.findAgentByUserId = exports.initOrUpdateAgent = void 0;
+exports.findAgentByUserPhone = exports.setSubscriptionNull = exports.fireAgentExpirationAlert = exports.findAgentById = exports.findManyAgents = exports.getExpiredAgentUserIds = exports.updateAgent = exports.findAgentByUserId = exports.initOrUpdateAgent = void 0;
 /* eslint-disable no-param-reassign */
 const typeorm_1 = require("typeorm");
 const cloudinaryUtils_1 = require("../../../utils/cloudinaryUtils");
@@ -60,17 +60,29 @@ const findManyAgents = (limit, offset) => __awaiter(void 0, void 0, void 0, func
 });
 exports.findManyAgents = findManyAgents;
 const findAgentByUserId = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const agent = yield model_2.Agent.findOne({ where: { user: { id: userId } } });
-    agent === null || agent === void 0 ? true : delete agent.user;
+    (_a = agent === null || agent === void 0 ? void 0 : agent.user) === null || _a === void 0 ? true : delete _a.password;
     return agent;
 });
 exports.findAgentByUserId = findAgentByUserId;
+const findAgentByUserPhone = (phone) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b, _c;
+    const agent = yield model_2.Agent.findOne({ where: { user: { phone } } });
+    if (agent) {
+        agent.phone = (_b = agent === null || agent === void 0 ? void 0 : agent.user) === null || _b === void 0 ? void 0 : _b.phone;
+        agent.user_id = (_c = agent === null || agent === void 0 ? void 0 : agent.user) === null || _c === void 0 ? void 0 : _c.id;
+    }
+    agent === null || agent === void 0 ? true : delete agent.user;
+    return agent;
+});
+exports.findAgentByUserPhone = findAgentByUserPhone;
 const findAgentById = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _d, _e;
     const agent = yield model_2.Agent.findOneBy({ id });
     if (agent) {
-        agent.phone = (_a = agent === null || agent === void 0 ? void 0 : agent.user) === null || _a === void 0 ? void 0 : _a.phone;
-        agent.user_id = (_b = agent === null || agent === void 0 ? void 0 : agent.user) === null || _b === void 0 ? void 0 : _b.id;
+        agent.phone = (_d = agent === null || agent === void 0 ? void 0 : agent.user) === null || _d === void 0 ? void 0 : _d.phone;
+        agent.user_id = (_e = agent === null || agent === void 0 ? void 0 : agent.user) === null || _e === void 0 ? void 0 : _e.id;
     }
     agent === null || agent === void 0 ? true : delete agent.user;
     return agent;

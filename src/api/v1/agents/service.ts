@@ -53,7 +53,19 @@ const findManyAgents = async (limit: number, offset: number | undefined) => {
 };
 
 const findAgentByUserId = async (userId: number) => {
-  const agent: IAgent | null = await Agent.findOne({ where: { user: { id: userId } } });
+  const agent: any = await Agent.findOne({ where: { user: { id: userId } } });
+  delete agent?.user?.password;
+
+  return agent;
+};
+
+const findAgentByUserPhone = async (phone: string) => {
+  const agent: IAgent | null = await Agent.findOne({ where: { user: { phone } } });
+  if (agent) {
+    agent.phone = agent?.user?.phone;
+    agent.user_id = agent?.user?.id;
+  }
+
   delete agent?.user;
 
   return agent;
@@ -217,4 +229,5 @@ export {
   findAgentById,
   fireAgentExpirationAlert,
   setSubscriptionNull,
+  findAgentByUserPhone,
 };

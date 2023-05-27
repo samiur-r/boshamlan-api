@@ -33,7 +33,7 @@ const AgentController = __importStar(require("./controller"));
 const router = express_1.default.Router();
 router.get('/', AuthMiddleware_1.isUserAuth, AgentController.fetch);
 router.get('/get-many', AgentController.fetchMany);
-router.get('/:id', AgentController.fetchById);
+router.get('/:phone', AgentController.fetchByPhone);
 router.post('/', [AuthMiddleware_1.isUserAuth, FileUploadMiddleware_1.default.any()], AgentController.update);
 exports.default = router;
 //# sourceMappingURL=route.js.map
