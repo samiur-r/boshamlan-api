@@ -352,13 +352,17 @@ const moveExpiredPosts = async () => {
 const removeArchivedPostsMedia = async () => {
   const currentDate = new Date();
   const threeMonthsAgo = new Date();
-  threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+  // threeMonthsAgo.setMonth(currentDate.getMonth() - 3);
+  threeMonthsAgo.setDate(currentDate.getDate() - 3);
 
-  const posts = await ArchivePost.find({ where: { created_at: LessThanOrEqual(threeMonthsAgo) } });
+  const posts = await ArchivePost.find({ where: { expiry_date: LessThanOrEqual(threeMonthsAgo) } });
 
   posts.forEach(async (post) => {
     await removePostMedia(post.id, post);
-    post.media = [];
+    await ArchivePost.save({
+      ...post,
+      media: [],
+    });
     logger.info(`The media assets of archived Post ${post.id} by user ${post.user.phone} has been deleted`);
     await saveUserLog([
       {
