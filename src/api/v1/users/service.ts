@@ -223,6 +223,23 @@ const filterUsersForAdmin = async (
   //   .take(50)
   //   .getMany();
 
+  // const queryBuilder = User.createQueryBuilder('user')
+  //   .leftJoinAndSelect('user.posts', 'post')
+  //   .leftJoinAndSelect('user.archive_posts', 'archive_post')
+  //   .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
+  //   .leftJoinAndSelect('user.credits', 'credits')
+  //   .leftJoinAndSelect('user.transactions', 'transactions')
+  //   .leftJoinAndSelect('transactions.package', 'package')
+  //   .leftJoinAndSelect('user.agent', 'agent')
+  //   .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
+  //   .addSelect('COUNT(post.id)', 'total_active_posts')
+  //   .addSelect('COUNT(archive_post.id)', 'total_archive_post')
+  //   .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
+  //   .where(where)
+  //   .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
+  //   .orderBy(order, 'DESC')
+  //   .skip(offset)
+  //   .take(50);
   const queryBuilder = User.createQueryBuilder('user')
     .leftJoinAndSelect('user.posts', 'post')
     .leftJoinAndSelect('user.archive_posts', 'archive_post')

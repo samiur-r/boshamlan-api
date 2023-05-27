@@ -131,10 +131,10 @@ const handleKpayResponse = async (req: Request, res: Response) => {
                 post_id: post?.id,
                 transaction: response.data?.track_id,
                 user: user?.phone,
-                activity: 'Post sticked successfully',
+                activity: `Post ${post?.title} is sticked successfully`,
               },
             ]);
-            const slackMsg = `Post sticked successfully\n${
+            const slackMsg = `Post ${post?.title} is sticked successfully\n${
               user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
             } - ${user?.admin_comment ? `${user.admin_comment}` : ''}`;
             await alertOnSlack('imp', slackMsg);

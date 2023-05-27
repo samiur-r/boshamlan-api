@@ -190,7 +190,6 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
       const newPost = await savePost(postInfo, user, typeOfCredit, postedDate, publicDate);
       await updateCredit(userId, typeOfCredit, 1, 'SUB', credit);
       logger.info(`User: ${user.phone} created new post: ${newPost.id}`);
-      logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
 
       if (typeOfCredit === 'free' && credit.free === 1) {
         const slackMsg = `User consumed their free credits\n ${
@@ -206,6 +205,19 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
         await alertOnSlack('imp', slackMsg);
         await sendSms(user.phone, 'Your agent credit is now 0');
       }
+
+      if (typeOfCredit === 'sticky') {
+        const slackMsg = `Post ${newPost?.title} is sticked successfully\n${
+          user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
+        } - ${user?.admin_comment ? `${user.admin_comment}` : ''}`;
+        await alertOnSlack('imp', slackMsg);
+        logs.push({
+          post_id: newPost.id,
+          transaction: undefined,
+          user: user.phone,
+          activity: `Post ${newPost?.title} is sticked successfully`,
+        });
+      } else logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
     }
     if (logs && logs.length) await saveUserLog(logs);
     return res.status(200).json({ success: 'Post created successfully' });
@@ -335,7 +347,7 @@ const updatePostToStick = async (req: Request, res: Response, next: NextFunction
         post_id: post.id,
         transaction: undefined,
         user: user?.phone ?? undefined,
-        activity: 'Post sticked successfully',
+        activity: `Post ${post.title} is sticked successfully`,
       },
     ]);
 
