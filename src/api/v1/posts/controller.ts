@@ -215,7 +215,7 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
           post_id: newPost.id,
           transaction: undefined,
           user: user.phone,
-          activity: `Post ${newPost?.title} is sticked successfully`,
+          activity: `New direct sticky created`,
         });
       } else logs.push({ post_id: newPost.id, transaction: undefined, user: user.phone, activity: 'New post created' });
     }

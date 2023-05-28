@@ -354,22 +354,22 @@ const filterUsers = async (req: Request, res: Response, next: NextFunction) => {
       registeredDate: parseTimestamp(user.created_at).parsedDate,
       registeredTime: parseTimestamp(user.created_at).parsedTime,
       created_at: user.created_at,
-      // subscriptionStartDate:
-      //   user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
-      //     ? parseTimestamp(user.agent[0].subscription_start_date).parsedDate
-      //     : null,
-      // subscriptionStartTime:
-      //   user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
-      //     ? parseTimestamp(user.agent[0].subscription_start_date).parsedTime
-      //     : null,
-      // subscriptionEndsDate:
-      //   user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
-      //     ? parseTimestamp(user.agent[0].subscription_ends_date).parsedDate
-      //     : null,
-      // subscriptionEndsTime:
-      //   user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
-      //     ? parseTimestamp(user.agent[0].subscription_ends_date).parsedTime
-      //     : null,
+      subscriptionStartDate:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
+          ? parseTimestamp(user.agent[0].subscription_start_date).parsedDate
+          : null,
+      subscriptionStartTime:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
+          ? parseTimestamp(user.agent[0].subscription_start_date).parsedTime
+          : null,
+      subscriptionEndsDate:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
+          ? parseTimestamp(user.agent[0].subscription_ends_date).parsedDate
+          : null,
+      subscriptionEndsTime:
+        user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
+          ? parseTimestamp(user.agent[0].subscription_ends_date).parsedTime
+          : null,
       post: {
         active: user.posts?.length,
         repost: user.posts?.filter((post: IPost) => post.is_reposted).length,

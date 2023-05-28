@@ -8,14 +8,17 @@ import { IUser } from '../users/interfaces';
 import { findUserById, findUserByPhone } from '../users/service';
 import { Transaction } from './model';
 
-const saveTransaction = async (payload: {
-  trackId: string;
-  amount: number;
-  packageTitle: string;
-  status: string;
-  user: IUser;
-  packageObj: IPackage;
-}) => {
+const saveTransaction = async (
+  payload: {
+    trackId: string;
+    amount: number;
+    packageTitle: string;
+    status: string;
+    user: IUser;
+    packageObj: IPackage;
+  },
+  postInfo?: any,
+) => {
   const {
     trackId,
     amount,
@@ -43,10 +46,16 @@ const saveTransaction = async (payload: {
 
   const transaction = await Transaction.save(newTransaction);
 
+  let title;
+
+  if (postInfo) {
+    title = `${postInfo.propertyTitle} ل${postInfo.categoryTitle} في ${postInfo.cityTitle}`;
+  }
+
   if (status === 'created') {
-    const slackMsg = `Payment created - ${
+    const slackMsg = `Payment created - ${user?.phone ? `${user.phone}` : ''} - ${
       user?.admin_comment ? `${user.admin_comment}` : ''
-    }\n${packageTitle} - ${amount}`;
+    }\n${title ? `${title} - ` : ''}${packageTitle} - ${amount}`;
     await alertOnSlack('imp', slackMsg);
   }
   return transaction;
@@ -94,9 +103,9 @@ const editTransaction = async (trackId: number, reference_id: string, tran_id: s
     }
   }
 
-  const slackMsg = `Payment ${status} - ${user?.admin_comment ? `${user.admin_comment}` : ''}\n${
-    transactionObj.package_title
-  } - ${transactionObj.amount}`;
+  const slackMsg = `Payment ${status} - ${user?.phone ? `${user.phone}` : ''} - ${
+    user?.admin_comment ? `${user.admin_comment}` : ''
+  }\n${transactionObj.package_title} - ${transactionObj.amount}`;
 
   await alertOnSlack('imp', slackMsg);
   await sendSms(transactionObj.user.phone, smsMsg);
@@ -116,9 +125,9 @@ const editTransactionStatus = async (trackId: string | null, status: string) => 
     status,
   });
 
-  const slackMsg = `Payment canceled - ${user.admin_comment || ''}\n${transaction.package_title} - ${
-    transaction.amount
-  }`;
+  const slackMsg = `Payment canceled - ${user.phone || ''} - ${user.admin_comment || ''}\n${
+    transaction.package_title
+  } - ${transaction.amount}`;
   const smsMsg = `Payment canceled`;
 
   await alertOnSlack('imp', slackMsg);

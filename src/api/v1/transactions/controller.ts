@@ -15,7 +15,7 @@ import { saveUserLog } from '../user_logs/service';
 import { alertOnSlack } from '../../../utils/slackUtils';
 
 const insert = async (req: Request, res: Response, next: NextFunction) => {
-  const { payload } = req.body;
+  const { payload, postInfo } = req.body;
   const userId = res.locals.user.payload.id;
 
   try {
@@ -26,7 +26,7 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
     const user = await findUserById(userId);
     payload.user = user;
 
-    await saveTransaction(payload);
+    await saveTransaction(payload, postInfo);
     logger.info(`Transaction created by user ${payload.user?.phone}`);
     await saveUserLog([
       {
@@ -131,7 +131,7 @@ const handleKpayResponse = async (req: Request, res: Response) => {
                 post_id: post?.id,
                 transaction: response.data?.track_id,
                 user: user?.phone,
-                activity: `Post ${post?.title} is sticked successfully`,
+                activity: `New direct sticky created`,
               },
             ]);
             const slackMsg = `Post ${post?.title} is sticked successfully\n${
