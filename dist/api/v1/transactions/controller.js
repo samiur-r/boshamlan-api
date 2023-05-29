@@ -29,7 +29,7 @@ const service_7 = require("../user_logs/service");
 const slackUtils_1 = require("../../../utils/slackUtils");
 const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f;
-    const { payload } = req.body;
+    const { payload, postInfo } = req.body;
     const userId = res.locals.user.payload.id;
     try {
         yield validation_1.transactionSchema.validate(payload);
@@ -37,7 +37,7 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         payload.packageObj = packageObj;
         const user = yield (0, service_4.findUserById)(userId);
         payload.user = user;
-        yield (0, service_5.saveTransaction)(payload);
+        yield (0, service_5.saveTransaction)(payload, postInfo);
         logger_1.default.info(`Transaction created by user ${(_a = payload.user) === null || _a === void 0 ? void 0 : _a.phone}`);
         yield (0, service_7.saveUserLog)([
             {
@@ -133,7 +133,7 @@ const handleKpayResponse = (req, res) => __awaiter(void 0, void 0, void 0, funct
                                 post_id: post === null || post === void 0 ? void 0 : post.id,
                                 transaction: (_q = response.data) === null || _q === void 0 ? void 0 : _q.track_id,
                                 user: user === null || user === void 0 ? void 0 : user.phone,
-                                activity: `Post ${post === null || post === void 0 ? void 0 : post.title} is sticked successfully`,
+                                activity: `New direct sticky created`,
                             },
                         ]);
                         const slackMsg = `Post ${post === null || post === void 0 ? void 0 : post.title} is sticked successfully\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}`;

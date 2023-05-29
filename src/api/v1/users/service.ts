@@ -3,7 +3,11 @@ import AppDataSource from '../../../db';
 import logger from '../../../utils/logger';
 import { hashPassword } from '../../../utils/passwordUtils';
 import { getLocaleDate } from '../../../utils/timestampUtls';
+import { Credit } from '../credits/model';
+import { ArchivePost } from '../posts/models/ArchivePost';
+import { DeletedPost } from '../posts/models/DeletedPost';
 import { Post } from '../posts/models/Post';
+import { Transaction } from '../transactions/model';
 import { IUser } from './interfaces';
 import { User } from './model';
 
@@ -171,21 +175,21 @@ const filterUsersForAdmin = async (
       case 'Registered':
         order = 'user.created_at';
         break;
-      case 'Total Posts':
-        order = 'total_posts';
-        break;
-      case 'Active Posts':
-        order = 'total_active_posts';
-        break;
-      case 'Archived Posts':
-        order = 'total_archive_post';
-        break;
-      case 'Trashed Posts':
-        order = 'total_deleted_post';
-        break;
       case 'Mobile':
         order = 'user.phone';
         break;
+      // case 'Total Posts':
+      //   order = 'total_posts';
+      //   break;
+      // case 'Active Posts':
+      //   order = 'total_active_posts';
+      //   break;
+      // case 'Archived Posts':
+      //   order = 'total_archive_post';
+      //   break;
+      // case 'Trashed Posts':
+      //   order = 'total_deleted_post';
+      //   break;
       default:
         break;
     }
@@ -194,64 +198,38 @@ const filterUsersForAdmin = async (
   let count = 0;
   let users: any = [];
 
-  // count = await User.createQueryBuilder('user')
-  //   .leftJoinAndSelect('user.posts', 'post')
-  //   .leftJoinAndSelect('user.archive_posts', 'archive_post')
-  //   .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-  //   .leftJoinAndSelect('user.credits', 'credits')
-  //   .leftJoinAndSelect('user.transactions', 'transactions')
-  //   .leftJoinAndSelect('user.agent', 'agent')
-  //   .where(where)
-  //   .getCount();
-
-  // users = await User.createQueryBuilder('user')
-  //   .leftJoinAndSelect('user.posts', 'post')
-  //   .leftJoinAndSelect('user.archive_posts', 'archive_post')
-  //   .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-  //   .leftJoinAndSelect('user.credits', 'credits')
-  //   .leftJoinAndSelect('user.transactions', 'transactions')
-  //   .leftJoinAndSelect('transactions.package', 'package')
-  //   .leftJoinAndSelect('user.agent', 'agent')
-  //   .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
-  //   .addSelect('COUNT(post.id)', 'total_active_posts')
-  //   .addSelect('COUNT(archive_post.id)', 'total_archive_post')
-  //   .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
-  //   .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
-  //   .orderBy(order, 'DESC')
-  //   .where(where)
-  //   .skip(offset)
-  //   .take(50)
-  //   .getMany();
-
-  // const queryBuilder = User.createQueryBuilder('user')
-  //   .leftJoinAndSelect('user.posts', 'post')
-  //   .leftJoinAndSelect('user.archive_posts', 'archive_post')
-  //   .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-  //   .leftJoinAndSelect('user.credits', 'credits')
-  //   .leftJoinAndSelect('user.transactions', 'transactions')
-  //   .leftJoinAndSelect('transactions.package', 'package')
-  //   .leftJoinAndSelect('user.agent', 'agent')
-  //   .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
-  //   .addSelect('COUNT(post.id)', 'total_active_posts')
-  //   .addSelect('COUNT(archive_post.id)', 'total_archive_post')
-  //   .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
-  //   .where(where)
-  //   .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
-  //   .orderBy(order, 'DESC')
-  //   .skip(offset)
-  //   .take(50);
   const queryBuilder = User.createQueryBuilder('user')
-    .leftJoinAndSelect('user.posts', 'post')
-    .leftJoinAndSelect('user.archive_posts', 'archive_post')
-    .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-    .leftJoinAndSelect('user.credits', 'credits')
-    .leftJoinAndSelect('user.transactions', 'transactions')
-    .leftJoinAndSelect('transactions.package', 'package')
-    .leftJoinAndSelect('user.agent', 'agent')
-    .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
-    .addSelect('COUNT(post.id)', 'total_active_posts')
-    .addSelect('COUNT(archive_post.id)', 'total_archive_post')
-    .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
+    .leftJoin('user.posts', 'post')
+    .leftJoin('user.archive_posts', 'archive_post')
+    .leftJoin('user.deleted_posts', 'deleted_post')
+    .leftJoin('user.credits', 'credits')
+    .leftJoin('user.transactions', 'transactions')
+    .leftJoin('transactions.package', 'package')
+    .leftJoin('user.agent', 'agent')
+    .select([
+      'user.id',
+      'user.is_agent',
+      'user.status',
+      'user.phone',
+      'user.admin_comment',
+      'user.created_at',
+      'user.is_blocked',
+      'user.is_deleted',
+      'post.id',
+      'post.public_date',
+      'post.is_reposted',
+      'archive_post.id',
+      'deleted_post.id',
+      'credits.free',
+      'credits.regular',
+      'credits.sticky',
+      'credits.agent',
+      'transactions.status',
+      'transactions.package_title',
+      'package.numberOfCredits',
+      'agent.subscription_start_date',
+      'agent.subscription_ends_date',
+    ])
     .where(where)
     .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
     .orderBy(order, 'DESC')
@@ -260,6 +238,32 @@ const filterUsersForAdmin = async (
 
   count = await queryBuilder.getCount();
   users = await queryBuilder.getMany();
+
+  if (orderByToFilter === 'Total Posts') {
+    users.sort((a: any, b: any) => {
+      const totalA = a.posts.length + a.archive_posts.length + a.deleted_posts.length;
+      const totalB = b.posts.length + b.archive_posts.length + b.deleted_posts.length;
+      return totalB - totalA;
+    });
+  } else if (orderByToFilter === 'Active Posts') {
+    users.sort((a: any, b: any) => {
+      const totalA = a.posts.length;
+      const totalB = b.posts.length;
+      return totalB - totalA;
+    });
+  } else if (orderByToFilter === 'Archive Posts') {
+    users.sort((a: any, b: any) => {
+      const totalA = a.archive_posts.length;
+      const totalB = b.archive_posts.length;
+      return totalB - totalA;
+    });
+  } else if (orderByToFilter === 'Deleted Posts') {
+    users.sort((a: any, b: any) => {
+      const totalA = a.deleted_posts.length;
+      const totalB = b.deleted_posts.length;
+      return totalB - totalA;
+    });
+  }
 
   return { users, count };
 };

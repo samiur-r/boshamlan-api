@@ -183,7 +183,7 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
                     post_id: newPost.id,
                     transaction: undefined,
                     user: user.phone,
-                    activity: `Post ${newPost === null || newPost === void 0 ? void 0 : newPost.title} is sticked successfully`,
+                    activity: `New direct sticky created`,
                 });
             }
             else

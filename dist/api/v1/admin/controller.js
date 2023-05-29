@@ -258,7 +258,7 @@ const filterUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
         const { users, count } = yield (0, service_3.filterUsersForAdmin)(statusToFilter, phoneToFilter, adminCommentToFilter, fromCreationDateToFilter, toCreationDateToFilter, orderByToFilter, offset);
         totalPages = Math.ceil(count / 50);
         const parsedUsers = users.map((user) => {
-            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
+            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s;
             return ({
                 id: user.id,
                 phone: user.phone,
@@ -272,35 +272,31 @@ const filterUsers = (req, res, next) => __awaiter(void 0, void 0, void 0, functi
                 registeredDate: (0, timestampUtls_1.parseTimestamp)(user.created_at).parsedDate,
                 registeredTime: (0, timestampUtls_1.parseTimestamp)(user.created_at).parsedTime,
                 created_at: user.created_at,
-                // subscriptionStartDate:
-                //   user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
-                //     ? parseTimestamp(user.agent[0].subscription_start_date).parsedDate
-                //     : null,
-                // subscriptionStartTime:
-                //   user.agent && user.agent.length && user?.agent[0]?.subscription_start_date
-                //     ? parseTimestamp(user.agent[0].subscription_start_date).parsedTime
-                //     : null,
-                // subscriptionEndsDate:
-                //   user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
-                //     ? parseTimestamp(user.agent[0].subscription_ends_date).parsedDate
-                //     : null,
-                // subscriptionEndsTime:
-                //   user.agent && user.agent.length && user?.agent[0]?.subscription_ends_date
-                //     ? parseTimestamp(user.agent[0].subscription_ends_date).parsedTime
-                //     : null,
+                subscriptionStartDate: user.agent && user.agent.length && ((_a = user === null || user === void 0 ? void 0 : user.agent[0]) === null || _a === void 0 ? void 0 : _a.subscription_start_date)
+                    ? (0, timestampUtls_1.parseTimestamp)(user.agent[0].subscription_start_date).parsedDate
+                    : null,
+                subscriptionStartTime: user.agent && user.agent.length && ((_b = user === null || user === void 0 ? void 0 : user.agent[0]) === null || _b === void 0 ? void 0 : _b.subscription_start_date)
+                    ? (0, timestampUtls_1.parseTimestamp)(user.agent[0].subscription_start_date).parsedTime
+                    : null,
+                subscriptionEndsDate: user.agent && user.agent.length && ((_c = user === null || user === void 0 ? void 0 : user.agent[0]) === null || _c === void 0 ? void 0 : _c.subscription_ends_date)
+                    ? (0, timestampUtls_1.parseTimestamp)(user.agent[0].subscription_ends_date).parsedDate
+                    : null,
+                subscriptionEndsTime: user.agent && user.agent.length && ((_d = user === null || user === void 0 ? void 0 : user.agent[0]) === null || _d === void 0 ? void 0 : _d.subscription_ends_date)
+                    ? (0, timestampUtls_1.parseTimestamp)(user.agent[0].subscription_ends_date).parsedTime
+                    : null,
                 post: {
-                    active: (_a = user.posts) === null || _a === void 0 ? void 0 : _a.length,
-                    repost: (_b = user.posts) === null || _b === void 0 ? void 0 : _b.filter((post) => post.is_reposted).length,
-                    archived: (_c = user.archive_posts) === null || _c === void 0 ? void 0 : _c.length,
-                    deleted: (_d = user.deleted_posts) === null || _d === void 0 ? void 0 : _d.length,
+                    active: (_e = user.posts) === null || _e === void 0 ? void 0 : _e.length,
+                    repost: (_f = user.posts) === null || _f === void 0 ? void 0 : _f.filter((post) => post.is_reposted).length,
+                    archived: (_g = user.archive_posts) === null || _g === void 0 ? void 0 : _g.length,
+                    deleted: (_h = user.deleted_posts) === null || _h === void 0 ? void 0 : _h.length,
                 },
                 credits: {
-                    free: (_f = (_e = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _e === void 0 ? void 0 : _e.free) !== null && _f !== void 0 ? _f : 0,
-                    regular: (_h = (_g = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _g === void 0 ? void 0 : _g.regular) !== null && _h !== void 0 ? _h : 0,
-                    sticky: (_k = (_j = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _j === void 0 ? void 0 : _j.sticky) !== null && _k !== void 0 ? _k : 0,
-                    agent: (_m = (_l = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _l === void 0 ? void 0 : _l.agent) !== null && _m !== void 0 ? _m : 0,
+                    free: (_k = (_j = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _j === void 0 ? void 0 : _j.free) !== null && _k !== void 0 ? _k : 0,
+                    regular: (_m = (_l = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _l === void 0 ? void 0 : _l.regular) !== null && _m !== void 0 ? _m : 0,
+                    sticky: (_p = (_o = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _o === void 0 ? void 0 : _o.sticky) !== null && _p !== void 0 ? _p : 0,
+                    agent: (_r = (_q = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _q === void 0 ? void 0 : _q.agent) !== null && _r !== void 0 ? _r : 0,
                 },
-                has_zero_credits: ((_o = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _o === void 0 ? void 0 : _o.free) === 0 || user.status === 'not_verified',
+                has_zero_credits: ((_s = user === null || user === void 0 ? void 0 : user.credits[0]) === null || _s === void 0 ? void 0 : _s.free) === 0 || user.status === 'not_verified',
                 payment: {
                     regular: user === null || user === void 0 ? void 0 : user.transactions.filter((transaction) => transaction.status === 'completed' && ['regular1', 'regular2'].includes(transaction.package_title)).reduce((total, transaction) => total + transaction.package.numberOfCredits, 0),
                     sticky: user.transactions

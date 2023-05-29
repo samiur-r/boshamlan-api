@@ -185,62 +185,46 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
     }
     let count = 0;
     let users = [];
-    // count = await User.createQueryBuilder('user')
-    //   .leftJoinAndSelect('user.posts', 'post')
-    //   .leftJoinAndSelect('user.archive_posts', 'archive_post')
-    //   .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-    //   .leftJoinAndSelect('user.credits', 'credits')
-    //   .leftJoinAndSelect('user.transactions', 'transactions')
-    //   .leftJoinAndSelect('user.agent', 'agent')
-    //   .where(where)
-    //   .getCount();
-    // users = await User.createQueryBuilder('user')
-    //   .leftJoinAndSelect('user.posts', 'post')
-    //   .leftJoinAndSelect('user.archive_posts', 'archive_post')
-    //   .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-    //   .leftJoinAndSelect('user.credits', 'credits')
-    //   .leftJoinAndSelect('user.transactions', 'transactions')
-    //   .leftJoinAndSelect('transactions.package', 'package')
-    //   .leftJoinAndSelect('user.agent', 'agent')
-    //   .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
-    //   .addSelect('COUNT(post.id)', 'total_active_posts')
-    //   .addSelect('COUNT(archive_post.id)', 'total_archive_post')
-    //   .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
-    //   .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
-    //   .orderBy(order, 'DESC')
-    //   .where(where)
-    //   .skip(offset)
-    //   .take(50)
-    //   .getMany();
-    // const queryBuilder = User.createQueryBuilder('user')
-    //   .leftJoinAndSelect('user.posts', 'post')
-    //   .leftJoinAndSelect('user.archive_posts', 'archive_post')
-    //   .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-    //   .leftJoinAndSelect('user.credits', 'credits')
-    //   .leftJoinAndSelect('user.transactions', 'transactions')
-    //   .leftJoinAndSelect('transactions.package', 'package')
-    //   .leftJoinAndSelect('user.agent', 'agent')
-    //   .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
-    //   .addSelect('COUNT(post.id)', 'total_active_posts')
-    //   .addSelect('COUNT(archive_post.id)', 'total_archive_post')
-    //   .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
-    //   .where(where)
-    //   .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
-    //   .orderBy(order, 'DESC')
-    //   .skip(offset)
-    //   .take(50);
     const queryBuilder = model_1.User.createQueryBuilder('user')
-        .leftJoinAndSelect('user.posts', 'post')
-        .leftJoinAndSelect('user.archive_posts', 'archive_post')
-        .leftJoinAndSelect('user.deleted_posts', 'deleted_post')
-        .leftJoinAndSelect('user.credits', 'credits')
-        .leftJoinAndSelect('user.transactions', 'transactions')
-        .leftJoinAndSelect('transactions.package', 'package')
-        .leftJoinAndSelect('user.agent', 'agent')
-        .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
-        .addSelect('COUNT(post.id)', 'total_active_posts')
-        .addSelect('COUNT(archive_post.id)', 'total_archive_post')
-        .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
+        .leftJoin('user.posts', 'post')
+        .leftJoin('user.archive_posts', 'archive_post')
+        .leftJoin('user.deleted_posts', 'deleted_post')
+        .leftJoin('user.credits', 'credits')
+        .leftJoin('user.transactions', 'transactions')
+        .leftJoin('transactions.package', 'package')
+        .leftJoin('user.agent', 'agent')
+        .select([
+        'user.id',
+        'user.is_agent',
+        'user.status',
+        'user.phone',
+        'user.admin_comment',
+        'user.created_at',
+        'user.is_blocked',
+        'user.is_deleted',
+        'post.id',
+        'post.public_date',
+        'post.is_reposted',
+        'archive_post.id',
+        'deleted_post.id',
+        'credits.free',
+        'credits.regular',
+        'credits.sticky',
+        'credits.agent',
+        'transactions.status',
+        'transactions.package_title',
+        'package.numberOfCredits',
+        'agent.subscription_start_date',
+        'agent.subscription_ends_date',
+        'COUNT(DISTINCT post.id) + COUNT(DISTINCT archive_post.id) + COUNT(DISTINCT deleted_post.id) AS total_posts',
+        'COUNT(DISTINCT post.id) AS total_active_posts',
+        'COUNT(DISTINCT archive_post.id) AS total_archive_post',
+        'COUNT(DISTINCT deleted_post.id) AS total_deleted_post',
+    ])
+        // .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
+        // .addSelect('COUNT(post.id)', 'total_active_posts')
+        // .addSelect('COUNT(archive_post.id)', 'total_archive_post')
+        // .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
         .where(where)
         .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
         .orderBy(order, 'DESC')

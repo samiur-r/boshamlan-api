@@ -1,11 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const hidePhoneNumber = (description) => {
-    const regex = /\b(\d{8})\b/g;
-    const replacedString = description.replace(regex, (match, number) => {
-        return '*'.repeat(number.length);
-    });
-    return replacedString;
+    const pattern = /[\d\u0660-\u0669\u06F0-\u06F9]{8}/g;
+    return description.replace(pattern, '********');
 };
 exports.default = hidePhoneNumber;
 //# sourceMappingURL=hidePhoneNumber.js.map

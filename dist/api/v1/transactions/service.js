@@ -17,7 +17,7 @@ const smsUtils_1 = require("../../../utils/smsUtils");
 const timestampUtls_1 = require("../../../utils/timestampUtls");
 const service_1 = require("../users/service");
 const model_1 = require("./model");
-const saveTransaction = (payload) => __awaiter(void 0, void 0, void 0, function* () {
+const saveTransaction = (payload, postInfo) => __awaiter(void 0, void 0, void 0, function* () {
     const { trackId, amount, packageTitle, status, user, packageObj, } = payload;
     const newTransaction = model_1.Transaction.create({
         track_id: trackId,
@@ -28,8 +28,12 @@ const saveTransaction = (payload) => __awaiter(void 0, void 0, void 0, function*
         package: packageObj,
     });
     const transaction = yield model_1.Transaction.save(newTransaction);
+    let title;
+    if (postInfo) {
+        title = `${postInfo.propertyTitle} ل${postInfo.categoryTitle} في ${postInfo.cityTitle}`;
+    }
     if (status === 'created') {
-        const slackMsg = `Payment created - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}\n${packageTitle} - ${amount}`;
+        const slackMsg = `Payment created - ${(user === null || user === void 0 ? void 0 : user.phone) ? `${user.phone}` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}\n${title ? `${title} - ` : ''}${packageTitle} - ${amount}`;
         yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
     }
     return transaction;
@@ -70,7 +74,7 @@ const editTransaction = (trackId, reference_id, tran_id, status) => __awaiter(vo
                 break;
         }
     }
-    const slackMsg = `Payment ${status} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}\n${transactionObj.package_title} - ${transactionObj.amount}`;
+    const slackMsg = `Payment ${status} - ${(user === null || user === void 0 ? void 0 : user.phone) ? `${user.phone}` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}\n${transactionObj.package_title} - ${transactionObj.amount}`;
     yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
     yield (0, smsUtils_1.sendSms)(transactionObj.user.phone, smsMsg);
     return { status: 200, data: transactionObj };
@@ -86,7 +90,7 @@ const editTransactionStatus = (trackId, status) => __awaiter(void 0, void 0, voi
     if (!user)
         return { status: 404 };
     yield model_1.Transaction.save(Object.assign(Object.assign({}, transaction), { status }));
-    const slackMsg = `Payment canceled - ${user.admin_comment || ''}\n${transaction.package_title} - ${transaction.amount}`;
+    const slackMsg = `Payment canceled - ${user.phone || ''} - ${user.admin_comment || ''}\n${transaction.package_title} - ${transaction.amount}`;
     const smsMsg = `Payment canceled`;
     yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
     yield (0, smsUtils_1.sendSms)(transaction.user.phone, smsMsg);

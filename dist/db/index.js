@@ -27,9 +27,9 @@ const AppDataSource = new typeorm_1.DataSource({
     synchronize: true,
     logging: false,
     migrationsRun: false,
-    // ssl: {
-    //   rejectUnauthorized: false,
-    // },
+    ssl: {
+        rejectUnauthorized: false,
+    },
     entities: [
         model_1.User,
         model_2.Credit,

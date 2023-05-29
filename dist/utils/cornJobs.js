@@ -66,7 +66,7 @@ function scheduledTaskPerFiveMins() {
 }
 const cronJobPerMonth = node_cron_1.default.schedule('0 0 1 * *', scheduledTaskPerMonth);
 exports.cronJobPerMonth = cronJobPerMonth;
-const cronJobPerHour = node_cron_1.default.schedule('*/1 * * * *', scheduledTaskPerHour);
+const cronJobPerHour = node_cron_1.default.schedule('*/30 * * * *', scheduledTaskPerHour);
 exports.cronJobPerHour = cronJobPerHour;
 const cronJobPerFiveMins = node_cron_1.default.schedule('*/5 * * * *', scheduledTaskPerFiveMins);
 exports.cronJobPerFiveMins = cronJobPerFiveMins;
