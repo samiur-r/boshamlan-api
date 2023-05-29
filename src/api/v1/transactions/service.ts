@@ -53,7 +53,7 @@ const saveTransaction = async (
   }
 
   if (status === 'created') {
-    const slackMsg = `Payment created - ${user?.phone ? `${user.phone}` : ''} - ${
+    const slackMsg = `Payment created - ${user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''} - ${
       user?.admin_comment ? `${user.admin_comment}` : ''
     }\n${title ? `${title} - ` : ''}${packageTitle} - ${amount}`;
     await alertOnSlack('imp', slackMsg);
@@ -103,7 +103,7 @@ const editTransaction = async (trackId: number, reference_id: string, tran_id: s
     }
   }
 
-  const slackMsg = `Payment ${status} - ${user?.phone ? `${user.phone}` : ''} - ${
+  const slackMsg = `Payment ${status} - ${user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''} - ${
     user?.admin_comment ? `${user.admin_comment}` : ''
   }\n${transactionObj.package_title} - ${transactionObj.amount}`;
 
@@ -125,9 +125,9 @@ const editTransactionStatus = async (trackId: string | null, status: string) => 
     status,
   });
 
-  const slackMsg = `Payment canceled - ${user.phone || ''} - ${user.admin_comment || ''}\n${
-    transaction.package_title
-  } - ${transaction.amount}`;
+  const slackMsg = `Payment canceled - ${user.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''} - ${
+    user.admin_comment || ''
+  }\n${transaction.package_title} - ${transaction.amount}`;
   const smsMsg = `Payment canceled`;
 
   await alertOnSlack('imp', slackMsg);
