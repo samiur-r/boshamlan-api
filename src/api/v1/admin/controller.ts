@@ -416,11 +416,45 @@ const fetchUser = async (req: Request, res: Response, next: NextFunction) => {
   const { userId } = req.body;
 
   try {
-    const user: any = await User.findOne({
-      where: { id: userId },
-      relations: ['posts', 'archive_posts', 'deleted_posts', 'credits', 'transactions', 'agent'],
-    });
-    delete user?.password;
+    const where: any = {};
+    where.id = userId;
+
+    const queryBuilder = User.createQueryBuilder('user')
+      .leftJoin('user.posts', 'post')
+      .leftJoin('user.archive_posts', 'archive_post')
+      .leftJoin('user.deleted_posts', 'deleted_post')
+      .leftJoin('user.credits', 'credits')
+      .leftJoin('user.transactions', 'transactions')
+      .leftJoin('transactions.package', 'package')
+      .leftJoin('user.agent', 'agent')
+      .select([
+        'user.id',
+        'user.is_agent',
+        'user.status',
+        'user.phone',
+        'user.admin_comment',
+        'user.created_at',
+        'user.is_blocked',
+        'user.is_deleted',
+        'post.id',
+        'post.public_date',
+        'post.is_reposted',
+        'archive_post.id',
+        'deleted_post.id',
+        'credits.free',
+        'credits.regular',
+        'credits.sticky',
+        'credits.agent',
+        'transactions.status',
+        'transactions.package_title',
+        'package.numberOfCredits',
+        'agent.subscription_start_date',
+        'agent.subscription_ends_date',
+      ])
+      .where(where)
+      .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id');
+
+    const user: any = await queryBuilder.getOne();
 
     const parsedUser = {
       id: user.id,

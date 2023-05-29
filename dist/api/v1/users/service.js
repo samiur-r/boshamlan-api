@@ -164,21 +164,21 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
             case 'Registered':
                 order = 'user.created_at';
                 break;
-            case 'Total Posts':
-                order = 'total_posts';
-                break;
-            case 'Active Posts':
-                order = 'total_active_posts';
-                break;
-            case 'Archived Posts':
-                order = 'total_archive_post';
-                break;
-            case 'Trashed Posts':
-                order = 'total_deleted_post';
-                break;
             case 'Mobile':
                 order = 'user.phone';
                 break;
+            // case 'Total Posts':
+            //   order = 'total_posts';
+            //   break;
+            // case 'Active Posts':
+            //   order = 'total_active_posts';
+            //   break;
+            // case 'Archived Posts':
+            //   order = 'total_archive_post';
+            //   break;
+            // case 'Trashed Posts':
+            //   order = 'total_deleted_post';
+            //   break;
             default:
                 break;
         }
@@ -216,15 +216,7 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
         'package.numberOfCredits',
         'agent.subscription_start_date',
         'agent.subscription_ends_date',
-        'COUNT(DISTINCT post.id) + COUNT(DISTINCT archive_post.id) + COUNT(DISTINCT deleted_post.id) AS total_posts',
-        'COUNT(DISTINCT post.id) AS total_active_posts',
-        'COUNT(DISTINCT archive_post.id) AS total_archive_post',
-        'COUNT(DISTINCT deleted_post.id) AS total_deleted_post',
     ])
-        // .addSelect('COUNT(post.id) + COUNT(archive_post.id) + COUNT(deleted_post.id)', 'total_posts')
-        // .addSelect('COUNT(post.id)', 'total_active_posts')
-        // .addSelect('COUNT(archive_post.id)', 'total_archive_post')
-        // .addSelect('COUNT(deleted_post.id)', 'total_deleted_post')
         .where(where)
         .groupBy('user.id, post.id, archive_post.id, deleted_post.id, credits.id, transactions.id, package.id, agent.id')
         .orderBy(order, 'DESC')
@@ -232,6 +224,34 @@ const filterUsersForAdmin = (statusToFilter, phoneToFilter, adminCommentToFilter
         .take(50);
     count = yield queryBuilder.getCount();
     users = yield queryBuilder.getMany();
+    if (orderByToFilter === 'Total Posts') {
+        users.sort((a, b) => {
+            const totalA = a.posts.length + a.archive_posts.length + a.deleted_posts.length;
+            const totalB = b.posts.length + b.archive_posts.length + b.deleted_posts.length;
+            return totalB - totalA;
+        });
+    }
+    else if (orderByToFilter === 'Active Posts') {
+        users.sort((a, b) => {
+            const totalA = a.posts.length;
+            const totalB = b.posts.length;
+            return totalB - totalA;
+        });
+    }
+    else if (orderByToFilter === 'Archive Posts') {
+        users.sort((a, b) => {
+            const totalA = a.archive_posts.length;
+            const totalB = b.archive_posts.length;
+            return totalB - totalA;
+        });
+    }
+    else if (orderByToFilter === 'Deleted Posts') {
+        users.sort((a, b) => {
+            const totalA = a.deleted_posts.length;
+            const totalB = b.deleted_posts.length;
+            return totalB - totalA;
+        });
+    }
     return { users, count };
 });
 exports.filterUsersForAdmin = filterUsersForAdmin;
