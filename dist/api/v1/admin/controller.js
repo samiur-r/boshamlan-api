@@ -320,11 +320,6 @@ const fetchUser = (req, res, next) => __awaiter(void 0, void 0, void 0, function
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r;
     const { userId } = req.body;
     try {
-        // const user: any = await User.findOne({
-        //   where: { id: userId },
-        //   relations: ['posts', 'archive_posts', 'deleted_posts', 'credits', 'transactions', 'agent'],
-        // });
-        // delete user?.password;
         const where = {};
         where.id = userId;
         const queryBuilder = model_3.User.createQueryBuilder('user')

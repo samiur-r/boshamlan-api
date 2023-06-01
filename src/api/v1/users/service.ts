@@ -1,13 +1,7 @@
-import { Between, In, LessThan, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual } from 'typeorm';
-import AppDataSource from '../../../db';
+import { Between, In, LessThanOrEqual, Like, MoreThan, MoreThanOrEqual } from 'typeorm';
 import logger from '../../../utils/logger';
 import { hashPassword } from '../../../utils/passwordUtils';
 import { getLocaleDate } from '../../../utils/timestampUtls';
-import { Credit } from '../credits/model';
-import { ArchivePost } from '../posts/models/ArchivePost';
-import { DeletedPost } from '../posts/models/DeletedPost';
-import { Post } from '../posts/models/Post';
-import { Transaction } from '../transactions/model';
 import { IUser } from './interfaces';
 import { User } from './model';
 

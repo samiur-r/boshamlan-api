@@ -1,7 +1,6 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
-import { Agent } from 'http';
 import { Between, In, IsNull, LessThan, LessThanOrEqual, Like } from 'typeorm';
 import cloudinary from '../../../config/cloudinary';
 import AppDataSource from '../../../db';
@@ -20,25 +19,6 @@ import { ArchivePost } from './models/ArchivePost';
 import { DeletedPost } from './models/DeletedPost';
 import { Post } from './models/Post';
 import { TempPost } from './models/TempPost';
-
-interface PostsWithUser extends IPost {
-  post_type?: string;
-  user_phone?: string;
-  postedDate?: string;
-  postedTime?: string;
-  expiredDate?: string;
-  expiredTime?: string;
-  repostedDate?: string | null;
-  repostedTime?: string | null;
-  stickyDate?: string | null;
-  stickyTime?: string | null;
-  unStickDate?: string | null;
-  unStickTime?: string | null;
-  deletedDate?: string | null;
-  deletedTime?: string | null;
-  publicDate?: string;
-  publicTime?: string;
-}
 
 const generatePostId = async () => {
   const [maxPostId, maxArchivePostId, maxDeletedPostId] = await Promise.all([
@@ -712,6 +692,34 @@ const findPosts = async (limit: number, offset: number | undefined, userId: numb
   return { posts, count };
 };
 
+const getColumnToFilterByKeyword = async (keyword: string) => {
+  const cityCount = await Post.count({
+    where: { city_title: Like(`%${keyword}%`) },
+  });
+
+  if (cityCount) return 'city_title';
+
+  const stateCount = await Post.count({
+    where: { state_title: Like(`%${keyword}%`) },
+  });
+
+  if (stateCount) return 'state_title';
+
+  const propertyCount = await Post.count({
+    where: { property_title: Like(`%${keyword}%`) },
+  });
+
+  if (propertyCount) return 'property_title';
+
+  const categoryCount = await Post.count({
+    where: { category_title: Like(`%${keyword}%`) },
+  });
+
+  if (categoryCount) return 'category_title';
+
+  return null;
+};
+
 const searchPosts = async (
   limit: number,
   offset: number | undefined,
@@ -724,27 +732,19 @@ const searchPosts = async (
 ) => {
   const searchCriteria: any = {};
 
-  if (categoryId) {
-    searchCriteria.category_id = categoryId;
-  }
-  if (propertyId) {
-    searchCriteria.property_id = propertyId;
-  }
-  if (city?.length) {
-    searchCriteria.city_id = In(city.map((l) => l.id));
-  }
-  if (stateId) {
-    searchCriteria.state_id = stateId;
-  }
+  if (city?.length) searchCriteria.city_id = In(city.map((l) => l.id));
+  if (stateId) searchCriteria.state_id = stateId;
+  if (categoryId) searchCriteria.category_id = categoryId;
+  if (propertyId) searchCriteria.property_id = propertyId;
   if (priceRange) {
-    searchCriteria.price = IsNull() || Between(priceRange.min, priceRange.max);
+    if (priceRange.min === 0) searchCriteria.price = IsNull() || Between(priceRange.min, priceRange.max);
+    else searchCriteria.price = Between(priceRange.min, priceRange.max);
   }
 
   if (keyword) {
-    searchCriteria.city_title = Like(`%${keyword}%`);
-    searchCriteria.state_title = Like(`%${keyword}%`);
-    searchCriteria.category_title = Like(`%${keyword}%`);
-    searchCriteria.property_title = Like(`%${keyword}%`);
+    const column = await getColumnToFilterByKeyword(keyword);
+    // eslint-disable-next-line security/detect-object-injection
+    if (column) searchCriteria[column] = Like(`%${keyword}%`);
   }
 
   const [posts, count]: any = await Post.findAndCount({

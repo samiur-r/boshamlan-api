@@ -13,6 +13,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.searchArchivedPosts = exports.removeArchivedPostsMedia = exports.unstickPost = exports.findDeletedPostById = exports.removeAllPostsOfUser = exports.filterPostsForAdmin = exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updateDeletedPost = exports.updateArchivePost = exports.updatePost = exports.removePost = exports.removeDeletedPost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = exports.generatePostId = void 0;
+/* eslint-disable no-param-reassign */
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
 const typeorm_1 = require("typeorm");
 const cloudinary_1 = __importDefault(require("../../../config/cloudinary"));
 const db_1 = __importDefault(require("../../../db"));
@@ -488,29 +491,51 @@ const findPosts = (limit, offset, userId) => __awaiter(void 0, void 0, void 0, f
     return { posts, count };
 });
 exports.findPosts = findPosts;
+const getColumnToFilterByKeyword = (keyword) => __awaiter(void 0, void 0, void 0, function* () {
+    const cityCount = yield Post_1.Post.count({
+        where: { city_title: (0, typeorm_1.Like)(`%${keyword}%`) },
+    });
+    if (cityCount)
+        return 'city_title';
+    const stateCount = yield Post_1.Post.count({
+        where: { state_title: (0, typeorm_1.Like)(`%${keyword}%`) },
+    });
+    if (stateCount)
+        return 'state_title';
+    const propertyCount = yield Post_1.Post.count({
+        where: { property_title: (0, typeorm_1.Like)(`%${keyword}%`) },
+    });
+    if (propertyCount)
+        return 'property_title';
+    const categoryCount = yield Post_1.Post.count({
+        where: { category_title: (0, typeorm_1.Like)(`%${keyword}%`) },
+    });
+    if (categoryCount)
+        return 'category_title';
+    return null;
+});
 const searchPosts = (limit, offset, city, stateId, propertyId, categoryId, priceRange, keyword) => __awaiter(void 0, void 0, void 0, function* () {
     var _l, _m;
     const searchCriteria = {};
-    if (categoryId) {
-        searchCriteria.category_id = categoryId;
-    }
-    if (propertyId) {
-        searchCriteria.property_id = propertyId;
-    }
-    if (city === null || city === void 0 ? void 0 : city.length) {
+    if (city === null || city === void 0 ? void 0 : city.length)
         searchCriteria.city_id = (0, typeorm_1.In)(city.map((l) => l.id));
-    }
-    if (stateId) {
+    if (stateId)
         searchCriteria.state_id = stateId;
-    }
+    if (categoryId)
+        searchCriteria.category_id = categoryId;
+    if (propertyId)
+        searchCriteria.property_id = propertyId;
     if (priceRange) {
-        searchCriteria.price = (0, typeorm_1.IsNull)() || (0, typeorm_1.Between)(priceRange.min, priceRange.max);
+        if (priceRange.min === 0)
+            searchCriteria.price = (0, typeorm_1.IsNull)() || (0, typeorm_1.Between)(priceRange.min, priceRange.max);
+        else
+            searchCriteria.price = (0, typeorm_1.Between)(priceRange.min, priceRange.max);
     }
     if (keyword) {
-        searchCriteria.city_title = (0, typeorm_1.Like)(`%${keyword}%`);
-        searchCriteria.state_title = (0, typeorm_1.Like)(`%${keyword}%`);
-        searchCriteria.category_title = (0, typeorm_1.Like)(`%${keyword}%`);
-        searchCriteria.property_title = (0, typeorm_1.Like)(`%${keyword}%`);
+        const column = yield getColumnToFilterByKeyword(keyword);
+        // eslint-disable-next-line security/detect-object-injection
+        if (column)
+            searchCriteria[column] = (0, typeorm_1.Like)(`%${keyword}%`);
     }
     const [posts, count] = yield Post_1.Post.findAndCount({
         where: searchCriteria,
