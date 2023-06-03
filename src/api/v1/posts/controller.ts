@@ -197,16 +197,13 @@ const insert = async (req: Request, res: Response, next: NextFunction) => {
         } - ${user?.admin_comment || ''}`;
         await alertOnSlack('imp', slackMsg);
         await sendSms(user.phone, 'You have consumed all of your free credits');
-      }
-      if (typeOfCredit === 'agent' && credit.agent === 1) {
+      } else if (typeOfCredit === 'agent' && credit.agent === 1) {
         const slackMsg = `Agent credit is now 0\n ${
           user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
         } - ${user?.admin_comment || ''}`;
         await alertOnSlack('imp', slackMsg);
         await sendSms(user.phone, 'Your agent credit is now 0');
-      }
-
-      if (typeOfCredit === 'sticky') {
+      } else if (typeOfCredit === 'sticky') {
         const slackMsg = `Post ${newPost?.title} is sticked successfully\n${
           user?.phone ? `<https://wa.me/965${user?.phone}|${user?.phone}>` : ''
         } - ${user?.admin_comment ? `${user.admin_comment}` : ''}`;
@@ -423,7 +420,6 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     await updateCredit(user.id, typeOfCredit, 1, 'SUB', credit);
     const repostCount = post.repost_count + 1;
     await updatePostRepostVals(newPost, true, repostCount);
-    await updateLocationCountValue(post.city_id, 'increment');
     logger.info(`Post ${post.id} reposted by user ${user?.phone}`);
     await saveUserLog([
       {
@@ -525,9 +521,10 @@ const deletePost = async (req: Request, res: Response, next: NextFunction) => {
     if (!user) throw new ErrorHandler(500, 'Something went wrong');
 
     if (isArchive) await removeArchivedPost(post.id, post);
-    else await removePost(post.id, post);
-
-    await updateLocationCountValue(post.city_id, 'decrement');
+    else {
+      await removePost(post.id, post);
+      await updateLocationCountValue(post.city_id, 'decrement');
+    }
 
     post.media = [];
 

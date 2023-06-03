@@ -162,7 +162,6 @@ const saveDeletedPost = (postInfo, user) => __awaiter(void 0, void 0, void 0, fu
         user,
     });
     yield DeletedPost_1.DeletedPost.save(newPost);
-    yield (0, service_2.updateLocationCountValue)(postInfo.city_id, 'decrement');
 });
 exports.saveDeletedPost = saveDeletedPost;
 const saveTempPost = (postInfo, user, typeOfCredit) => __awaiter(void 0, void 0, void 0, function* () {
@@ -395,7 +394,10 @@ const findDeletedPostById = (id) => __awaiter(void 0, void 0, void 0, function* 
 exports.findDeletedPostById = findDeletedPostById;
 const updatePost = (postInfo, post) => __awaiter(void 0, void 0, void 0, function* () {
     yield Post_1.Post.save(Object.assign(Object.assign({}, post), { city_id: postInfo.cityId, city_title: postInfo.cityTitle, state_id: postInfo.stateId, state_title: postInfo.stateTitle, property_id: postInfo.propertyId, property_title: postInfo.propertyTitle, category_id: postInfo.categoryId, category_title: postInfo.categoryTitle, price: postInfo.price, description: postInfo.description, media: postInfo.media }));
-    yield (0, service_2.updateLocationCountValue)(postInfo.cityId, 'increment');
+    if (post.city_id !== postInfo.cityId) {
+        yield (0, service_2.updateLocationCountValue)(postInfo.cityId, 'increment');
+        yield (0, service_2.updateLocationCountValue)(post.city_id, 'decrement');
+    }
     return post;
 });
 exports.updatePost = updatePost;

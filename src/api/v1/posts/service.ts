@@ -184,7 +184,6 @@ const saveDeletedPost = async (postInfo: IPost, user: IUser) => {
   });
 
   await DeletedPost.save(newPost);
-  await updateLocationCountValue(postInfo.city_id, 'decrement');
 };
 
 const saveTempPost = async (
@@ -496,7 +495,10 @@ const updatePost = async (
     media: postInfo.media,
   });
 
-  await updateLocationCountValue(postInfo.cityId, 'increment');
+  if (post.city_id !== postInfo.cityId) {
+    await updateLocationCountValue(postInfo.cityId, 'increment');
+    await updateLocationCountValue(post.city_id, 'decrement');
+  }
 
   return post;
 };

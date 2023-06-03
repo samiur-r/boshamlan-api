@@ -226,10 +226,13 @@ const deletePostPermanently = async (req: Request, res: Response, next: NextFunc
 
   try {
     if (!postId) throw new ErrorHandler(404, 'Post not found');
+    const post = await findPostById(postId);
+    if (!post) throw new ErrorHandler(404, 'Post not found');
 
     await removePost(postId);
     await removeArchivedPost(postId);
     await DeletedPost.delete({ id: postId });
+    await updateLocationCountValue(post.city_id, 'decrement');
     logger.info(`Post ${postId} permanently deleted by user ${userObj.phone}`);
     return res.status(200).json({ success: 'Post deleted successfully' });
   } catch (error) {
@@ -277,7 +280,6 @@ const rePost = async (req: Request, res: Response, next: NextFunction) => {
     await removeArchivedPost(post.id);
     const repostCount = post.repost_count + 1;
     await updatePostRepostVals(newPost, true, repostCount);
-    await updateLocationCountValue(post.city_id, 'increment');
 
     logger.info(`Post ${post.id} reposted by admin ${user?.phone}`);
     await saveUserLog([

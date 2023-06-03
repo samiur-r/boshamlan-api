@@ -161,9 +161,13 @@ const deletePostPermanently = (req, res, next) => __awaiter(void 0, void 0, void
     try {
         if (!postId)
             throw new ErrorHandler_1.default(404, 'Post not found');
+        const post = yield (0, service_2.findPostById)(postId);
+        if (!post)
+            throw new ErrorHandler_1.default(404, 'Post not found');
         yield (0, service_2.removePost)(postId);
         yield (0, service_2.removeArchivedPost)(postId);
         yield DeletedPost_1.DeletedPost.delete({ id: postId });
+        yield (0, service_8.updateLocationCountValue)(post.city_id, 'decrement');
         logger_1.default.info(`Post ${postId} permanently deleted by user ${userObj.phone}`);
         return res.status(200).json({ success: 'Post deleted successfully' });
     }
@@ -210,7 +214,6 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         yield (0, service_2.removeArchivedPost)(post.id);
         const repostCount = post.repost_count + 1;
         yield (0, service_2.updatePostRepostVals)(newPost, true, repostCount);
-        yield (0, service_8.updateLocationCountValue)(post.city_id, 'increment');
         logger_1.default.info(`Post ${post.id} reposted by admin ${user === null || user === void 0 ? void 0 : user.phone}`);
         yield (0, service_4.saveUserLog)([
             {

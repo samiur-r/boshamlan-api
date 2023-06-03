@@ -171,12 +171,12 @@ const insert = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
                 yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
                 yield (0, smsUtils_1.sendSms)(user.phone, 'You have consumed all of your free credits');
             }
-            if (typeOfCredit === 'agent' && credit.agent === 1) {
+            else if (typeOfCredit === 'agent' && credit.agent === 1) {
                 const slackMsg = `Agent credit is now 0\n ${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) || ''}`;
                 yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
                 yield (0, smsUtils_1.sendSms)(user.phone, 'Your agent credit is now 0');
             }
-            if (typeOfCredit === 'sticky') {
+            else if (typeOfCredit === 'sticky') {
                 const slackMsg = `Post ${newPost === null || newPost === void 0 ? void 0 : newPost.title} is sticked successfully\n${(user === null || user === void 0 ? void 0 : user.phone) ? `<https://wa.me/965${user === null || user === void 0 ? void 0 : user.phone}|${user === null || user === void 0 ? void 0 : user.phone}>` : ''} - ${(user === null || user === void 0 ? void 0 : user.admin_comment) ? `${user.admin_comment}` : ''}`;
                 yield (0, slackUtils_1.alertOnSlack)('imp', slackMsg);
                 logs.push({
@@ -389,7 +389,6 @@ const rePost = (req, res, next) => __awaiter(void 0, void 0, void 0, function* (
         yield (0, service_2.updateCredit)(user.id, typeOfCredit, 1, 'SUB', credit);
         const repostCount = post.repost_count + 1;
         yield (0, service_3.updatePostRepostVals)(newPost, true, repostCount);
-        yield (0, service_5.updateLocationCountValue)(post.city_id, 'increment');
         logger_1.default.info(`Post ${post.id} reposted by user ${user === null || user === void 0 ? void 0 : user.phone}`);
         yield (0, service_4.saveUserLog)([
             {
@@ -492,9 +491,10 @@ const deletePost = (req, res, next) => __awaiter(void 0, void 0, void 0, functio
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         if (isArchive)
             yield (0, service_3.removeArchivedPost)(post.id, post);
-        else
+        else {
             yield (0, service_3.removePost)(post.id, post);
-        yield (0, service_5.updateLocationCountValue)(post.city_id, 'decrement');
+            yield (0, service_5.updateLocationCountValue)(post.city_id, 'decrement');
+        }
         post.media = [];
         yield (0, service_3.saveDeletedPost)(post, user);
         logger_1.default.info(`Post ${postId} deleted by user ${user.phone}`);
