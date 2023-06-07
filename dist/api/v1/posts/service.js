@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchArchivedPosts = exports.removeArchivedPostsMedia = exports.unstickPost = exports.findDeletedPostById = exports.removeAllPostsOfUser = exports.filterPostsForAdmin = exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updateDeletedPost = exports.updateArchivePost = exports.updatePost = exports.removePost = exports.removeDeletedPost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = exports.generatePostId = void 0;
+exports.findPostCountByUserId = exports.searchPostCount = exports.searchArchivedPosts = exports.removeArchivedPostsMedia = exports.unstickPost = exports.findDeletedPostById = exports.removeAllPostsOfUser = exports.filterPostsForAdmin = exports.searchPosts = exports.updatePostViewCount = exports.updatePostRepostVals = exports.updatePostStickyVal = exports.updateDeletedPost = exports.updateArchivePost = exports.updatePost = exports.removePost = exports.removeDeletedPost = exports.removeArchivedPost = exports.removePostMedia = exports.findPosts = exports.findPostById = exports.findArchivedPostByUserId = exports.findArchivedPostById = exports.findPostByUserId = exports.removeTempPostByTrackId = exports.moveTempPost = exports.saveTempPost = exports.saveDeletedPost = exports.saveArchivedPost = exports.moveExpiredPosts = exports.savePost = exports.generatePostId = void 0;
 /* eslint-disable no-param-reassign */
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
@@ -347,6 +347,11 @@ const findPostByUserId = (userId) => __awaiter(void 0, void 0, void 0, function*
     return posts;
 });
 exports.findPostByUserId = findPostByUserId;
+const findPostCountByUserId = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const count = yield Post_1.Post.count({ where: { user: { id: userId } } });
+    return count;
+});
+exports.findPostCountByUserId = findPostCountByUserId;
 const findArchivedPostByUserId = (limit, offset, userId) => __awaiter(void 0, void 0, void 0, function* () {
     const archivePosts = yield ArchivePost_1.ArchivePost.find({
         where: { user: { id: userId } },
@@ -567,6 +572,22 @@ const searchPosts = (limit, offset, city, stateId, propertyId, categoryId, price
     return { posts, count };
 });
 exports.searchPosts = searchPosts;
+const searchPostCount = (city, stateId, propertyId, categoryId) => __awaiter(void 0, void 0, void 0, function* () {
+    const searchCriteria = {};
+    if (city === null || city === void 0 ? void 0 : city.length)
+        searchCriteria.city_id = (0, typeorm_1.In)(city.map((l) => l.id));
+    if (stateId)
+        searchCriteria.state_id = stateId;
+    if (categoryId)
+        searchCriteria.category_id = categoryId;
+    if (propertyId)
+        searchCriteria.property_id = propertyId;
+    const count = yield Post_1.Post.count({
+        where: searchCriteria,
+    });
+    return count;
+});
+exports.searchPostCount = searchPostCount;
 const searchArchivedPosts = (limit, offset, city, stateId, propertyId, categoryId, priceRange, keyword) => __awaiter(void 0, void 0, void 0, function* () {
     const searchCriteria = {};
     if (categoryId) {

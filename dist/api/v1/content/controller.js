@@ -25,7 +25,8 @@ const fetch = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
     try {
         if (location) {
             const locationArticle = yield (0, service_2.findLocationArticleById)(location.id);
-            articles.push(locationArticle);
+            if (locationArticle !== 'NULL')
+                articles.push(locationArticle);
         }
         if (propertyType && location) {
             const isState = location.state_id === null;

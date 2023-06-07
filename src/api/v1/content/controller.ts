@@ -16,7 +16,7 @@ const fetch = async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (location) {
       const locationArticle = await findLocationArticleById(location.id);
-      articles.push(locationArticle);
+      if (locationArticle !== 'NULL') articles.push(locationArticle);
     }
 
     if (propertyType && location) {

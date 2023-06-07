@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 
 import logger from '../../../utils/logger';
 import { saveUserLog } from '../user_logs/service';
-import { searchArchivedPosts, searchPosts } from '../posts/service';
+import { searchArchivedPosts, searchPostCount, searchPosts } from '../posts/service';
 
 const search = async (req: Request, res: Response, next: NextFunction) => {
   const { limit, offset, location, propertyType, category, priceRange, keyword } = req.body;
@@ -46,6 +46,29 @@ const search = async (req: Request, res: Response, next: NextFunction) => {
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     logger.error(`Failed to send posts as searched for`);
+    return next(error);
+  }
+};
+
+const searchCount = async (req: Request, res: Response, next: NextFunction) => {
+  const { location, propertyType, category } = req.body;
+
+  const propertyId = propertyType ? propertyType.id : undefined;
+  const categoryId = category ? category.id : undefined;
+  let city = [];
+  let stateId;
+
+  if (location && location.length > 1) city = location;
+  else if (location && location.length === 1) {
+    if (location[0].state_id === null) stateId = location[0].id;
+    else city = location;
+  }
+
+  try {
+    const totalPosts = await searchPostCount(city, stateId, propertyId, categoryId);
+    return res.status(200).json({ totalPosts });
+  } catch (error) {
+    logger.error(`${error.name}: ${error.message}`);
     return next(error);
   }
 };
@@ -96,4 +119,4 @@ const searchArchived = async (req: Request, res: Response, next: NextFunction) =
   }
 };
 
-export { search, searchArchived };
+export { search, searchArchived, searchCount };

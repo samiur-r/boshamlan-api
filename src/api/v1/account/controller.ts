@@ -3,7 +3,7 @@ import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
 import { findAgentByUserId } from '../agents/service';
 import { findCreditByUserId } from '../credits/service';
-import { findArchivedPostByUserId, findPosts } from '../posts/service';
+import { findArchivedPostByUserId, findPostCountByUserId, findPosts } from '../posts/service';
 import { findUserById } from '../users/service';
 
 const fetch = async (req: Request, res: Response, next: NextFunction) => {
@@ -16,14 +16,14 @@ const fetch = async (req: Request, res: Response, next: NextFunction) => {
     if (!userInfo) throw new ErrorHandler(500, 'Something went wrong');
 
     const credits = await findCreditByUserId(userInfo.id);
-    const { posts, count } = await findPosts(10, 0, userInfo.id);
+    const count = await findPostCountByUserId(userInfo.id);
     const { archivePosts, archiveCount } = await findArchivedPostByUserId(10, 0, userInfo.id);
 
     if (userInfo.is_agent) agent = await findAgentByUserId(userInfo.id);
 
     return res
       .status(200)
-      .json({ success: { agent, credits, posts, archivePosts, totalPosts: count, totalArchivePosts: archiveCount } });
+      .json({ success: { agent, credits, archivePosts, totalPosts: count, totalArchivePosts: archiveCount } });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

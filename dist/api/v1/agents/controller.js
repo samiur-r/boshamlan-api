@@ -87,8 +87,8 @@ const fetchByPhone = (req, res, next) => __awaiter(void 0, void 0, void 0, funct
                 href: `mailto:${agent.email}`,
             });
         agent.socialLinks = socialLinks;
-        const { posts, count } = yield (0, service_1.findPosts)(10, 0, agent.user_id);
-        return res.status(200).json({ agent, posts, totalPosts: count });
+        const count = yield (0, service_1.findPostCountByUserId)(agent.user_id);
+        return res.status(200).json({ agent, count });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);

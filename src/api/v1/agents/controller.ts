@@ -3,7 +3,7 @@ import { uploadMediaToCloudinary } from '../../../utils/cloudinaryUtils';
 import ErrorHandler from '../../../utils/ErrorHandler';
 import logger from '../../../utils/logger';
 import { alertOnSlack } from '../../../utils/slackUtils';
-import { findPosts } from '../posts/service';
+import { findPostCountByUserId, findPosts } from '../posts/service';
 import { findUserById } from '../users/service';
 import { findAgentById, findAgentByUserId, findAgentByUserPhone, findManyAgents, updateAgent } from './service';
 import { agentSchema } from './validation';
@@ -78,8 +78,8 @@ const fetchByPhone = async (req: Request, res: Response, next: NextFunction) => 
 
     agent.socialLinks = socialLinks;
 
-    const { posts, count } = await findPosts(10, 0, agent.user_id);
-    return res.status(200).json({ agent, posts, totalPosts: count });
+    const count = await findPostCountByUserId(agent.user_id);
+    return res.status(200).json({ agent, count });
   } catch (error) {
     logger.error(`${error.name}: ${error.message}`);
     return next(error);

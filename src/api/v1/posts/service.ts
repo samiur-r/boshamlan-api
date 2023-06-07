@@ -414,6 +414,12 @@ const findPostByUserId = async (userId: number) => {
   return posts;
 };
 
+const findPostCountByUserId = async (userId: number) => {
+  const count = await Post.count({ where: { user: { id: userId } } });
+
+  return count;
+};
+
 const findArchivedPostByUserId = async (limit: number, offset: number | undefined, userId: number | undefined) => {
   const archivePosts: IPost[] | null = await ArchivePost.find({
     where: { user: { id: userId } },
@@ -781,6 +787,26 @@ const searchPosts = async (
   return { posts, count };
 };
 
+const searchPostCount = async (
+  city?: Array<{ id: number; title: string; state_id: number | null }>,
+  stateId?: number,
+  propertyId?: number,
+  categoryId?: number,
+) => {
+  const searchCriteria: any = {};
+
+  if (city?.length) searchCriteria.city_id = In(city.map((l) => l.id));
+  if (stateId) searchCriteria.state_id = stateId;
+  if (categoryId) searchCriteria.category_id = categoryId;
+  if (propertyId) searchCriteria.property_id = propertyId;
+
+  const count: any = await Post.count({
+    where: searchCriteria,
+  });
+
+  return count;
+};
+
 const searchArchivedPosts = async (
   limit: number,
   offset: number | undefined,
@@ -1138,4 +1164,6 @@ export {
   unstickPost,
   removeArchivedPostsMedia,
   searchArchivedPosts,
+  searchPostCount,
+  findPostCountByUserId,
 };

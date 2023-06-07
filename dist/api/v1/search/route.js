@@ -30,6 +30,7 @@ const express_1 = __importDefault(require("express"));
 const SearchController = __importStar(require("./controller"));
 const router = express_1.default.Router();
 router.post('/', SearchController.search);
+router.post('/count', SearchController.searchCount);
 router.post('/archived', SearchController.searchArchived);
 exports.default = router;
 //# sourceMappingURL=route.js.map

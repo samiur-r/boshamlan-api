@@ -27,13 +27,13 @@ const fetch = (req, res, next) => __awaiter(void 0, void 0, void 0, function* ()
         if (!userInfo)
             throw new ErrorHandler_1.default(500, 'Something went wrong');
         const credits = yield (0, service_2.findCreditByUserId)(userInfo.id);
-        const { posts, count } = yield (0, service_3.findPosts)(10, 0, userInfo.id);
+        const count = yield (0, service_3.findPostCountByUserId)(userInfo.id);
         const { archivePosts, archiveCount } = yield (0, service_3.findArchivedPostByUserId)(10, 0, userInfo.id);
         if (userInfo.is_agent)
             agent = yield (0, service_1.findAgentByUserId)(userInfo.id);
         return res
             .status(200)
-            .json({ success: { agent, credits, posts, archivePosts, totalPosts: count, totalArchivePosts: archiveCount } });
+            .json({ success: { agent, credits, archivePosts, totalPosts: count, totalArchivePosts: archiveCount } });
     }
     catch (error) {
         logger_1.default.error(`${error.name}: ${error.message}`);
