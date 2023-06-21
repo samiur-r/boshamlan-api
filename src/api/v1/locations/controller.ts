@@ -26,16 +26,16 @@ const fetchAll = async (req: Request, res: Response, next: NextFunction) => {
     const propertyTypes = await PropertyType.find({
       select: ['id', 'title'],
     });
-    const posts = await Post.find({
-      select: ['property_id'],
-    });
-    propertyTypes.forEach((type: any) => {
-      const count = posts.filter((post) => post.property_id === type.id).length;
-      // eslint-disable-next-line no-param-reassign
-      type.count = count;
-    });
+    // const posts = await Post.find({
+    //   select: ['property_id'],
+    // });
+    // propertyTypes.forEach((type: any) => {
+    //   const count = posts.filter((post) => post.property_id === type.id).length;
+    //   // eslint-disable-next-line no-param-reassign
+    //   type.count = count;
+    // });
 
-    propertyTypes.sort((a: any, b: any) => b.count - a.count);
+    // propertyTypes.sort((a: any, b: any) => b.count - a.count);
 
     return res.status(200).json({ locations, propertyTypes });
   } catch (error) {

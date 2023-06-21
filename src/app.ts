@@ -20,6 +20,7 @@ import locationRoutes from './api/v1/locations';
 import contentRoutes from './api/v1/content';
 import adminRoutes from './api/v1/admin';
 import commonRoutes from './api/v1/common';
+import propertyTypesRoutes from './api/v1/property_types';
 
 const app: Express = express();
 
@@ -42,6 +43,7 @@ app.use('/api/v1/locations', locationRoutes);
 app.use('/api/v1/page-content', contentRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/common', commonRoutes);
+app.use('/api/v1/propertyTypes', propertyTypesRoutes);
 
 app.use(errorHandlingMiddleware);
 
