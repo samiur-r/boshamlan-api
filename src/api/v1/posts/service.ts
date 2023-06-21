@@ -725,6 +725,12 @@ const getColumnToFilterByKeyword = async (keyword: string) => {
 
   if (categoryCount) return 'category_title';
 
+  const descriptionCount = await Post.count({
+    where: { description: Like(`%${keyword}%`) },
+  });
+
+  if (descriptionCount) return 'description';
+
   return null;
 };
 
