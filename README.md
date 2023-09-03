@@ -1,4 +1,4 @@
-# Boshamlan Backend
+# Square Feet Backend
 
 ## Features
 
@@ -21,8 +21,8 @@
 ## Getting started
 
 ```
-git clone https://github.com/q8villa/boshamlan-backend.git
-cd boshamlan-backend
+git clone https://github.com/samiur-r/squarefeet-api.git
+cd squarefeet-api
 npm i
 cp .env.example .env
 npm run start:dev
